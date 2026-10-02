@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/>
+<title>DUALGRID</title>
+<style>
+:root{--bg:#0b0d0a;--panel:#141814;--ink:#e8f0e4;--mute:#8a9684;--lime:#c6f25a;--line:#2a3228;--east:#7cffb2;--west:#7cc8ff;--north:#ffd27c;--south:#ff8ad4}
+*{box-sizing:border-box}html,body{margin:0;background:var(--bg);color:var(--ink);font-family:ui-sans-serif,system-ui,Segoe UI,Helvetica,Arial}
+a{color:inherit;text-decoration:none}
+.app-header{display:flex;justify-content:space-between;align-items:center;padding:14px 16px;border-bottom:1px solid var(--line);position:sticky;top:0;background:#0b0d0acc;backdrop-filter:blur(10px);z-index:5}
+.brand{display:flex;align-items:center;gap:10px;font-weight:800;letter-spacing:.08em}
+.mark{width:28px;height:28px;border-radius:8px;background:var(--lime);color:#111;display:grid;place-items:center;font-weight:900}
+.brand small{color:var(--mute);font-weight:600;letter-spacing:.12em}
+.header-actions{display:flex;gap:8px;flex-wrap:wrap}
+.btn{border:1px solid var(--line);background:#1a1f19;color:var(--ink);padding:8px 12px;border-radius:10px;cursor:pointer;font-weight:700;font-size:13px}
+.btn-lime{background:var(--lime);color:#111;border-color:transparent}
+.btn-ghost{background:transparent}
+.page{max-width:1100px;margin:0 auto;padding:24px 16px 80px}
+.eyebrow{color:var(--lime);letter-spacing:.18em;font-size:11px;font-weight:800}
+h1{font-size:clamp(28px,6vw,52px);line-height:1.05;margin:8px 0 12px}
+.lede,.card p{color:var(--mute);line-height:1.5}
+.grid-2{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px}
+.grid-4{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;margin-top:16px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:16px}
+.pod-chip{display:inline-block;font-size:11px;font-weight:800;letter-spacing:.08em;margin-bottom:8px}
+.pod-chip.east{color:var(--east)}.pod-chip.west{color:var(--west)}.pod-chip.north{color:var(--north)}.pod-chip.south{color:var(--south)}
+.join-row{display:flex;gap:8px;margin-top:10px}
+.search,input,select{width:100%;background:#0f130f;border:1px solid var(--line);color:var(--ink);padding:10px;border-radius:10px}
+.draft-shell{display:grid;grid-template-columns:240px 1fr 240px;gap:10px;padding:12px}
+@media(max-width:900px){.draft-shell{grid-template-columns:1fr}}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:12px;min-height:200px}
+.clock-box{background:#0f130f;border-radius:12px;padding:12px;margin:8px 0}
+.who{font-size:20px;font-weight:800}.timer{font-size:32px;font-weight:900;color:var(--lime)}
+.team-row,.player,.log-item{display:flex;justify-content:space-between;gap:8px;align-items:center;padding:8px 0;border-bottom:1px solid #222}
+.team-row.active{color:var(--lime)}
+.pos{width:36px;height:36px;border-radius:8px;display:grid;place-items:center;font-size:11px;font-weight:800;background:#222}
+.pos.QB{background:#355}.pos.RB{background:#353}.pos.WR{background:#335}.pos.TE{background:#533}
+.pick-btn{background:var(--lime);border:0;border-radius:8px;padding:7px 10px;font-weight:800;cursor:pointer}
+.board{display:grid;grid-template-columns:80px repeat(10,minmax(70px,1fr));gap:4px;overflow:auto}
+.cell{background:#151a15;border:1px solid #222;min-height:54px;padding:6px;font-size:11px;border-radius:8px}
+.cell.head{background:#1d241c;font-weight:800}
+.payout table{width:100%;border-collapse:collapse;font-size:14px}
+.payout td,.payout th{border-bottom:1px solid #222;padding:8px;text-align:left}
+.money{color:var(--lime);font-weight:800}
+.live{font-size:12px;color:var(--lime);font-weight:800}
+label{display:block;margin:8px 0 4px}
+</style>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+</head>
+<body>
+<div id="app"></div>
+<script>
+const firebaseConfig={apiKey:"AIzaSyCPoc8RiH0GtWnyPe9azxQ8lFCLrOBoMts",authDomain:"dualgrid-427ca.firebaseapp.com",databaseURL:"https://dualgrid-427ca-default-rtdb.firebaseio.com",projectId:"dualgrid-427ca",storageBucket:"dualgrid-427ca.firebasestorage.app",messagingSenderId:"52737569543",appId:"1:52737569543:web:cf80fe25c42eb4891a0ba2"};
+firebase.initializeApp(firebaseConfig);
+const cloud=firebase.database();
+let cloudOn=false, applyingRemote=false;
+cloud.ref(".info/connected").on("value",s=>{cloudOn=!!s.val(); const el=document.getElementById("live"); if(el) el.textContent=cloudOn?"LIVE BOARD":"OFFLINE";});
+
+const PLAYERS=[
+["J. Allen","QB","BUF"],["Lamar Jackson","QB","BAL"],["Jalen Hurts","QB","PHI"],
+["Josh Jacobs","RB","GB"],["Saquon Barkley","RB","PHI"],["Bijan Robinson","RB","ATL"],
+["Jahmyr Gibbs","RB","DET"],["Breece Hall","RB","NYJ"],["Derrick Henry","RB","BAL"],
+["Ja'Marr Chase","WR","CIN"],["Justin Jefferson","WR","MIN"],["CeeDee Lamb","WR","DAL"],
+["Amon-Ra St. Brown","WR","DET"],["Puka Nacua","WR","LAR"],["A.J. Brown","WR","PHI"],
+["Nico Collins","WR","HOU"],["Garrett Wilson","WR","NYJ"],["Malik Nabers","WR","NYG"],
+["Travis Kelce","TE","KC"],["Brock Bowers","TE","LV"],["Sam LaPorta","TE","DET"],
+["Trey McBride","TE","ARI"],["George Kittle","TE","SF"],
+["Joe Burrow","QB","CIN"],["Patrick Mahomes","QB","KC"],["Jayden Daniels","QB","WAS"],
+["De'Von Achane","RB","MIA"],["Kyren Williams","RB","LAR"],["Jonathan Taylor","RB","IND"],
+["Brian Thomas Jr.","WR","JAX"],["Tee Higgins","WR","CIN"],["DK Metcalf","WR","PIT"],
+["CMC","RB","SF"],["Davante Adams","WR","LAR"],["Mark Andrews","TE","BAL"]
+].map((p,i)=>({id:i+1,name:p[0],pos:p[1],team:p[2],adp:i+1}));
+const POD_TEAMS={
+east:["Iron Hawks","Night Owls","Grid Kings","Thunderstrike","Blacktop Brigade","Titan Forge","Liberty Rush","Empire X","Shadow Lancers","Riverfront Rush"],
+west:["Velocity Vipers","Desert Rattlers","Pacific Predators","Storm Riders","Neon Knights","Harbor Seals","Summit Sentinels","Canyon Wranglers","Arctic Foxes","Golden Aces"],
+north:["Iron Harbor Dragons","Northpoint Sentinels","Stonewall Defenders","Riverdale Raiders","Frost Giants","Metro Lynx","Pinebox","Lake Effect","Steel Chapel","North Gate"],
+south:["Desert Ridge Renegades","Coastal Predators","Valley Outlaws","Southpoint Stallions","Gulfstream","Palmetto","Bayou Kings","Red Clay","Sunbelt","Lowcountry"]
+};
+const CODES={east:"EAST-7K2",west:"WEST-4N9",north:"NTH-1Q8",south:"STH-6P3"};
+const PRICE={dual:59,quad:119};
+const STORE="dualgrid-v5";
+const ROUNDS=8,PICK_SECONDS=90,BID_SECONDS=12,BUDGET=200;
+function defaultState(){return{circuit:"dual",format:"snake",actingAs:{},drafts:{},paid:false,plan:null,season:"2026",paidAt:null,owner:false,payout:{buyIn:50,commishPct:0,useCommish:false,weeklyHigh:20,divRecord:40,first:200,second:100,third:50}};}
+function load(){try{const raw=localStorage.getItem(STORE);if(raw)return Object.assign(defaultState(),JSON.parse(raw));}catch(e){}return defaultState();}
+function save(s){localStorage.setItem(STORE,JSON.stringify(s));}
+function unlocked(s){return !!(s&&(s.owner||(s.paid&&s.plan)));}
+function podsOf(s){return s.circuit==="quad"?["east","west","north","south"]:["east","west"];}
+function emptyDraft(pod,format){return{pod,format:format||"snake",teams:POD_TEAMS[pod].map((name,i)=>({id:i,name,picks:[],budget:BUDGET})),pickIndex:0,nomIndex:0,started:false,secondsLeft:format==="auction"?BID_SECONDS:PICK_SECONDS,nomination:null,log:[]};}
+function normalizeDraft(d){if(!d)return d;d.teams=(d.teams||[]).map(t=>Object.assign({picks:[],budget:200},t,{picks:t.picks||[]}));d.log=d.log||[];return d;}function ensureDraft(s,pod){if(!s.drafts[pod])s.drafts[pod]=emptyDraft(pod,s.format||"snake");s.drafts[pod]=normalizeDraft(s.drafts[pod]);return s.drafts[pod];}
+function snakeSlot(i){const r=Math.floor(i/10),p=i%10,teamId=r%2===0?p:9-p;return{round:r+1,slot:p+1,teamId,label:r+1+"."+String(p+1).padStart(2,"0")};}
+function takenIds(d){const ids=new Set();(d.teams||[]).forEach(t=>(t.picks||[]).forEach(p=>ids.add(p.id)));return ids;}
+function available(d){const t=takenIds(d);return PLAYERS.filter(p=>!t.has(p.id));}
+function fmtTime(s){return Math.floor(s/60)+":"+String(Math.max(0,s)%60).padStart(2,"0");}
+function podFromHash(){return (location.hash.split("/")[1]||"east").toLowerCase();}
+function header(extra){return '<header class="app-header"><div class="brand"><div class="mark">D</div> DUALGRID <small>PROTOTYPE</small></div><div class="header-actions"><span class="live" id="live">'+(cloudOn?"LIVE BOARD":"CONNECTING")+'</span>'+(extra||"")+"</div></header>";}
+function publish(pod){if(applyingRemote)return;const s=load();const d=s.drafts[pod];if(!d)return;cloud.ref("drafts/"+pod).set(d).catch(()=>{});}
+function makePick(state,pod,playerId){const d=ensureDraft(state,pod);const info=snakeSlot(d.pickIndex);const player=PLAYERS.find(p=>p.id===playerId);if(!player)return;if(d.format==="auction"){if(d.nomination)return;d.nomination={playerId,teamId:d.nomIndex%10,bid:1,seconds:BID_SECONDS};save(state);publish(pod);return;}const team=d.teams[info.teamId];team.picks.push(player);d.log.unshift({label:info.label,player:player.name,pos:player.pos,team:team.name});d.pickIndex++;d.started=true;d.secondsLeft=PICK_SECONDS;save(state);publish(pod);}
+function bid(state,pod,teamId){const d=ensureDraft(state,pod);if(!d.nomination)return;const t=d.teams[teamId];const next=d.nomination.bid+1;if(t.budget<next)return;d.nomination.bid=next;d.nomination.teamId=teamId;d.nomination.seconds=BID_SECONDS;save(state);publish(pod);}
+function settleAuction(state,pod){const d=ensureDraft(state,pod);const n=d.nomination;if(!n)return;const player=PLAYERS.find(p=>p.id===n.playerId);const team=d.teams[n.teamId];team.picks.push(player);team.budget-=n.bid;d.log.unshift({label:"$"+n.bid,player:player.name,pos:player.pos,team:team.name});d.nomination=null;d.nomIndex++;d.pickIndex++;d.secondsLeft=BID_SECONDS;save(state);publish(pod);}
+function resetPod(state,pod){state.drafts[pod]=emptyDraft(pod,state.format||"snake");save(state);publish(pod);}
+function seatCount(s){return s.circuit==="quad"?40:20;}
+function pot(s){return seatCount(s)*(Number(s.payout.buyIn)||0);}
+function commishTake(s){return s.payout.useCommish?pot(s)*((Number(s.payout.commishPct)||0)/100):0;}
+function prizePool(s){return Math.max(0,pot(s)-commishTake(s));}
+function renderHome(){
+const root=document.getElementById("app");const s=load();const on=unlocked(s);const pods=podsOf(s);
+root.innerHTML=header((s.owner?'<span class="btn btn-ghost">OWNER · COMPED</span>':(on&&s.plan?'<span class="btn btn-ghost">'+s.plan.toUpperCase()+' · PAID</span>':''))+'<a class="btn" href="#payout">Payouts</a><a class="btn" href="#wall">Quad wall</a>')+
+'<div class="page"><div class="eyebrow">COMMISSIONER DESK</div><h1>'+(on?"Invites are live.":"You pay once.<br>Players join free.")+'</h1>'+
+'<p class="lede">Shared board is on. Two phones in the same pod should see the same picks.</p>'+
+'<div class="card" style="margin-bottom:16px"><span class="pod-chip '+(s.owner?"east":"west")+'">'+(s.owner?"FOUNDER":"FEE")+'</span><h2>'+(s.owner?"Owner mode on.":"Pay once, or run as owner.")+'</h2><button class="btn '+(s.owner?"btn-lime":"")+'" id="owner-toggle">'+(s.owner?"Owner mode on":"Turn on owner mode")+'</button></div>'+
+(on?"":'<div class="grid-2" style="margin-bottom:16px"><div class="card"><span class="pod-chip east">20 · PLAYERS $0</span><h2>Dual · $59</h2><p>Two pods. One bracket.</p><a class="btn btn-lime" href="#pay/dual">Unlock Dual $59</a></div><div class="card"><span class="pod-chip west">40 · PLAYERS $0</span><h2>Quad · $119</h2><p>Four pods. Quad wall.</p><a class="btn btn-lime" href="#pay/quad">Unlock Quad $119</a></div></div>')+
+'<div class="card" style="margin-bottom:16px"><h2>Join a room</h2><p>'+(on?"Type EAST-7K2.":"Codes turn on after unlock.")+'</p><div class="join-row"><input id="join-code" placeholder="EAST-7K2" '+(on?"":"disabled")+'/><button class="btn btn-lime" id="join-btn" '+(on?"":"disabled")+'>Join</button></div></div>'+
+'<div class="grid-2"><div class="card"><h2>Dual circuit</h2><button class="btn '+(s.circuit==="dual"?"btn-lime":"")+'" data-circuit="dual">Use Dual</button></div><div class="card"><h2>Quad circuit</h2><button class="btn '+(s.circuit==="quad"?"btn-lime":"")+'" data-circuit="quad">Use Quad</button></div></div>'+
+'<div class="card" style="margin:16px 0"><h2>Draft format</h2><button class="btn '+(s.format!=="auction"?"btn-lime":"")+'" data-format="snake">Snake</button> <button class="btn '+(s.format==="auction"?"btn-lime":"")+'" data-format="auction">Auction · $200</button></div>'+
+'<div class="grid-4">'+pods.map(p=>'<div class="card"><span class="pod-chip '+p+'">'+p.toUpperCase()+' · '+CODES[p]+'</span><h2>'+POD_TEAMS[p][0]+' + 9</h2>'+(on?'<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px"><a class="btn btn-lime" href="#draft/'+p+'">Draft room</a><a class="btn" href="#board/'+p+'">Big Board</a></div>':'<a class="btn btn-lime" href="#pay/'+(s.circuit||"dual")+'">Unlock to invite</a>')+'</div>').join("")+'</div></div>';
+document.querySelectorAll("[data-circuit]").forEach(b=>b.onclick=()=>{const st=load();st.circuit=b.dataset.circuit;save(st);renderHome();});
+document.querySelectorAll("[data-format]").forEach(b=>b.onclick=()=>{const st=load();st.format=b.dataset.format;save(st);renderHome();});
+document.getElementById("join-btn").onclick=()=>{if(!unlocked(load())){location.hash="#pay/dual";return;}const raw=(document.getElementById("join-code").value||"").toUpperCase().trim();const hit=Object.keys(CODES).find(k=>CODES[k]===raw||k.toUpperCase()===raw);if(hit)location.hash="#draft/"+hit;else alert("Unknown code. Try EAST-7K2");};
+document.getElementById("owner-toggle").onclick=()=>{const st=load();st.owner=!st.owner;if(st.owner&&!st.plan)st.plan=st.circuit||"dual";save(st);renderHome();};
+}
+function renderPay(){
+const plan=(location.hash.split("/")[1]||"dual").toLowerCase()==="quad"?"quad":"dual";
+document.getElementById("app").innerHTML=header('<a class="btn" href="#home">Back</a>')+'<div class="page"><div class="eyebrow">CHECKOUT · MOCK</div><h1>Unlock '+(plan==="quad"?"Quad":"Dual")+' for 2026.</h1><p class="lede">Demo card. Nothing is charged.</p><div class="grid-2"><div class="card"><h2>$'+PRICE[plan]+'.00</h2><p>Season hosting. Players $0.</p></div><div class="card"><h2>Card</h2><input class="search" value="4242 4242 4242 4242" readonly/><button class="btn btn-lime" id="pay-now" style="margin-top:12px">Pay $'+PRICE[plan]+' · unlock invites</button></div></div></div>';
+document.getElementById("pay-now").onclick=()=>{const s=load();s.paid=true;s.plan=plan;s.circuit=plan;s.paidAt=new Date().toLocaleDateString();save(s);location.hash="#home";};
+}
+function renderDraft(){
+if(!unlocked(load())){location.hash="#pay/dual";return;}
+const pod=podFromHash();const root=document.getElementById("app");let filter="";
+const paint=()=>{
+const state=load();const draft=ensureDraft(state,pod);save(state);
+const auction=draft.format==="auction";const info=snakeSlot(draft.pickIndex);
+const onClock=auction?draft.teams[draft.nomination?draft.nomination.teamId:draft.nomIndex%10]:draft.teams[info.teamId];
+const done=draft.pickIndex>=ROUNDS*10;
+const avail=available(draft).filter(p=>{const q=filter.toLowerCase();return !q||p.name.toLowerCase().includes(q)||p.pos.toLowerCase()===q;});
+const acting=state.actingAs[pod]!=null?Number(state.actingAs[pod]):(onClock&&onClock.id)||0;
+root.innerHTML=header('<a class="btn" href="#home">Circuit</a><a class="btn" href="#payout">Payouts</a><a class="btn btn-lime" href="#board/'+pod+'">Cast Big Board</a><button class="btn" id="reset">Reset</button>')+
+'<div class="draft-shell"><aside class="panel"><h3>'+(auction?"AUCTION":"ON THE CLOCK")+' · '+CODES[pod]+'</h3><div class="clock-box"><div class="who">'+(done?"Complete":onClock.name)+'</div><div class="meta">'+(done?"Board locked":(auction?(draft.nomination?"High bid $"+draft.nomination.bid:"Nominate"):"Pick "+info.label))+'</div><div class="timer">'+fmtTime(auction&&draft.nomination?draft.nomination.seconds:draft.secondsLeft)+'</div></div>'+(auction&&draft.nomination?'<button class="btn btn-lime" id="bid">Bid $'+(draft.nomination.bid+1)+'</button>':'')+'<h3>ACT AS</h3><select id="actor" class="search">'+draft.teams.map(t=>'<option value="'+t.id+'" '+(t.id===acting?"selected":"")+'>'+t.name+(auction?" · $"+t.budget:"")+"</option>").join("")+"</select>"+draft.teams.map(t=>'<div class="team-row '+(t.id===onClock.id&&!done?"active":"")+'"><span>'+t.name+"</span><span>"+(auction?"$"+t.budget:t.picks.length)+"</span></div>").join("")+'</aside><section class="panel"><h3>'+(auction?(draft.nomination?"WAITING ON BIDS":"NOMINATE"):"AVAILABLE")+'</h3><input class="search" id="q" placeholder="Search" value="'+filter+'"/>'+avail.slice(0,40).map(p=>'<div class="player"><div class="pos '+p.pos+'">'+p.pos+'</div><div><div class="name">'+p.name+'</div><div class="sub">'+p.team+'</div></div><button class="pick-btn" data-id="'+p.id+'" '+(done||(auction&&draft.nomination)?"disabled":"")+'>'+(auction?"NOM":"DRAFT")+"</button></div>").join("")+'</section><aside class="panel"><h3>FEED</h3>'+(draft.log.length?draft.log.map(l=>'<div class="log-item"><strong>'+l.label+"</strong> "+l.player+"<div>"+l.team+"</div></div>").join(""):'<div class="log-item">Waiting for a pick.</div>')+"</aside></div>";
+const q=document.getElementById("q");if(q)q.oninput=e=>{filter=e.target.value;paint();};
+root.querySelectorAll(".pick-btn").forEach(btn=>btn.onclick=()=>{makePick(load(),pod,Number(btn.dataset.id));paint();});
+const actor=document.getElementById("actor");if(actor)actor.onchange=()=>{const st=load();st.actingAs[pod]=Number(actor.value);save(st);paint();};
+const bidBtn=document.getElementById("bid");if(bidBtn)bidBtn.onclick=()=>{bid(load(),pod,acting);paint();};
+document.getElementById("reset").onclick=()=>{if(confirm("Reset this pod for everyone?")){resetPod(load(),pod);paint();}};
+};
+window._paint=paint;paint();
+if(!window._draftTick){window._draftTick=setInterval(()=>{if(!(location.hash||"").startsWith("#draft"))return;const p=podFromHash();const state=load();const draft=ensureDraft(state,p);if(draft.format==="auction"&&draft.nomination){draft.nomination.seconds-=1;if(draft.nomination.seconds<=0)settleAuction(state,p);else save(state);if(window._paint)window._paint();}else if(draft.started&&draft.pickIndex<ROUNDS*10&&draft.secondsLeft>0){draft.secondsLeft-=1;save(state);const t=document.querySelector(".timer");if(t)t.textContent=fmtTime(draft.secondsLeft);}},1000);}
+}
+function renderBoard(){
+if(!unlocked(load())){location.hash="#pay/dual";return;}
+const pod=podFromHash();
+const paint=()=>{const state=load();const draft=ensureDraft(state,pod);const info=snakeSlot(draft.pickIndex);const onClock=draft.teams[info.teamId];
+let cells='<div class="cell head"></div>';draft.teams.forEach(t=>{cells+='<div class="cell head">'+t.name+"</div>";});
+for(let r=1;r<=ROUNDS;r++){cells+='<div class="cell head">RD '+r+"</div>";for(let teamId=0;teamId<10;teamId++){const pick=draft.teams[teamId].picks[r-1];cells+='<div class="cell">'+(pick?pick.name+"<div>"+pick.pos+"</div>":"")+"</div>";}}
+document.getElementById("app").innerHTML=header('<a class="btn" href="#draft/'+pod+'">Room</a><a class="btn" href="#home">Home</a>')+'<div class="page"><div class="eyebrow">'+CODES[pod]+' · BIG BOARD</div><h1>'+(onClock?onClock.name:"Board")+'</h1><div class="board">'+cells+"</div></div>";};
+window._paint=paint;paint();
+}
+function renderWall(){
+if(!unlocked(load())){location.hash="#pay/quad";return;}
+const s=load();const pods=podsOf(s);
+document.getElementById("app").innerHTML=header('<a class="btn" href="#home">Home</a>')+'<div class="page"><div class="eyebrow">QUAD WALL</div><h1>Four rooms. One office.</h1><div class="grid-2">'+pods.map(p=>{const d=ensureDraft(s,p);return '<div class="card"><span class="pod-chip '+p+'">'+p.toUpperCase()+'</span><h2>'+CODES[p]+"</h2><p>Pick "+d.pickIndex+" · "+d.format+'</p><a class="btn" href="#board/'+p+'">Open board</a></div>';}).join("")+"</div></div>";
+}
+function renderPayout(){
+if(!unlocked(load())){location.hash="#pay/dual";return;}
+const s=load();const p=s.payout;const seats=seatCount(s);const total=pot(s);const cut=commishTake(s);const pool=prizePool(s);
+const assigned=(Number(p.weeklyHigh)||0)*14+(Number(p.divRecord)||0)*podsOf(s).length+(Number(p.first)||0)+(Number(p.second)||0)+(Number(p.third)||0);
+const leftover=pool-assigned;
+document.getElementById("app").innerHTML=header('<a class="btn" href="#home">Circuit</a>')+'<div class="page payout"><div class="eyebrow">LEDGER · NO MONEY HELD</div><h1>Who gets paid what.</h1><p class="lede">Enter buy-ins and splits. Venmo stays between owners.</p><div class="grid-2"><div class="card"><h2>Pot</h2><label>Buy-in per owner</label><input id="buyIn" type="number" value="'+p.buyIn+'"/><p>'+seats+' seats · Gross <span class="money">$'+total.toFixed(0)+'</span></p><label><input id="useCommish" type="checkbox" '+(p.useCommish?"checked":"")+'/> Optional commissioner cut %</label><input id="commishPct" type="number" value="'+p.commishPct+'" '+(p.useCommish?"":"disabled")+'/><p>Cut <span class="money">$'+cut.toFixed(0)+'</span> · Prize pool <span class="money">$'+pool.toFixed(0)+'</span></p></div><div class="card"><h2>Splits (dollars)</h2><p>Weekly high score (x14 weeks)</p><input id="weeklyHigh" type="number" value="'+p.weeklyHigh+'"/><p>Best regular-season record per pod</p><input id="divRecord" type="number" value="'+p.divRecord+'"/><p>Champion / 2nd / 3rd</p><div class="join-row"><input id="first" type="number" value="'+p.first+'"/><input id="second" type="number" value="'+p.second+'"/><input id="third" type="number" value="'+p.third+'"/></div><button class="btn btn-lime" id="savePay" style="margin-top:12px">Save ledger</button></div></div><div class="card" style="margin-top:16px"><h2>Season receipt</h2><table><tr><th>Item</th><th>How many</th><th>Each</th><th>Total</th></tr><tr><td>Weekly high score</td><td>14</td><td>$'+(Number(p.weeklyHigh)||0)+'</td><td class="money">$'+((Number(p.weeklyHigh)||0)*14).toFixed(0)+'</td></tr><tr><td>Best record / pod</td><td>'+podsOf(s).length+'</td><td>$'+(Number(p.divRecord)||0)+'</td><td class="money">$'+((Number(p.divRecord)||0)*podsOf(s).length).toFixed(0)+'</td></tr><tr><td>Champion</td><td>1</td><td>$'+(Number(p.first)||0)+'</td><td class="money">$'+(Number(p.first)||0)+'</td></tr><tr><td>Second</td><td>1</td><td>$'+(Number(p.second)||0)+'</td><td class="money">$'+(Number(p.second)||0)+'</td></tr><tr><td>Third</td><td>1</td><td>$'+(Number(p.third)||0)+'</td><td class="money">$'+(Number(p.third)||0)+'</td></tr><tr><td>Commissioner cut</td><td>—</td><td>'+(p.useCommish?(p.commishPct||0)+"%":"off")+'</td><td class="money">$'+cut.toFixed(0)+'</td></tr></table><p style="margin-top:12px">Assigned <span class="money">$'+assigned.toFixed(0)+'</span> · Left in pot <span class="money">$'+leftover.toFixed(0)+'</span></p><p>Dualgrid does not collect or send money. This is the receipt.</p></div></div>';
+document.getElementById("useCommish").onchange=e=>{document.getElementById("commishPct").disabled=!e.target.checked;};
+document.getElementById("savePay").onclick=()=>{const st=load();st.payout.buyIn=Number(document.getElementById("buyIn").value)||0;st.payout.useCommish=document.getElementById("useCommish").checked;st.payout.commishPct=Number(document.getElementById("commishPct").value)||0;st.payout.weeklyHigh=Number(document.getElementById("weeklyHigh").value)||0;st.payout.divRecord=Number(document.getElementById("divRecord").value)||0;st.payout.first=Number(document.getElementById("first").value)||0;st.payout.second=Number(document.getElementById("second").value)||0;st.payout.third=Number(document.getElementById("third").value)||0;save(st);renderPayout();};
+}
+function route(){const page=(location.hash.replace("#","").split("/")[0]||"home");if(page==="pay")renderPay();else if(page==="draft")renderDraft();else if(page==="board")renderBoard();else if(page==="wall")renderWall();else if(page==="payout")renderPayout();else renderHome();}
+["east","west","north","south"].forEach(pod=>{cloud.ref("drafts/"+pod).on("value",snap=>{const remote=snap.val();if(!remote||!remote.teams)return;applyingRemote=true;const s=load();s.drafts[pod]=normalizeDraft(remote);save(s);applyingRemote=false;const page=(location.hash.replace("#","").split("/")[0]||"");const onPod=(location.hash.split("/")[1]||"")===(pod);if((page==="draft"||page==="board")&&onPod&&window._paint)window._paint();});});
+window.addEventListener("hashchange",route);route();
+</script>
+</body>
+</html>
