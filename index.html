@@ -88,7 +88,7 @@ function save(s){localStorage.setItem(STORE,JSON.stringify(s));}
 function unlocked(s){return !!(s&&(s.owner||(s.paid&&s.plan)));}
 function podsOf(s){return s.circuit==="quad"?["east","west","north","south"]:["east","west"];}
 function emptyDraft(pod,format){return{pod,format:format||"snake",teams:POD_TEAMS[pod].map((name,i)=>({id:i,name,picks:[],budget:BUDGET})),pickIndex:0,nomIndex:0,started:false,secondsLeft:format==="auction"?BID_SECONDS:PICK_SECONDS,nomination:null,log:[]};}
-function ensureDraft(s,pod){if(!s.drafts[pod])s.drafts[pod]=emptyDraft(pod,s.format||"snake");return s.drafts[pod];}
+function normalizeDraft(d){if(!d)return d;d.teams=(d.teams||[]).map(t=>Object.assign({picks:[],budget:200},t,{picks:t.picks||[]}));d.log=d.log||[];return d;}function ensureDraft(s,pod){if(!s.drafts[pod])s.drafts[pod]=emptyDraft(pod,s.format||"snake");s.drafts[pod]=normalizeDraft(s.drafts[pod]);return s.drafts[pod];}
 function snakeSlot(i){const r=Math.floor(i/10),p=i%10,teamId=r%2===0?p:9-p;return{round:r+1,slot:p+1,teamId,label:r+1+"."+String(p+1).padStart(2,"0")};}
 function takenIds(d){const ids=new Set();(d.teams||[]).forEach(t=>(t.picks||[]).forEach(p=>ids.add(p.id)));return ids;}
 function available(d){const t=takenIds(d);return PLAYERS.filter(p=>!t.has(p.id));}
@@ -170,7 +170,7 @@ document.getElementById("useCommish").onchange=e=>{document.getElementById("comm
 document.getElementById("savePay").onclick=()=>{const st=load();st.payout.buyIn=Number(document.getElementById("buyIn").value)||0;st.payout.useCommish=document.getElementById("useCommish").checked;st.payout.commishPct=Number(document.getElementById("commishPct").value)||0;st.payout.weeklyHigh=Number(document.getElementById("weeklyHigh").value)||0;st.payout.divRecord=Number(document.getElementById("divRecord").value)||0;st.payout.first=Number(document.getElementById("first").value)||0;st.payout.second=Number(document.getElementById("second").value)||0;st.payout.third=Number(document.getElementById("third").value)||0;save(st);renderPayout();};
 }
 function route(){const page=(location.hash.replace("#","").split("/")[0]||"home");if(page==="pay")renderPay();else if(page==="draft")renderDraft();else if(page==="board")renderBoard();else if(page==="wall")renderWall();else if(page==="payout")renderPayout();else renderHome();}
-["east","west","north","south"].forEach(pod=>{cloud.ref("drafts/"+pod).on("value",snap=>{const remote=snap.val();if(!remote||!remote.teams)return;applyingRemote=true;const s=load();s.drafts[pod]=remote;save(s);applyingRemote=false;const page=(location.hash.replace("#","").split("/")[0]||"");const onPod=(location.hash.split("/")[1]||"")===(pod);if((page==="draft"||page==="board")&&onPod&&window._paint)window._paint();});});
+["east","west","north","south"].forEach(pod=>{cloud.ref("drafts/"+pod).on("value",snap=>{const remote=snap.val();if(!remote||!remote.teams)return;applyingRemote=true;const s=load();s.drafts[pod]=normalizeDraft(remote);save(s);applyingRemote=false;const page=(location.hash.replace("#","").split("/")[0]||"");const onPod=(location.hash.split("/")[1]||"")===(pod);if((page==="draft"||page==="board")&&onPod&&window._paint)window._paint();});});
 window.addEventListener("hashchange",route);route();
 </script>
 </body>
