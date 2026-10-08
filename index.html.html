@@ -167,6 +167,16 @@ window._paint=paint;paint();
 function renderWall(){
 if(!unlocked(load())){location.hash="#pay/quad";return;}
 const s=load();const pods=podsOf(s);
+const seats=[];
+pods.forEach(pod=>{ensureDraft(s,pod).teams.forEach(team=>{seats.push({key:pod+"-"+team.id,label:pod.toUpperCase()+" · "+team.name+(team.ownerName?" · "+team.ownerName:"")});});});
+const slapRec=rec.slap||{};
+const opt=(sel)=>seats.map(x=>'<option value="'+x.key+'" '+(x.key===sel?"selected":"")+'>'+x.label+'</option>').join("");
+const home=seats.find(x=>x.key===slapRec.home)||seats[0]||{key:"",label:"Seat"};
+const away=seats.find(x=>x.key===slapRec.away)||seats[1]||seats[0]||{key:"",label:"Seat"};
+const hs=rec.rows[home.key]||{pf:0}; const as=rec.rows[away.key]||{pf:0};
+const gap=Math.abs((Number(hs.pf)||0)-(Number(as.pf)||0));
+const winner=(Number(hs.pf)||0)>=(Number(as.pf)||0)?home.label:away.label;
+const slap='<div class="card" style="margin-top:12px"><div class="eyebrow">PECKERSLAP OF THE WEEK</div><h2>'+winner+'</h2><p>Margin '+gap+'</p><svg viewBox="0 0 120 80" width="140" height="90" aria-label="woodpecker"><rect width="120" height="80" rx="12" fill="#10140f"/><circle cx="34" cy="36" r="16" fill="#f4f1e8"/><path d="M28 18 l8-14 10 10z" fill="#e23b2f"/><path d="M48 34 h22 l-6 6 h-16z" fill="#222"/><rect x="70" y="28" width="28" height="34" rx="4" fill="#d4a017"/><text x="84" y="50" text-anchor="middle" font-size="10" fill="#111">CUP</text></svg>'+(can?'<label>Matchup</label><select id="slap-home" class="search">'+opt(home.key)+'</select><select id="slap-away" class="search" style="margin-top:8px">'+opt(away.key)+'</select>':'<p>'+home.label+' vs '+away.label+'</p>')+'</div>';
 document.getElementById("app").innerHTML=header('<a class="btn" href="#home">Home</a>')+'<div class="page"><div class="eyebrow">QUAD WALL</div><h1>Four rooms. One office.</h1><div class="grid-2">'+pods.map(p=>{const d=ensureDraft(s,p);return '<div class="card"><span class="pod-chip '+p+'">'+p.toUpperCase()+'</span><h2>'+CODES[p]+"</h2><p>Pick "+d.pickIndex+" · "+d.format+'</p><a class="btn" href="#board/'+p+'">Open board</a></div>';}).join("")+"</div></div>";
 }
 function renderPayout(){
@@ -200,7 +210,7 @@ document.getElementById("app").innerHTML=header('<a class="btn" href="#home">Hom
 (can?'<label>Week</label><input id="week" value="'+rec.week+'" style="max-width:120px">':'')+
 '<div class="card payout" style="margin-top:12px"><table><tr><th>Pod</th><th>Seat</th><th>W</th><th>L</th><th>PF</th><th>PA</th><th>Diff</th></tr>'+rows+'</table>'+
 (can?'<button class="btn btn-lime" id="save-scores" style="margin-top:12px">Save week</button>':'')+
-'</div></div>';
+'</div>'+slap+'</div>';
 const btn=document.getElementById("save-scores");
 if(btn) btn.onclick=()=>{
   const st=load(); if(!st.owner){alert("Commissioner only.");return;}
@@ -210,6 +220,7 @@ if(btn) btn.onclick=()=>{
     const k=inp.dataset.k; if(!st.records.rows[k])st.records.rows[k]={w:0,l:0,pf:0,pa:0};
     st.records.rows[k][inp.dataset.f]=Number(inp.value)||0;
   });
+  st.records.slap={home:document.getElementById("slap-home").value,away:document.getElementById("slap-away").value};
   save(st); publishRecords(); alert("Week saved for every phone.");
 };
 }
