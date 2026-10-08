@@ -99,6 +99,7 @@ function fmtTime(s){return Math.floor(s/60)+":"+String(Math.max(0,s)%60).padStar
 function podFromHash(){return (location.hash.split("/")[1]||"east").toLowerCase();}
 function header(extra){return '<header class="app-header"><div class="brand"><div class="mark">D</div> DUALGRID <small>PROTOTYPE</small></div><div class="header-actions"><span class="live" id="live">'+(cloudOn?"LIVE BOARD":"CONNECTING")+'</span>'+(extra||"")+"</div></header>";}
 function publish(pod){if(applyingRemote)return;const s=load();const d=s.drafts[pod];if(!d)return;cloud.ref("drafts/"+pod).set(d).catch(()=>{});}
+function publishRecords(){if(applyingRemote)return;const s=load();cloud.ref("records").set(s.records||{week:1,rows:{}}).catch(()=>{});}
 function makePick(state,pod,playerId){const d=ensureDraft(state,pod);const info=snakeSlot(d.pickIndex);const player=PLAYERS.find(p=>p.id===playerId);if(!player)return;if(d.format==="auction"){if(d.nomination)return;d.nomination={playerId,teamId:d.nomIndex%10,bid:1,seconds:BID_SECONDS};save(state);publish(pod);return;}const team=d.teams[info.teamId];team.picks.push(player);d.log.unshift({label:info.label,player:player.name,pos:player.pos,team:team.name});d.pickIndex++;d.started=true;d.secondsLeft=PICK_SECONDS;save(state);publish(pod);}
 function bid(state,pod,teamId){const d=ensureDraft(state,pod);if(!d.nomination)return;const t=d.teams[teamId];const next=d.nomination.bid+1;if(t.budget<next)return;d.nomination.bid=next;d.nomination.teamId=teamId;d.nomination.seconds=BID_SECONDS;save(state);publish(pod);}
 function settleAuction(state,pod){const d=ensureDraft(state,pod);const n=d.nomination;if(!n)return;const player=PLAYERS.find(p=>p.id===n.playerId);const team=d.teams[n.teamId];team.picks.push(player);team.budget-=n.bid;d.log.unshift({label:"$"+n.bid,player:player.name,pos:player.pos,team:team.name});d.nomination=null;d.nomIndex++;d.pickIndex++;d.secondsLeft=BID_SECONDS;save(state);publish(pod);}
@@ -110,7 +111,7 @@ function commishTake(s){return s.payout.useCommish?pot(s)*((Number(s.payout.comm
 function prizePool(s){return Math.max(0,pot(s)-commishTake(s));}
 function renderHome(){
 const root=document.getElementById("app");const s=load();const on=unlocked(s);const pods=podsOf(s);
-root.innerHTML=header((s.owner?'<span class="btn btn-ghost">OWNER · COMPED</span>':(on&&s.plan?'<span class="btn btn-ghost">'+s.plan.toUpperCase()+' · PAID</span>':''))+'<a class="btn" href="#payout">Payouts</a><a class="btn" href="#wall">Quad wall</a>')+
+root.innerHTML=header((s.owner?'<span class="btn btn-ghost">OWNER · COMPED</span>':(on&&s.plan?'<span class="btn btn-ghost">'+s.plan.toUpperCase()+' · PAID</span>':''))+'<a class="btn" href="#scores">Scores</a><a class="btn" href="#payout">Payouts</a><a class="btn" href="#wall">Quad wall</a>')+
 '<div class="page"><div class="eyebrow">COMMISSIONER DESK</div><h1>'+(on?"Invites are live.":"You pay once.<br>Players join free.")+'</h1>'+
 '<p class="lede">Shared board is on. Two phones in the same pod should see the same picks.</p>'+
 '<div class="card" style="margin-bottom:16px"><span class="pod-chip '+(s.owner?"east":"west")+'">'+(s.owner?"COMMISH":"LOCKED")+'</span><h2>'+(s.owner?"Commissioner unlocked.":"Commissioner code")+'</h2><p>Players can join and draft. Reset and payouts need the code. First code is DUAL-2026.</p>'+(s.owner?'<button class="btn" id="lock-out">Lock this phone</button>':'<div class="join-row"><input id="commish-code" placeholder="DUAL-2026"/><button class="btn btn-lime" id="commish-btn">Unlock</button></div>')+'</div>'+
@@ -177,8 +178,44 @@ document.getElementById("app").innerHTML=header('<a class="btn" href="#home">Cir
 document.getElementById("useCommish").onchange=e=>{document.getElementById("commishPct").disabled=!e.target.checked;};
 document.getElementById("savePay").onclick=()=>{const st=load();st.payout.buyIn=Number(document.getElementById("buyIn").value)||0;st.payout.useCommish=document.getElementById("useCommish").checked;st.payout.commishPct=Number(document.getElementById("commishPct").value)||0;st.payout.weeklyHigh=Number(document.getElementById("weeklyHigh").value)||0;st.payout.divRecord=Number(document.getElementById("divRecord").value)||0;st.payout.first=Number(document.getElementById("first").value)||0;st.payout.second=Number(document.getElementById("second").value)||0;st.payout.third=Number(document.getElementById("third").value)||0;save(st);renderPayout();};
 }
-function route(){const page=(location.hash.replace("#","").split("/")[0]||"home");if(page==="pay")renderPay();else if(page==="draft")renderDraft();else if(page==="board")renderBoard();else if(page==="wall")renderWall();else if(page==="payout"){ if(!unlocked(load())){ alert("Commissioner code required."); location.hash="#home"; return;} renderPayout(); }else renderHome();}
+
+function renderScores(){
+const s=load(); if(!s.records)s.records={week:1,rows:{}};
+const pods=podsOf(s); const rec=s.records; const can=!!s.owner;
+let rows="";
+pods.forEach(pod=>{
+  const d=ensureDraft(s,pod);
+  d.teams.forEach(team=>{
+    const key=pod+"-"+team.id;
+    const row=rec.rows[key]||{w:0,l:0,pf:0};
+    rows+='<tr><td>'+pod.toUpperCase()+'</td><td>'+team.name+(team.ownerName?" · "+team.ownerName:"")+'</td>'+
+      '<td><input data-k="'+key+'" data-f="w" value="'+row.w+'" style="width:64px"'+(can?"":" disabled")+'></td>'+
+      '<td><input data-k="'+key+'" data-f="l" value="'+row.l+'" style="width:64px"'+(can?"":" disabled")+'></td>'+
+      '<td><input data-k="'+key+'" data-f="pf" value="'+row.pf+'" style="width:80px"'+(can?"":" disabled")+'></td></tr>';
+  });
+});
+document.getElementById("app").innerHTML=header('<a class="btn" href="#home">Home</a>')+
+'<div class="page"><div class="eyebrow">SEASON RECORD</div><h1>Week '+rec.week+'</h1>'+
+'<p class="lede">'+(can?"Type wins, losses, and points. Everyone else can read this.":"Read only. The commissioner types the week.")+'</p>'+
+(can?'<label>Week</label><input id="week" value="'+rec.week+'" style="max-width:120px">':'')+
+'<div class="card payout" style="margin-top:12px"><table><tr><th>Pod</th><th>Seat</th><th>W</th><th>L</th><th>PF</th></tr>'+rows+'</table>'+
+(can?'<button class="btn btn-lime" id="save-scores" style="margin-top:12px">Save week</button>':'')+
+'</div></div>';
+const btn=document.getElementById("save-scores");
+if(btn) btn.onclick=()=>{
+  const st=load(); if(!st.owner){alert("Commissioner only.");return;}
+  if(!st.records)st.records={week:1,rows:{}};
+  st.records.week=Number(document.getElementById("week").value)||1;
+  document.querySelectorAll("[data-k]").forEach(inp=>{
+    const k=inp.dataset.k; if(!st.records.rows[k])st.records.rows[k]={w:0,l:0,pf:0};
+    st.records.rows[k][inp.dataset.f]=Number(inp.value)||0;
+  });
+  save(st); publishRecords(); alert("Week saved for every phone.");
+};
+}
+function route(){const page=(location.hash.replace("#","").split("/")[0]||"home");if(page==="pay")renderPay();else if(page==="draft")renderDraft();else if(page==="board")renderBoard();else if(page==="wall")renderWall();else if(page==="payout"){ if(!unlocked(load())){ alert("Commissioner code required."); location.hash="#home"; return;} renderPayout(); }else if(page==="scores")renderScores();else renderHome();}
 ["east","west","north","south"].forEach(pod=>{cloud.ref("drafts/"+pod).on("value",snap=>{const remote=snap.val();if(!remote||!remote.teams)return;applyingRemote=true;const s=load();s.drafts[pod]=normalizeDraft(remote);save(s);applyingRemote=false;const page=(location.hash.replace("#","").split("/")[0]||"");const onPod=(location.hash.split("/")[1]||"")===(pod);if((page==="draft"||page==="board")&&onPod&&window._paint)window._paint();});});
+cloud.ref("records").on("value",snap=>{const remote=snap.val();if(!remote)return;applyingRemote=true;const s=load();s.records=remote;save(s);applyingRemote=false;if((location.hash||"").startsWith("#scores"))renderScores();});
 window.addEventListener("hashchange",route);route();
 </script>
 </body>
