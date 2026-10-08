@@ -187,18 +187,18 @@ pods.forEach(pod=>{
   const d=ensureDraft(s,pod);
   d.teams.forEach(team=>{
     const key=pod+"-"+team.id;
-    const row=rec.rows[key]||{w:0,l:0,pf:0};
+    const row=rec.rows[key]||{w:0,l:0,pf:0,pa:0};
     rows+='<tr><td>'+pod.toUpperCase()+'</td><td>'+team.name+(team.ownerName?" · "+team.ownerName:"")+'</td>'+
       '<td><input data-k="'+key+'" data-f="w" value="'+row.w+'" style="width:64px"'+(can?"":" disabled")+'></td>'+
       '<td><input data-k="'+key+'" data-f="l" value="'+row.l+'" style="width:64px"'+(can?"":" disabled")+'></td>'+
-      '<td><input data-k="'+key+'" data-f="pf" value="'+row.pf+'" style="width:80px"'+(can?"":" disabled")+'></td></tr>';
+      '<td><input data-k="'+key+'" data-f="pf" value="'+row.pf+'" style="width:80px"'+(can?"":" disabled")+'></td><td><input data-k="'+key+'" data-f="pa" value="'+(row.pa||0)+'" style="width:80px"'+(can?"":" disabled")+'></td><td>'+((Number(row.pf)||0)-(Number(row.pa)||0))+'</td></tr>';
   });
 });
 document.getElementById("app").innerHTML=header('<a class="btn" href="#home">Home</a>')+
 '<div class="page"><div class="eyebrow">SEASON RECORD</div><h1>Week '+rec.week+'</h1>'+
 '<p class="lede">'+(can?"Type wins, losses, and points. Everyone else can read this.":"Read only. The commissioner types the week.")+'</p>'+
 (can?'<label>Week</label><input id="week" value="'+rec.week+'" style="max-width:120px">':'')+
-'<div class="card payout" style="margin-top:12px"><table><tr><th>Pod</th><th>Seat</th><th>W</th><th>L</th><th>PF</th></tr>'+rows+'</table>'+
+'<div class="card payout" style="margin-top:12px"><table><tr><th>Pod</th><th>Seat</th><th>W</th><th>L</th><th>PF</th><th>PA</th><th>Diff</th></tr>'+rows+'</table>'+
 (can?'<button class="btn btn-lime" id="save-scores" style="margin-top:12px">Save week</button>':'')+
 '</div></div>';
 const btn=document.getElementById("save-scores");
@@ -207,7 +207,7 @@ if(btn) btn.onclick=()=>{
   if(!st.records)st.records={week:1,rows:{}};
   st.records.week=Number(document.getElementById("week").value)||1;
   document.querySelectorAll("[data-k]").forEach(inp=>{
-    const k=inp.dataset.k; if(!st.records.rows[k])st.records.rows[k]={w:0,l:0,pf:0};
+    const k=inp.dataset.k; if(!st.records.rows[k])st.records.rows[k]={w:0,l:0,pf:0,pa:0};
     st.records.rows[k][inp.dataset.f]=Number(inp.value)||0;
   });
   save(st); publishRecords(); alert("Week saved for every phone.");
