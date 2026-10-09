@@ -100,7 +100,7 @@ function grantCommish(code){const s=load(); if(String(code||"").toUpperCase().tr
 function podsOf(s){return s.circuit==="quad"?["east","west","north","south"]:["east","west"];}
 function emptyDraft(pod,format){const n=teamCount();return{pod,format:format||"snake",size:n,teams:POD_TEAMS[pod].slice(0,n).map((name,i)=>({id:i,name,picks:[],budget:BUDGET})),pickIndex:0,nomIndex:0,started:false,secondsLeft:format==="auction"?BID_SECONDS:PICK_SECONDS,nomination:null,log:[]};}
 function normalizeDraft(d){if(!d)return d;d.teams=(d.teams||[]).map(t=>Object.assign({picks:[],budget:200},t,{picks:t.picks||[]}));d.log=d.log||[];return d;}function ensureDraft(s,pod){if(!s.drafts[pod])s.drafts[pod]=emptyDraft(pod,s.format||"snake");s.drafts[pod]=normalizeDraft(s.drafts[pod]);return s.drafts[pod];}
-function snakeSlot(i){const n=teamCount();const r=Math.floor(i/n),p=i%n,teamId=r%2===0?p:n-1-p;return{round:r+1,slot:p+1,teamId,label:r+1+"."+String(p+1).padStart(2,"0")};}
+function snakeSlot(i,draft){const n=teamCount();const r=Math.floor(i/n),p=i%n;const order=(draft&&draft.order&&draft.order.length===n)?draft.order:null;const teamId=order?(r%2===0?order[p]:order[n-1-p]):(r%2===0?p:n-1-p);return{round:r+1,slot:p+1,teamId,label:r+1+"."+String(p+1).padStart(2,"0")};}
 function takenIds(d){const ids=new Set();(d.teams||[]).forEach(t=>(t.picks||[]).forEach(p=>ids.add(p.id)));return ids;}
 function available(d){const t=takenIds(d);return PLAYERS.filter(p=>!t.has(p.id));}
 function fmtTime(s){return Math.floor(s/60)+":"+String(Math.max(0,s)%60).padStart(2,"0");}
@@ -108,7 +108,7 @@ function podFromHash(){return (location.hash.split("/")[1]||"east").toLowerCase(
 function header(extra){return '<header class="app-header"><div class="brand"><div class="mark">D</div> DUALGRID <small>PROTOTYPE</small></div><div class="header-actions"><span class="live" id="live">'+(cloudOn?"LIVE BOARD":"CONNECTING")+'</span>'+(extra||"")+"</div></header>";}
 function publish(pod){if(applyingRemote)return;const s=load();const d=s.drafts[pod];if(!d)return;cloud.ref("drafts/"+pod).set(d).catch(()=>{});}
 function publishRecords(){if(applyingRemote)return;const s=load();cloud.ref("records").set(s.records||{week:1,rows:{}}).catch(()=>{});}
-function makePick(state,pod,playerId){const d=ensureDraft(state,pod);const info=snakeSlot(d.pickIndex);const player=PLAYERS.find(p=>p.id===playerId);if(!player)return;if(d.format==="auction"){if(d.nomination)return;d.nomination={playerId,teamId:d.nomIndex%10,bid:1,seconds:BID_SECONDS};save(state);publish(pod);return;}const team=d.teams[info.teamId];team.picks.push(player);d.log.unshift({label:info.label,player:player.name,pos:player.pos,team:team.name});d.pickIndex++;d.started=true;d.secondsLeft=PICK_SECONDS;save(state);publish(pod);}
+function makePick(state,pod,playerId){const d=ensureDraft(state,pod);const info=snakeSlot(d.pickIndex,d);const player=PLAYERS.find(p=>p.id===playerId);if(!player)return;if(d.format==="auction"){if(d.nomination)return;d.nomination={playerId,teamId:d.nomIndex%10,bid:1,seconds:BID_SECONDS};save(state);publish(pod);return;}const team=d.teams[info.teamId];team.picks.push(player);d.log.unshift({label:info.label,player:player.name,pos:player.pos,team:team.name});d.pickIndex++;d.started=true;d.secondsLeft=PICK_SECONDS;save(state);publish(pod);}
 function bid(state,pod,teamId){const d=ensureDraft(state,pod);if(!d.nomination)return;const t=d.teams[teamId];const next=d.nomination.bid+1;if(t.budget<next)return;d.nomination.bid=next;d.nomination.teamId=teamId;d.nomination.seconds=BID_SECONDS;save(state);publish(pod);}
 function settleAuction(state,pod){const d=ensureDraft(state,pod);const n=d.nomination;if(!n)return;const player=PLAYERS.find(p=>p.id===n.playerId);const team=d.teams[n.teamId];team.picks.push(player);team.budget-=n.bid;d.log.unshift({label:"$"+n.bid,player:player.name,pos:player.pos,team:team.name});d.nomination=null;d.nomIndex++;d.pickIndex++;d.secondsLeft=BID_SECONDS;save(state);publish(pod);}
 function resetPod(state,pod){state.drafts[pod]=emptyDraft(pod,state.format||"snake");save(state);publish(pod);}
@@ -129,7 +129,7 @@ root.innerHTML=header((s.owner?'<span class="btn btn-ghost">OWNER · COMPED</spa
 '<div class="card" style="margin-bottom:16px"><h2>Join a room</h2><p>Type EAST-7K2. Players do not need the commissioner code.</p><div class="join-row"><input id="join-code" placeholder="EAST-7K2"/><button class="btn btn-lime" id="join-btn">Join</button></div></div>'+
 '<div class="grid-2"><div class="card"><h2>Dual circuit</h2><button class="btn '+(s.circuit==="dual"?"btn-lime":"")+'" data-circuit="dual">Use Dual</button></div><div class="card"><h2>Quad circuit</h2><button class="btn '+(s.circuit==="quad"?"btn-lime":"")+'" data-circuit="quad">Use Quad</button></div></div>'+
 '<div class="card" style="margin:16px 0"><h2>Draft format</h2><button class="btn '+(s.format!=="auction"?"btn-lime":"")+'" data-format="snake">Snake</button> <button class="btn '+(s.format==="auction"?"btn-lime":"")+'" data-format="auction">Auction · $200</button></div>'+
-'<div class="grid-4">'+pods.map(p=>'<div class="card"><span class="pod-chip '+p+'">'+podName(p)+' · '+CODES[p]+'</span><h2>'+POD_TEAMS[p][0]+' + 9</h2><div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px"><a class="btn btn-lime" href="#draft/'+p+'">Draft room</a><a class="btn" href="#board/'+p+'">Big Board</a></div></div>').join("")+'</div></div>';
+'<div class="grid-4">'+pods.map(p=>'<div class="card"><span class="pod-chip '+p+'">'+podName(p)+' · '+CODES[p]+'</span><h2>'+POD_TEAMS[p][0]+' + 9</h2><div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px"><a class="btn btn-lime" href="#draft/'+p+'">Draft room</a><a class="btn" href="#board/'+p+'">Big Board</a><a class="btn" href="#dash/'+p+'">Dash</a></div></div>').join("")+'</div></div>';
 document.querySelectorAll("[data-circuit]").forEach(b=>b.onclick=()=>{const st=load();st.circuit=b.dataset.circuit;save(st);renderHome();});
 document.querySelectorAll("[data-format]").forEach(b=>b.onclick=()=>{const st=load();st.format=b.dataset.format;save(st);renderHome();});
 document.getElementById("join-btn").onclick=()=>{/* players can draft */const raw=(document.getElementById("join-code").value||"").toUpperCase().trim();const hit=Object.keys(CODES).find(k=>CODES[k]===raw||k.toUpperCase()===raw);if(hit)location.hash="#draft/"+hit;else alert("Unknown code. Try EAST-7K2");};
@@ -149,7 +149,7 @@ function renderDraft(){
 const pod=podFromHash();const root=document.getElementById("app");let filter="";
 const paint=()=>{
 const state=load();const draft=ensureDraft(state,pod);save(state);
-const auction=draft.format==="auction";const info=snakeSlot(draft.pickIndex);
+const auction=draft.format==="auction";const info=snakeSlot(draft.pickIndex,draft);
 const onClock=auction?draft.teams[draft.nomination?draft.nomination.teamId:draft.nomIndex%teamCount()]:draft.teams[info.teamId];
 const done=draft.pickIndex>=ROUNDS*teamCount();
 const avail=available(draft).filter(p=>{const q=filter.toLowerCase();return !q||p.name.toLowerCase().includes(q)||p.pos.toLowerCase()===q;});
@@ -169,7 +169,7 @@ if(!window._draftTick){window._draftTick=setInterval(()=>{if(!(location.hash||""
 }
 function renderBoard(){
 const pod=podFromHash();
-const paint=()=>{const state=load();const draft=ensureDraft(state,pod);const info=snakeSlot(draft.pickIndex);const onClock=draft.teams[info.teamId];
+const paint=()=>{const state=load();const draft=ensureDraft(state,pod);const info=snakeSlot(draft.pickIndex,draft);const onClock=draft.teams[info.teamId];
 let cells='<div class="cell head"></div>';draft.teams.forEach(t=>{cells+='<div class="cell head">'+t.name+(t.ownerName?"<div>"+t.ownerName+"</div>":"")+(state.owner&&t.ownerName?'<button class="btn" data-clear="'+t.id+'" style="margin-top:6px;padding:4px 6px">Clear</button>':"")+"</div>";});
 for(let r=1;r<=ROUNDS;r++){cells+='<div class="cell head">RD '+r+"</div>";for(let teamId=0;teamId<teamCount();teamId++){const pick=draft.teams[teamId].picks[r-1];cells+='<div class="cell">'+(pick?pick.name+"<div>"+pick.pos+"</div>":"")+"</div>";}}
 document.getElementById("app").innerHTML=header('<a class="btn" href="#draft/'+pod+'">Room</a><a class="btn" href="#home">Home</a>')+'<div class="page"><div class="eyebrow">'+podName(pod)+' · '+CODES[pod]+' · BIG BOARD</div><h1>'+(onClock?onClock.name:"Board")+'</h1><div class="board" style="grid-template-columns:80px repeat('+teamCount()+',minmax(70px,1fr))">'+cells+"</div></div>";
@@ -237,7 +237,25 @@ if(btn) btn.onclick=()=>{
   save(st); publishRecords(); alert("Week saved for every phone.");
 };
 }
-function route(){const page=(location.hash.replace("#","").split("/")[0]||"home");if(page==="pay")renderPay();else if(page==="draft")renderDraft();else if(page==="board")renderBoard();else if(page==="wall")renderWall();else if(page==="payout"){ if(!unlocked(load())){ alert("Commissioner code required."); location.hash="#home"; return;} renderPayout(); }else if(page==="scores")renderScores();else renderHome();}
+
+function renderDash(){
+const pod=podFromHash();
+const paint=()=>{
+const s=load(); const d=ensureDraft(s,pod); const n=d.teams.length||teamCount();
+const lanes=d.teams.map((team,i)=>{
+const place=(d.order||[]).indexOf(team.id);
+const pct=d.racing?Math.min(100, (d.progress||0)*(0.72+((team.id*17)%28)/100)) : (place>=0?100:0);
+return '<div class="team-row"><span>'+(place>=0?(place+1)+". ":"")+team.name+'</span><div style="flex:1;height:14px;background:#111;border-radius:8px;margin:0 8px;overflow:hidden"><div style="width:'+pct+'%;height:100%;background:#c6f25a"></div></div></div>';
+}).join("");
+document.getElementById("app").innerHTML=header('<a class="btn" href="#home">Home</a><a class="btn" href="#draft/'+pod+'">Room</a>')+'<div class="page"><div class="eyebrow">'+podName(pod)+' · 100 YARD DASH</div><h1>Finish order is the draft order.</h1><p class="lede">First across sets pick 1.01. Manual and random stay under the race.</p><div class="card">'+lanes+'</div>'+(s.owner?'<button class="btn btn-lime" id="start-dash" style="margin-top:12px">Start dash</button> <button class="btn" id="random-order">Random order</button>':'<p>Waiting on the commissioner to start the dash.</p>')+'</div>';
+const start=document.getElementById("start-dash");
+if(start) start.onclick=()=>{const st=load(); const draft=ensureDraft(st,pod); draft.racing=true; draft.progress=0; draft.order=null; save(st); publish(pod); paint(); const timer=setInterval(()=>{const cur=load(); const dd=ensureDraft(cur,pod); dd.progress=(dd.progress||0)+8; if(dd.progress>=100){dd.racing=false; dd.order=dd.teams.map(t=>t.id).sort(()=>Math.random()-0.5); clearInterval(timer);} save(cur); publish(pod); paint();},180);};
+const rnd=document.getElementById("random-order");
+if(rnd) rnd.onclick=()=>{const st=load(); const draft=ensureDraft(st,pod); draft.order=draft.teams.map(t=>t.id).sort(()=>Math.random()-0.5); draft.racing=false; save(st); publish(pod); paint();};
+};
+window._paint=paint; paint();
+}
+function route(){const page=(location.hash.replace("#","").split("/")[0]||"home");if(page==="pay")renderPay();else if(page==="draft")renderDraft();else if(page==="board")renderBoard();else if(page==="wall")renderWall();else if(page==="payout"){ if(!unlocked(load())){ alert("Commissioner code required."); location.hash="#home"; return;} renderPayout(); }else if(page==="scores")renderScores();else if(page==="dash")renderDash();else renderHome();}
 ["east","west","north","south"].forEach(pod=>{cloud.ref("drafts/"+pod).on("value",snap=>{const remote=snap.val();if(!remote||!remote.teams)return;applyingRemote=true;const s=load();s.drafts[pod]=normalizeDraft(remote);save(s);applyingRemote=false;const page=(location.hash.replace("#","").split("/")[0]||"");const onPod=(location.hash.split("/")[1]||"")===(pod);if((page==="draft"||page==="board")&&onPod&&window._paint)window._paint();});});
 cloud.ref("records").on("value",snap=>{const remote=snap.val();if(!remote)return;applyingRemote=true;const s=load();s.records=remote;save(s);applyingRemote=false;if((location.hash||"").startsWith("#scores"))renderScores();});
 window.addEventListener("hashchange",route);route();
