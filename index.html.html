@@ -172,7 +172,7 @@ const pod=podFromHash();
 const paint=()=>{const state=load();const draft=ensureDraft(state,pod);const info=snakeSlot(draft.pickIndex);const onClock=draft.teams[info.teamId];
 let cells='<div class="cell head"></div>';draft.teams.forEach(t=>{cells+='<div class="cell head">'+t.name+(t.ownerName?"<div>"+t.ownerName+"</div>":"")+(state.owner&&t.ownerName?'<button class="btn" data-clear="'+t.id+'" style="margin-top:6px;padding:4px 6px">Clear</button>':"")+"</div>";});
 for(let r=1;r<=ROUNDS;r++){cells+='<div class="cell head">RD '+r+"</div>";for(let teamId=0;teamId<teamCount();teamId++){const pick=draft.teams[teamId].picks[r-1];cells+='<div class="cell">'+(pick?pick.name+"<div>"+pick.pos+"</div>":"")+"</div>";}}
-document.getElementById("app").innerHTML=header('<a class="btn" href="#draft/'+pod+'">Room</a><a class="btn" href="#home">Home</a>')+'<div class="page"><div class="eyebrow">'+podName(pod)+' · '+CODES[pod]+' · BIG BOARD</div><h1>'+(onClock?onClock.name:"Board")+'</h1><div class="board">'+cells+"</div></div>";
+document.getElementById("app").innerHTML=header('<a class="btn" href="#draft/'+pod+'">Room</a><a class="btn" href="#home">Home</a>')+'<div class="page"><div class="eyebrow">'+podName(pod)+' · '+CODES[pod]+' · BIG BOARD</div><h1>'+(onClock?onClock.name:"Board")+'</h1><div class="board" style="grid-template-columns:80px repeat('+teamCount()+',minmax(70px,1fr))">'+cells+"</div></div>";
 document.querySelectorAll("[data-clear]").forEach(btn=>btn.onclick=()=>{if(!confirm("Clear this seat for everyone?"))return;claimSeat(load(),pod,Number(btn.dataset.clear),"",true);paint();});
 };
 window._paint=paint;paint();
