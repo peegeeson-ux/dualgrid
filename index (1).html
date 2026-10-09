@@ -88,7 +88,7 @@ function save(s){localStorage.setItem(STORE,JSON.stringify(s));}
 let commishCode = "DUAL-2026";
 let divisionNames = {east:"East",west:"West",north:"North",south:"South"};
 cloud.ref("config/commishCode").on("value", snap => { if (snap.val()) commishCode = String(snap.val()).toUpperCase(); });
-cloud.ref("config/divisionNames").on("value", snap => { const v=snap.val(); if(v){divisionNames=Object.assign({east:"East",west:"West",north:"North",south:"South"}, v); if((location.hash||"#home")==="#home"||(location.hash||"").startsWith("#home"))renderHome(); }});
+cloud.ref("config/divisionNames").on("value", snap => { const v=snap.val(); if(v){divisionNames=Object.assign({east:"East",west:"West",north:"North",south:"South"}, v); const h=location.hash||""; if(h===""||h.startsWith("#home"))renderHome(); if((h.startsWith("#draft")||h.startsWith("#board")||h.startsWith("#scores"))&&window._paint)window._paint(); if(h.startsWith("#scores"))renderScores(); }});
 function podName(p){return divisionNames[p]||p;}
 function publishNames(){cloud.ref("config/divisionNames").set(divisionNames).catch(()=>{});}
 function unlocked(s){return !!(s&&(s.owner||(s.paid&&s.plan)));}
