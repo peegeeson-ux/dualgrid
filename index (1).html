@@ -86,7 +86,11 @@ function defaultState(){return{circuit:"dual",format:"snake",actingAs:{},drafts:
 function load(){try{const raw=localStorage.getItem(STORE);if(raw)return Object.assign(defaultState(),JSON.parse(raw));}catch(e){}return defaultState();}
 function save(s){localStorage.setItem(STORE,JSON.stringify(s));}
 let commishCode = "DUAL-2026";
+let divisionNames = {east:"East",west:"West",north:"North",south:"South"};
 cloud.ref("config/commishCode").on("value", snap => { if (snap.val()) commishCode = String(snap.val()).toUpperCase(); });
+cloud.ref("config/divisionNames").on("value", snap => { const v=snap.val(); if(v){divisionNames=Object.assign({east:"East",west:"West",north:"North",south:"South"}, v); if((location.hash||"#home")==="#home"||(location.hash||"").startsWith("#home"))renderHome(); }});
+function podName(p){return divisionNames[p]||p;}
+function publishNames(){cloud.ref("config/divisionNames").set(divisionNames).catch(()=>{});}
 function unlocked(s){return !!(s&&(s.owner||(s.paid&&s.plan)));}
 function grantCommish(code){const s=load(); if(String(code||"").toUpperCase().trim()!==commishCode){alert("Wrong commissioner code."); return false;} s.owner=true; if(!s.plan)s.plan=s.circuit||"dual"; save(s); return true;}
 function podsOf(s){return s.circuit==="quad"?["east","west","north","south"]:["east","west"];}
@@ -116,15 +120,17 @@ root.innerHTML=header((s.owner?'<span class="btn btn-ghost">OWNER · COMPED</spa
 '<p class="lede">Shared board is on. Two phones in the same pod should see the same picks.</p>'+
 '<div class="card" style="margin-bottom:16px"><span class="pod-chip '+(s.owner?"east":"west")+'">'+(s.owner?"COMMISH":"LOCKED")+'</span><h2>'+(s.owner?"Commissioner unlocked.":"Commissioner code")+'</h2><p>Players can join and draft. Reset and payouts need the code. First code is DUAL-2026.</p>'+(s.owner?'<button class="btn" id="lock-out">Lock this phone</button>':'<div class="join-row"><input id="commish-code" placeholder="DUAL-2026"/><button class="btn btn-lime" id="commish-btn">Unlock</button></div>')+'</div>'+
 (on?"":'<div class="grid-2" style="margin-bottom:16px"><div class="card"><span class="pod-chip east">20 · PLAYERS $0</span><h2>Dual · $59</h2><p>Two pods. One bracket.</p><a class="btn btn-lime" href="#pay/dual">Unlock Dual $59</a></div><div class="card"><span class="pod-chip west">40 · PLAYERS $0</span><h2>Quad · $119</h2><p>Four pods. Quad wall.</p><a class="btn btn-lime" href="#pay/quad">Unlock Quad $119</a></div></div>')+
+'<div class="card" style="margin-bottom:16px"><h2>Division names</h2><p>Defaults stay East, West, North, South. Invite codes do not change.</p>'+(s.owner?pods.map(p=>'<label>'+CODES[p]+'</label><input class="search" data-podname="'+p+'" value="'+podName(p)+'">').join("")+'<button class="btn btn-lime" id="save-names" style="margin-top:8px">Save names</button>':'<p>'+pods.map(podName).join(" · ")+'</p>')+'</div>'+
 '<div class="card" style="margin-bottom:16px"><h2>Join a room</h2><p>Type EAST-7K2. Players do not need the commissioner code.</p><div class="join-row"><input id="join-code" placeholder="EAST-7K2"/><button class="btn btn-lime" id="join-btn">Join</button></div></div>'+
 '<div class="grid-2"><div class="card"><h2>Dual circuit</h2><button class="btn '+(s.circuit==="dual"?"btn-lime":"")+'" data-circuit="dual">Use Dual</button></div><div class="card"><h2>Quad circuit</h2><button class="btn '+(s.circuit==="quad"?"btn-lime":"")+'" data-circuit="quad">Use Quad</button></div></div>'+
 '<div class="card" style="margin:16px 0"><h2>Draft format</h2><button class="btn '+(s.format!=="auction"?"btn-lime":"")+'" data-format="snake">Snake</button> <button class="btn '+(s.format==="auction"?"btn-lime":"")+'" data-format="auction">Auction · $200</button></div>'+
-'<div class="grid-4">'+pods.map(p=>'<div class="card"><span class="pod-chip '+p+'">'+p.toUpperCase()+' · '+CODES[p]+'</span><h2>'+POD_TEAMS[p][0]+' + 9</h2><div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px"><a class="btn btn-lime" href="#draft/'+p+'">Draft room</a><a class="btn" href="#board/'+p+'">Big Board</a></div></div>').join("")+'</div></div>';
+'<div class="grid-4">'+pods.map(p=>'<div class="card"><span class="pod-chip '+p+'">'+podName(p)+' · '+CODES[p]+'</span><h2>'+POD_TEAMS[p][0]+' + 9</h2><div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px"><a class="btn btn-lime" href="#draft/'+p+'">Draft room</a><a class="btn" href="#board/'+p+'">Big Board</a></div></div>').join("")+'</div></div>';
 document.querySelectorAll("[data-circuit]").forEach(b=>b.onclick=()=>{const st=load();st.circuit=b.dataset.circuit;save(st);renderHome();});
 document.querySelectorAll("[data-format]").forEach(b=>b.onclick=()=>{const st=load();st.format=b.dataset.format;save(st);renderHome();});
 document.getElementById("join-btn").onclick=()=>{/* players can draft */const raw=(document.getElementById("join-code").value||"").toUpperCase().trim();const hit=Object.keys(CODES).find(k=>CODES[k]===raw||k.toUpperCase()===raw);if(hit)location.hash="#draft/"+hit;else alert("Unknown code. Try EAST-7K2");};
 const cb=document.getElementById("commish-btn"); if(cb) cb.onclick=()=>{ if(grantCommish(document.getElementById("commish-code").value)) renderHome(); };
 const lo=document.getElementById("lock-out"); if(lo) lo.onclick=()=>{const st=load(); st.owner=false; save(st); renderHome();};
+const sn=document.getElementById("save-names"); if(sn) sn.onclick=()=>{ if(!load().owner)return; document.querySelectorAll("[data-podname]").forEach(inp=>{const v=(inp.value||"").trim().slice(0,18); if(v) divisionNames[inp.dataset.podname]=v;}); publishNames(); renderHome(); };
 }
 function renderPay(){
 const plan=(location.hash.split("/")[1]||"dual").toLowerCase()==="quad"?"quad":"dual";
@@ -183,7 +189,7 @@ function renderScores(){
 const s=load(); if(!s.records)s.records={week:1,rows:{}};
 const pods=podsOf(s); const rec=s.records; const can=!!s.owner;
 const seats=[];
-pods.forEach(pod=>{ensureDraft(s,pod).teams.forEach(team=>{seats.push({key:pod+"-"+team.id,label:pod.toUpperCase()+" · "+team.name+(team.ownerName?" · "+team.ownerName:"")});});});
+pods.forEach(pod=>{ensureDraft(s,pod).teams.forEach(team=>{seats.push({key:pod+"-"+team.id,label:podName(pod)+" · "+team.name+(team.ownerName?" · "+team.ownerName:"")});});});
 const slapRec=rec.slap||{};
 const opt=(sel)=>seats.map(x=>'<option value="'+x.key+'" '+(x.key===sel?"selected":"")+'>'+x.label+'</option>').join("");
 const home=seats.find(x=>x.key===slapRec.home)||seats[0]||{key:"",label:"Seat"};
@@ -198,7 +204,7 @@ pods.forEach(pod=>{
   d.teams.forEach(team=>{
     const key=pod+"-"+team.id;
     const row=rec.rows[key]||{w:0,l:0,pf:0,pa:0};
-    rows+='<tr><td>'+pod.toUpperCase()+'</td><td>'+team.name+(team.ownerName?" · "+team.ownerName:"")+'</td>'+
+    rows+='<tr><td>'+podName(pod)+'</td><td>'+team.name+(team.ownerName?" · "+team.ownerName:"")+'</td>'+
       '<td><input data-k="'+key+'" data-f="w" value="'+row.w+'" style="width:64px"'+(can?"":" disabled")+'></td>'+
       '<td><input data-k="'+key+'" data-f="l" value="'+row.l+'" style="width:64px"'+(can?"":" disabled")+'></td>'+
       '<td><input data-k="'+key+'" data-f="pf" value="'+row.pf+'" style="width:80px"'+(can?"":" disabled")+'></td><td><input data-k="'+key+'" data-f="pa" value="'+(row.pa||0)+'" style="width:80px"'+(can?"":" disabled")+'></td><td>'+((Number(row.pf)||0)-(Number(row.pa)||0))+'</td></tr>';
