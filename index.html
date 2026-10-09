@@ -88,7 +88,7 @@ function save(s){localStorage.setItem(STORE,JSON.stringify(s));}
 let commishCode = "DUAL-2026";
 let divisionNames = {east:"East",west:"West",north:"North",south:"South"};
 cloud.ref("config/commishCode").on("value", snap => { if (snap.val()) commishCode = String(snap.val()).toUpperCase(); });
-cloud.ref("config/divisionNames").on("value", snap => { const v=snap.val(); if(v){divisionNames=Object.assign({east:"East",west:"West",north:"North",south:"South"}, v); const h=location.hash||""; if(h===""||h.startsWith("#home"))renderHome(); if((h.startsWith("#draft")||h.startsWith("#board")||h.startsWith("#scores"))&&window._paint)window._paint(); if(h.startsWith("#scores"))renderScores(); }});
+cloud.ref("config/divisionNames").on("value", snap => { const v=snap.val(); if(v){divisionNames=Object.assign({east:"East",west:"West",north:"North",south:"South"}, v); const h=location.hash||""; if(h===""||h.startsWith("#home"))renderHome(); if((h.startsWith("#draft")||h.startsWith("#board")||h.startsWith("#scores"))&&window._paint)window._paint(); if(h.startsWith("#scores"))renderScores(); if(h.startsWith("#wall"))renderWall(); }});
 function podName(p){return divisionNames[p]||p;}
 function publishNames(){cloud.ref("config/divisionNames").set(divisionNames).catch(()=>{});}
 function unlocked(s){return !!(s&&(s.owner||(s.paid&&s.plan)));}
@@ -174,7 +174,7 @@ window._paint=paint;paint();
 function renderWall(){
 if(!unlocked(load())){location.hash="#pay/quad";return;}
 const s=load();const pods=podsOf(s);
-document.getElementById("app").innerHTML=header('<a class="btn" href="#home">Home</a>')+'<div class="page"><div class="eyebrow">QUAD WALL</div><h1>Four rooms. One office.</h1><div class="grid-2">'+pods.map(p=>{const d=ensureDraft(s,p);return '<div class="card"><span class="pod-chip '+p+'">'+p.toUpperCase()+'</span><h2>'+CODES[p]+"</h2><p>Pick "+d.pickIndex+" · "+d.format+'</p><a class="btn" href="#board/'+p+'">Open board</a></div>';}).join("")+"</div></div>";
+document.getElementById("app").innerHTML=header('<a class="btn" href="#home">Home</a>')+'<div class="page"><div class="eyebrow">QUAD WALL</div><h1>Four rooms. One office.</h1><div class="grid-2">'+pods.map(p=>{const d=ensureDraft(s,p);return '<div class="card"><span class="pod-chip '+p+'">'+podName(p)+'</span><h2>'+CODES[p]+"</h2><p>Pick "+d.pickIndex+" · "+d.format+'</p><a class="btn" href="#board/'+p+'">Open board</a></div>';}).join("")+"</div></div>";
 }
 function renderPayout(){
 if(!unlocked(load())){location.hash="#pay/dual";return;}
