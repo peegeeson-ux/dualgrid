@@ -100,7 +100,7 @@ function grantCommish(code){const s=load(); if(String(code||"").toUpperCase().tr
 function podsOf(s){return s.circuit==="quad"?["east","west","north","south"]:["east","west"];}
 function emptyDraft(pod,format){const n=teamCount();return{pod,format:format||"snake",size:n,teams:POD_TEAMS[pod].slice(0,n).map((name,i)=>({id:i,name,picks:[],budget:BUDGET})),pickIndex:0,nomIndex:0,started:false,secondsLeft:format==="auction"?BID_SECONDS:PICK_SECONDS,nomination:null,log:[]};}
 function normalizeDraft(d){if(!d)return d;d.teams=(d.teams||[]).map(t=>Object.assign({picks:[],budget:200},t,{picks:t.picks||[]}));d.log=d.log||[];return d;}function ensureDraft(s,pod){if(!s.drafts[pod])s.drafts[pod]=emptyDraft(pod,s.format||"snake");s.drafts[pod]=normalizeDraft(s.drafts[pod]);return s.drafts[pod];}
-function snakeSlot(i,draft){const n=teamCount();const r=Math.floor(i/n),p=i%n;const order=(draft&&draft.order&&draft.order.length===n)?draft.order:null;const teamId=order?(r%2===0?order[p]:order[n-1-p]):(r%2===0?p:n-1-p);return{round:r+1,slot:p+1,teamId,label:r+1+"."+String(p+1).padStart(2,"0")};}
+function snakeSlot(i,draft){const n=teamCount();const r=Math.floor(i/n),p=i%n;const raw=draft&&draft.order?Object.values(draft.order).map(Number):[]; const order=raw.length?raw:null;const teamId=order?(r%2===0?order[p]:order[n-1-p]):(r%2===0?p:n-1-p);return{round:r+1,slot:p+1,teamId,label:r+1+"."+String(p+1).padStart(2,"0")};}
 function takenIds(d){const ids=new Set();(d.teams||[]).forEach(t=>(t.picks||[]).forEach(p=>ids.add(p.id)));return ids;}
 function available(d){const t=takenIds(d);return PLAYERS.filter(p=>!t.has(p.id));}
 function fmtTime(s){return Math.floor(s/60)+":"+String(Math.max(0,s)%60).padStart(2,"0");}
@@ -256,10 +256,11 @@ if(start) start.onclick=()=>{
 const st=load(); const draft=ensureDraft(st,pod); draft.racing=true; draft.order=[]; draft.yards={}; draft.teams.forEach(team=>draft.yards[team.id]=0); save(st); publish(pod); paint();
 const timer=setInterval(()=>{
 const cur=load(); const dd=ensureDraft(cur,pod); if(!dd.yards)dd.yards={}; if(!dd.order)dd.order=[];
-dd.teams.forEach(team=>{
-if(dd.order.includes(team.id))return;
+const movers=dd.teams.slice().sort(()=>Math.random()-0.5);
+movers.forEach(team=>{
+if(dd.order.map(Number).includes(Number(team.id)))return;
 const roll=Math.random();
-const gain=roll<0.18?0:roll>0.93?12+Math.floor(Math.random()*8):1+Math.floor(Math.random()*6);
+const gain=roll<0.22?0:roll>0.9?8+Math.floor(Math.random()*10):1+Math.floor(Math.random()*5);
 dd.yards[team.id]=Math.min(100,(Number(dd.yards[team.id])||0)+gain);
 if(dd.yards[team.id]>=100)dd.order.push(team.id);
 });
