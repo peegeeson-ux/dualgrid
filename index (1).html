@@ -241,17 +241,32 @@ if(btn) btn.onclick=()=>{
 function renderDash(){
 const pod=podFromHash();
 const paint=()=>{
-const s=load(); const d=ensureDraft(s,pod); const n=d.teams.length||teamCount();
-const lanes=d.teams.map((team,i)=>{
+const s=load(); const d=ensureDraft(s,pod); const yards=d.yards||{};
+const lanes=d.teams.map(team=>{
+const y=Math.min(100, Number(yards[team.id])||0);
 const place=(d.order||[]).indexOf(team.id);
-const speed=0.62+((team.id*17)%34)/100;
-const pct=d.racing?Math.min(96, (d.progress||0)*speed) : (place>=0?96:2);
-return '<div style="position:relative;height:42px;border-bottom:1px dashed rgba(255,255,255,.25)"><span style="position:absolute;left:6px;top:4px;font-size:11px;font-weight:800;z-index:2">'+(place>=0?(place+1)+". ":"")+team.name+'</span><span style="position:absolute;left:'+pct+'%;top:6px;transform:translateX(-50%) scaleX(-1);font-size:26px;z-index:2">🏃</span></div>';
+const pct=4+(y/100)*86;
+return '<div style="position:relative;height:46px;border-bottom:1px dashed rgba(255,255,255,.28)"><span style="position:absolute;left:8px;top:2px;font-size:11px;font-weight:800;z-index:2;text-shadow:0 1px 2px #000">'+(place>=0?(place+1)+". ":"")+team.name+' · '+y+'</span><span style="position:absolute;left:'+pct+'%;top:8px;transform:translateX(-50%) scaleX(-1);font-size:26px;z-index:2">🏃</span></div>';
 }).join("");
-const field='<div style="position:relative;background:repeating-linear-gradient(90deg,#1f7a32 0 9%,#186b2a 9% 10%),linear-gradient(#1f7a32,#1f7a32);border:3px solid #f4f1e8;border-radius:12px;padding:8px 0;overflow:hidden"><div style="position:absolute;inset:0;background:repeating-linear-gradient(90deg,transparent 0 9%,rgba(255,255,255,.35) 9% 10%);pointer-events:none"></div>'+lanes+'</div>';
-document.getElementById("app").innerHTML=header('<a class="btn" href="#home">Home</a><a class="btn" href="#draft/'+pod+'">Room</a>')+'<div class="page"><div class="eyebrow">'+podName(pod)+' · 100 YARD DASH</div><h1>Finish order is the draft order.</h1><p class="lede">First across sets pick 1.01. Manual and random stay under the race.</p><div class="card">'+lanes+'</div>'+(s.owner?'<button class="btn btn-lime" id="start-dash" style="margin-top:12px">Start dash</button> <button class="btn" id="random-order">Random order</button>':'<p>Waiting on the commissioner to start the dash.</p>')+'</div>';
+const marks='<div style="display:flex;justify-content:space-between;font-size:10px;font-weight:800;padding:0 8px 4px">'+[0,10,20,30,40,50,60,70,80,90,100].map(n=>'<span>'+n+'</span>').join("")+'</div>';
+const field=marks+'<div style="position:relative;background:#1f7a32;border:4px solid #f4f1e8;border-radius:12px;overflow:hidden"><div style="position:absolute;inset:0;background:repeating-linear-gradient(90deg,transparent 0 9.6%,rgba(255,255,255,.45) 9.6% 10.4%);pointer-events:none"></div>'+lanes+'</div>';
+document.getElementById("app").innerHTML=header('<a class="btn" href="#home">Home</a><a class="btn" href="#draft/'+pod+'">Room</a>')+'<div class="page"><div class="eyebrow">'+podName(pod)+' · 100 YARD DASH</div><h1>First to 100 sets pick 1.01.</h1><p class="lede">They move in bursts. The lead can change. Finish order is the draft order.</p>'+field+(s.owner?'<button class="btn btn-lime" id="start-dash" style="margin-top:12px">Start dash</button> <button class="btn" id="random-order">Random order</button>':'<p>Waiting on the commissioner to start the dash.</p>')+'</div>';
 const start=document.getElementById("start-dash");
-if(start) start.onclick=()=>{const st=load(); const draft=ensureDraft(st,pod); draft.racing=true; draft.progress=0; draft.order=null; save(st); publish(pod); paint(); const timer=setInterval(()=>{const cur=load(); const dd=ensureDraft(cur,pod); dd.progress=(dd.progress||0)+3; if(dd.progress>=100){dd.racing=false; dd.order=dd.teams.map(t=>t.id).sort(()=>Math.random()-0.5); clearInterval(timer);} save(cur); publish(pod); paint();},420);};
+if(start) start.onclick=()=>{
+const st=load(); const draft=ensureDraft(st,pod); draft.racing=true; draft.order=[]; draft.yards={}; draft.teams.forEach(team=>draft.yards[team.id]=0); save(st); publish(pod); paint();
+const timer=setInterval(()=>{
+const cur=load(); const dd=ensureDraft(cur,pod); if(!dd.yards)dd.yards={}; if(!dd.order)dd.order=[];
+dd.teams.forEach(team=>{
+if(dd.order.includes(team.id))return;
+const roll=Math.random();
+const gain=roll<0.18?0:roll>0.93?12+Math.floor(Math.random()*8):1+Math.floor(Math.random()*6);
+dd.yards[team.id]=Math.min(100,(Number(dd.yards[team.id])||0)+gain);
+if(dd.yards[team.id]>=100)dd.order.push(team.id);
+});
+if(dd.order.length>=dd.teams.length){dd.racing=false; clearInterval(timer);} 
+save(cur); publish(pod); paint();
+},700);
+};
 const rnd=document.getElementById("random-order");
 if(rnd) rnd.onclick=()=>{const st=load(); const draft=ensureDraft(st,pod); draft.order=draft.teams.map(t=>t.id).sort(()=>Math.random()-0.5); draft.racing=false; save(st); publish(pod); paint();};
 };
