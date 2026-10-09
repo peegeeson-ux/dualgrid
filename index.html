@@ -244,9 +244,11 @@ const paint=()=>{
 const s=load(); const d=ensureDraft(s,pod); const n=d.teams.length||teamCount();
 const lanes=d.teams.map((team,i)=>{
 const place=(d.order||[]).indexOf(team.id);
-const pct=d.racing?Math.min(100, (d.progress||0)*(0.72+((team.id*17)%28)/100)) : (place>=0?100:0);
-return '<div class="team-row"><span>'+(place>=0?(place+1)+". ":"")+team.name+'</span><div style="flex:1;height:14px;background:#111;border-radius:8px;margin:0 8px;overflow:hidden"><div style="width:'+pct+'%;height:100%;background:#c6f25a"></div></div></div>';
+const speed=0.62+((team.id*17)%34)/100;
+const pct=d.racing?Math.min(96, (d.progress||0)*speed) : (place>=0?96:2);
+return '<div style="position:relative;height:42px;border-bottom:1px dashed rgba(255,255,255,.25)"><span style="position:absolute;left:6px;top:4px;font-size:11px;font-weight:800;z-index:2">'+(place>=0?(place+1)+". ":"")+team.name+'</span><span style="position:absolute;left:'+pct+'%;top:6px;transform:translateX(-50%);font-size:22px;z-index:2">🏃</span></div>';
 }).join("");
+const field='<div style="position:relative;background:repeating-linear-gradient(90deg,#1f7a32 0 9%,#186b2a 9% 10%),linear-gradient(#1f7a32,#1f7a32);border:3px solid #f4f1e8;border-radius:12px;padding:8px 0;overflow:hidden"><div style="position:absolute;inset:0;background:repeating-linear-gradient(90deg,transparent 0 9%,rgba(255,255,255,.35) 9% 10%);pointer-events:none"></div>'+lanes+'</div>';
 document.getElementById("app").innerHTML=header('<a class="btn" href="#home">Home</a><a class="btn" href="#draft/'+pod+'">Room</a>')+'<div class="page"><div class="eyebrow">'+podName(pod)+' · 100 YARD DASH</div><h1>Finish order is the draft order.</h1><p class="lede">First across sets pick 1.01. Manual and random stay under the race.</p><div class="card">'+lanes+'</div>'+(s.owner?'<button class="btn btn-lime" id="start-dash" style="margin-top:12px">Start dash</button> <button class="btn" id="random-order">Random order</button>':'<p>Waiting on the commissioner to start the dash.</p>')+'</div>';
 const start=document.getElementById("start-dash");
 if(start) start.onclick=()=>{const st=load(); const draft=ensureDraft(st,pod); draft.racing=true; draft.progress=0; draft.order=null; save(st); publish(pod); paint(); const timer=setInterval(()=>{const cur=load(); const dd=ensureDraft(cur,pod); dd.progress=(dd.progress||0)+8; if(dd.progress>=100){dd.racing=false; dd.order=dd.teams.map(t=>t.id).sort(()=>Math.random()-0.5); clearInterval(timer);} save(cur); publish(pod); paint();},180);};
