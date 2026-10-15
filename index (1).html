@@ -45,7 +45,7 @@ h1{font-size:clamp(28px,6vw,52px);line-height:1.05;margin:8px 0 12px}
 .money{color:var(--lime);font-weight:800}
 .live{font-size:12px;color:var(--lime);font-weight:800}
 label{display:block;margin:8px 0 4px}
-.ticker{position:fixed;left:0;right:0;bottom:0;background:#10140f;border-top:1px solid #2a3228;color:#c6f25a;font-weight:800;font-size:13px;padding:8px 0;overflow:hidden;z-index:8}.ticker span{display:inline-block;padding-left:100%;animation:tick 28s linear infinite;white-space:nowrap}@keyframes tick{0%{transform:translateX(-100%)}100%{transform:translateX(0)}}
+.ticker{position:fixed;left:0;right:0;bottom:0;background:#10140f;border-top:1px solid #2a3228;color:#c6f25a;font-weight:800;font-size:13px;padding:8px 0;overflow:hidden;z-index:8}.ticker span{display:inline-block;padding-left:100%;animation:tick 55s linear infinite;white-space:nowrap}@keyframes tick{0%{transform:translateX(0)}100%{transform:translateX(-100%)}}
 </style>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
@@ -109,7 +109,7 @@ function takenIds(d){const ids=new Set();(d.teams||[]).forEach(t=>(t.picks||[]).
 function available(d){const t=takenIds(d);return PLAYERS.filter(p=>!t.has(p.id));}
 function fmtTime(s){return Math.floor(s/60)+":"+String(Math.max(0,s)%60).padStart(2,"0");}
 function podFromHash(){return (location.hash.split("/")[1]||"east").toLowerCase();}
-function ticker(d){const bits=(d&&d.log&&d.log.length)?d.log.slice(0,12).map(l=>l.label+" "+l.player+" to "+l.team).join("    ·    "):"Waiting for the first pick";return '<div class="ticker"><span>'+bits+"    ·    "+bits+"</span></div>";}
+function ticker(d){const bits=(d&&d.log&&d.log.length)?d.log.slice().reverse().map(l=>l.label+" "+l.player+" to "+l.team).join("    ·    "):"Waiting for the first pick";return '<div class="ticker"><span>'+bits+"    ·    "+bits+"</span></div>";}
 function header(extra){return '<header class="app-header"><div class="brand"><div class="mark">D</div> DUALGRID <small>PROTOTYPE</small></div><div class="header-actions"><span class="live" id="live">'+(cloudOn?"LIVE BOARD":"CONNECTING")+'</span>'+(extra||"")+"</div></header>";}
 function publish(pod){if(applyingRemote)return;const s=load();const d=s.drafts[pod];if(!d)return;cloud.ref("drafts/"+pod).set(d).catch(()=>{});}
 function publishRecords(){if(applyingRemote)return;const s=load();cloud.ref("records").set(s.records||{week:1,rows:{}}).catch(()=>{});}
