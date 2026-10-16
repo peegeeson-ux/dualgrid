@@ -451,7 +451,7 @@ const sp=document.getElementById("save-spots"); if(sp) sp.onclick=()=>{ if(!load
 
 function renderLobby(){
 const s=load();
-if(s.league&&s.league.code){rememberLeague(s,s.league.name||s.league.code,s.league.code); save(s);} (s.leagues||[]).forEach(l=>cloud.ref("leagues/"+l.code+"/name").once("value",snap=>{ if(snap.val()&&snap.val()!==l.name){ l.name=snap.val(); save(s); renderLobby(); } }));
+if(s.league&&s.league.code){rememberLeague(s,s.league.name||s.league.code,s.league.code); save(s);} (s.leagues||[]).forEach(l=>{cloud.ref("leagues/"+l.code+"/name").once("value",snap=>{ if(snap.val()&&snap.val()!==l.name){ l.name=snap.val(); save(s); renderLobby(); } }); cloud.ref("leagues/"+l.code+"/config/leagueLogo").once("value",snap=>{ if(snap.val()&&snap.val()!==l.logo){ l.logo=snap.val(); save(s); renderLobby(); } });});
 const league=s.league||{};
 document.getElementById("app").innerHTML=header('')+
 '<div class="page"><div class="eyebrow">DUALGRID</div><h1 style="font-weight:900">Make a league<br>that feels alive.</h1>'+
