@@ -22,7 +22,7 @@ h1{font-size:clamp(28px,6vw,52px);line-height:1.05;margin:8px 0 12px}
 .lede,.card p{color:var(--mute);line-height:1.5}
 .grid-2{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px}
 .grid-4{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;margin-top:16px}
-.card{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:16px}
+.card{background:#141814e6;border:1px solid var(--line);border-radius:16px;padding:16px}
 .pod-chip{display:inline-block;font-size:11px;font-weight:800;letter-spacing:.08em;margin-bottom:8px}
 .pod-chip.east{color:var(--east)}.pod-chip.west{color:var(--west)}.pod-chip.north{color:var(--north)}.pod-chip.south{color:var(--south)}
 .join-row{display:flex;gap:8px;margin-top:10px}
@@ -243,12 +243,12 @@ pods.forEach(pod=>{
   });
 });
 document.getElementById("app").innerHTML=header('<a class="btn" href="#home">Home</a>')+
-'<div class="page" style="position:relative">'+(leagueLogo?'<img src="'+leagueLogo+'" alt="" style="position:fixed;left:50%;top:120px;transform:translateX(-50%);width:min(70vw,520px);opacity:.16;pointer-events:none;z-index:0">':'')+'<div style="position:relative;z-index:1"><div class="eyebrow">SEASON RECORD</div>'+(leagueLogo?'<img src="'+leagueLogo+'" alt="League" style="height:64px;border-radius:8px;margin:8px 0">':'')+'<h1>'+leagueName+' · Week '+rec.week+'</h1>'+
+'<div class="page" style="position:relative">'+'<div style="position:relative">'+ (leagueLogo?'<img src="'+leagueLogo+'" alt="" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:.18;pointer-events:none;border-radius:12px">':'') +'<div style="position:relative;z-index:1"><div class="eyebrow">SEASON RECORD</div>'+(leagueLogo?'<img src="'+leagueLogo+'" alt="League" style="height:64px;border-radius:8px;margin:8px 0">':'')+'<h1>'+leagueName+' · Week '+rec.week+'</h1>'+
 '<p class="lede">'+(can?"Type wins, losses, and points. Everyone else can read this.":"Read only. The commissioner types the week.")+'</p>'+
 (can?'<label>Week</label><input id="week" value="'+rec.week+'" style="max-width:120px">':'')+
 '<div class="card payout" style="margin-top:12px"><table><tr><th>Pod</th><th>Seat</th><th>W</th><th>L</th><th>PF</th><th>PA</th><th>Diff</th></tr>'+rows+'</table>'+
 (can?'<button class="btn btn-lime" id="save-scores" style="margin-top:12px">Save week</button>':'')+
-'</div>'+slap+'</div></div>';
+'</div>'+slap+'</div></div></div>';
 const btn=document.getElementById("save-scores");
 if(btn) btn.onclick=()=>{
   const st=load(); if(!st.owner){alert("Commissioner only.");return;}
