@@ -140,7 +140,7 @@ function prizePool(s){return Math.max(0,pot(s)-commishTake(s));}
 function renderHome(){
 const root=document.getElementById("app");const s=load();const on=unlocked(s);const pods=podsOf(s);
 if(!s.owner){
-const rooms=pods.map(p=>'<a class="btn" href="#draft/'+p+'">'+podName(p)+' room</a> <a class="btn" href="#board/'+p+'">Board</a>').join("<br>");
+const rooms=pods.map(p=>'<div class="team-row"><span class="pod-chip '+p+'">'+podName(p)+'</span><span><a class="btn" href="#draft/'+p+'">Room</a> <a class="btn" href="#board/'+p+'">Board</a></span></div>').join("");
 root.innerHTML=header('<a class="btn" href="#scores">Standings</a>')+
 '<div class="page"><div class="eyebrow">'+leagueName+'</div><h1>Your league.</h1>'+
 '<details class="card" open style="margin-bottom:10px"><summary style="font-weight:800;cursor:pointer">Draft</summary><p>Join a room or watch the board.</p><div class="join-row"><input id="join-code" placeholder="EAST-7K2"/><button class="btn btn-lime" id="join-btn">Join</button></div><div style="margin-top:10px">'+rooms+'</div></details>'+
