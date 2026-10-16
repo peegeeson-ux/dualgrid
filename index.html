@@ -139,6 +139,16 @@ function commishTake(s){return s.payout.useCommish?pot(s)*((Number(s.payout.comm
 function prizePool(s){return Math.max(0,pot(s)-commishTake(s));}
 function renderHome(){
 const root=document.getElementById("app");const s=load();const on=unlocked(s);const pods=podsOf(s);
+if(!s.owner){
+const rooms=pods.map(p=>'<a class="btn" href="#draft/'+p+'">'+podName(p)+' room</a> <a class="btn" href="#board/'+p+'">Board</a>').join("<br>");
+root.innerHTML=header('<a class="btn" href="#scores">Standings</a>')+
+'<div class="page"><div class="eyebrow">'+leagueName+'</div><h1>Your league.</h1>'+
+'<details class="card" open style="margin-bottom:10px"><summary style="font-weight:800;cursor:pointer">Draft</summary><p>Join a room or watch the board.</p><div class="join-row"><input id="join-code" placeholder="EAST-7K2"/><button class="btn btn-lime" id="join-btn">Join</button></div><div style="margin-top:10px">'+rooms+'</div></details>'+
+'<details class="card" style="margin-bottom:10px"><summary style="font-weight:800;cursor:pointer">League</summary><div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px"><a class="btn" href="#scores">Standings</a><a class="btn" href="#scoreboard">Scoreboard</a><a class="btn" href="#bracket">Bracket</a><a class="btn" href="#payout">Payouts</a></div></details>'+
+'<details class="card"><summary style="font-weight:800;cursor:pointer">Commissioner</summary><div class="join-row"><input id="commish-code" placeholder="Commissioner code"/><button class="btn" id="commish-btn">Unlock</button></div></details></div>';
+document.getElementById("join-btn").onclick=()=>{const raw=(document.getElementById("join-code").value||"").toUpperCase().trim();const hit=Object.keys(CODES).find(k=>CODES[k]===raw||k.toUpperCase()===raw);if(hit)location.hash="#draft/"+hit;else alert("Unknown code. Try EAST-7K2");};
+const cb=document.getElementById("commish-btn"); if(cb) cb.onclick=()=>{ if(grantCommish(document.getElementById("commish-code").value)) renderHome(); };
+return;}
 root.innerHTML=header((s.owner?'<span class="btn btn-ghost">OWNER · COMPED</span>':(on&&s.plan?'<span class="btn btn-ghost">'+s.plan.toUpperCase()+' · PAID</span>':''))+'<a class="btn" href="#scores">Standings</a><a class="btn" href="#scoreboard">Scoreboard</a><a class="btn" href="#bracket">Bracket</a><a class="btn" href="#payout">Payouts</a><a class="btn" href="#wall">Quad wall</a>')+
 '<div class="page"><div class="eyebrow">COMMISSIONER DESK</div><h1>'+(on?"Invites are live.":"You pay once.<br>Players join free.")+'</h1>'+
 '<p class="lede">Shared board is on. Two phones in the same pod should see the same picks.</p>'+
