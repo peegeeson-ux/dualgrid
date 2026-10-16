@@ -248,11 +248,11 @@ pods.forEach(pod=>{
   });
 });
 document.getElementById("app").innerHTML=header('<a class="btn" href="#home">Home</a>')+
-'<div class="page" style="position:relative">'+'<div style="position:relative">'+ (leagueLogo?'<img src="'+leagueLogo+'" alt="" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:.18;pointer-events:none;border-radius:12px">':'') +'<div style="position:relative;z-index:1"><div class="eyebrow">SEASON RECORD</div>'+(leagueLogo?'<img src="'+leagueLogo+'" alt="League" style="height:64px;border-radius:8px;margin:8px 0">':'')+'<h1>'+leagueName+' · Week '+rec.week+'</h1>'+
+'<div class="page" style="position:relative">'+'<div style="position:relative">'+ (leagueLogo?'<img src="'+leagueLogo+'" alt="" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:.18;pointer-events:none;border-radius:12px">':'') +'<div style="position:relative;z-index:1"><div class="eyebrow">SEASON RECORD</div><button class="btn" onclick="window.print()" style="margin-bottom:8px">Print standings</button>'+(leagueLogo?'<img src="'+leagueLogo+'" alt="League" style="height:64px;border-radius:8px;margin:8px 0">':'')+'<h1>'+leagueName+' · Week '+rec.week+'</h1>'+
 '<p class="lede">'+(can?"Type wins, losses, and points. Everyone else can read this.":"Read only. The commissioner types the week.")+'</p>'+
-(can?'<label>Week</label><input id="week" value="'+rec.week+'" style="max-width:120px">':'')+
+(can?'<div class="no-print"><label>Week</label><input id="week" value="'+rec.week+'" style="max-width:120px"></div>':'')+
 '<div class="card payout" style="margin-top:12px"><table><tr><th>Pod</th><th>Seat</th><th>W</th><th>L</th><th>PF</th><th>PA</th><th>Diff</th></tr>'+rows+'</table>'+
-(can?'<button class="btn btn-lime" id="save-scores" style="margin-top:12px">Save week</button>':'')+
+(can?'<button class="btn btn-lime no-print" id="save-scores" style="margin-top:12px">Save week</button>':'')+
 '</div>'+slap+'</div></div></div>';
 const btn=document.getElementById("save-scores");
 if(btn) btn.onclick=()=>{
