@@ -58,7 +58,7 @@ label{display:block;margin:8px 0 4px}
 const firebaseConfig={apiKey:"AIzaSyCPoc8RiH0GtWnyPe9azxQ8lFCLrOBoMts",authDomain:"dualgrid-427ca.firebaseapp.com",databaseURL:"https://dualgrid-427ca-default-rtdb.firebaseio.com",projectId:"dualgrid-427ca",storageBucket:"dualgrid-427ca.firebasestorage.app",messagingSenderId:"52737569543",appId:"1:52737569543:web:cf80fe25c42eb4891a0ba2"};
 firebase.initializeApp(firebaseConfig);
 const cloud=firebase.database();
-function leagueCode(){const s=load();return s.league&&s.league.code||"";}
+function leagueCode(){try{const raw=localStorage.getItem(STORE);const s=raw?JSON.parse(raw):{};return s.league&&s.league.code||"";}catch(e){return "";}}
 function dataRef(path){const code=leagueCode();return cloud.ref(code?("leagues/"+code+"/"+path):path);}
 let cloudOn=false, applyingRemote=false;
 cloud.ref(".info/connected").on("value",s=>{cloudOn=!!s.val(); const el=document.getElementById("live"); if(el) el.textContent=cloudOn?"LIVE BOARD":"OFFLINE";});
