@@ -101,6 +101,7 @@ function normalizeDraft(d){if(!d)return d;d.teams=(d.teams||[]).map(t=>Object.as
 function snakeSlot(i,draft){const n=teamCount();const r=Math.floor(i/n),p=i%n;const raw=draft&&draft.order?Object.values(draft.order).map(Number):[]; const order=raw.length?raw:null;const teamId=order?(r%2===0?order[p]:order[n-1-p]):(r%2===0?p:n-1-p);return{round:r+1,slot:p+1,teamId,label:r+1+"."+String(p+1).padStart(2,"0")};}
 function takenIds(d){const ids=new Set();(d.teams||[]).forEach(t=>(t.picks||[]).forEach(p=>ids.add(p.id)));return ids;}
 function available(d){const t=takenIds(d);return PLAYERS.filter(p=>!t.has(p.id));}
+function clockLeft(d){if(!d||!d.clockEnds)return d&&d.secondsLeft||PICK_SECONDS;return Math.max(0,Math.ceil((d.clockEnds-Date.now())/1000));}
 function fmtTime(s){return Math.floor(s/60)+":"+String(Math.max(0,s)%60).padStart(2,"0");}
 function podFromHash(){return (location.hash.split("/")[1]||"east").toLowerCase();}
 function ticker(d){const n=(d&&d.log)?d.log.length:0;const bits=n?d.log.slice().reverse().map(l=>l.label+" "+l.player+" to "+l.team).join("    ·    "):"Waiting for the first pick";const secs=Math.max(110, n*18);return '<div class="ticker"><span style="animation-duration:'+secs+'s">'+bits+"    ·    "+bits+"</span></div>";}
@@ -166,7 +167,6 @@ const claim=document.getElementById("claim"); if(claim) claim.onclick=()=>{ cons
 const clearer=document.getElementById("clear-seat"); if(clearer) clearer.onclick=()=>{ if(!confirm("Clear this seat for everyone?"))return; const st=load(); const id=Number((document.getElementById("actor")||{}).value||0); claimSeat(st,pod,id,"",true); paint(); };
 };
 window._paint=paint;paint();
-function clockLeft(d){if(!d||!d.clockEnds)return d&&d.secondsLeft||PICK_SECONDS;return Math.max(0,Math.ceil((d.clockEnds-Date.now())/1000));}
 if(!window._draftTick){window._draftTick=setInterval(()=>{const h=location.hash||"";if(!(h.startsWith("#draft")||h.startsWith("#board")))return;const el=document.querySelector(".timer");if(el){const d=ensureDraft(load(),podFromHash());el.textContent=fmtTime(clockLeft(d));}},250);}
 }
 function renderBoard(){
