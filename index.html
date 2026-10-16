@@ -113,6 +113,9 @@ function publishSpots(){cloud.ref("config/playoffSpots").set(playoffSpots).catch
 let seedMode = "division";
 cloud.ref("config/seedMode").on("value", snap => { if(snap.val()){seedMode=String(snap.val()); if((location.hash||"").startsWith("#bracket"))renderBracket();} });
 function publishSeed(){cloud.ref("config/seedMode").set(seedMode).catch(()=>{});}
+let seasonGames = 14;
+cloud.ref("config/seasonGames").on("value", snap => { const n=Number(snap.val()); if(n>=1&&n<=18){seasonGames=n; if((location.hash||"").startsWith("#scoreboard"))renderScoreboard();} });
+function publishGames(){cloud.ref("config/seasonGames").set(seasonGames).catch(()=>{});}
 let rivals = [];
 cloud.ref("config/rivals").on("value", snap => { rivals=snap.val()||[]; const h=location.hash||""; if(h===""||h.startsWith("#home"))renderHome(); if(h.startsWith("#scores"))renderScores(); });
 function publishRivals(){cloud.ref("config/rivals").set(rivals).catch(()=>{});}
@@ -355,7 +358,7 @@ const mode=(s.records&&s.records.board&&s.records.board.scope)||"division";
 if(mode==="league"){
   const teams=[];
   pods.forEach(pod=>ensureDraft(s,pod).teams.forEach(team=>teams.push(Object.assign({pod},team))));
-  return roundRobin(teams.map(t=>t.pod+"-"+t.id)).map(week=>week.map(pair=>{
+  const built=roundRobin(teams.map(t=>t.pod+"-"+t.id)); const weeks=[]; for(let i=0;i<seasonGames;i++)weeks.push(built[i%Math.max(1,built.length)]||[]); return weeks.map(week=>week.map(pair=>{
     const find=key=>{const [pod,id]=String(key).split("-"); return key==="BYE"?{name:"BYE",id:"BYE"}:ensureDraft(s,pod).teams.find(t=>Number(t.id)===Number(id))||{name:"BYE"};};
     return {home:find(pair[0]),away:find(pair[1]),pod:"league"};
   }));
@@ -372,7 +375,7 @@ pods.forEach(pod=>{
     });
   });
 });
-return weeks;
+const out=[]; for(let i=0;i<seasonGames;i++)out.push(weeks[i%Math.max(1,weeks.length)]||[]); return out;
 }
 function renderScoreboard(){
 const s=load(); if(!s.records)s.records={week:1,rows:{}};
@@ -411,9 +414,10 @@ pods.map(pod=>'<h2 style="margin:18px 0 8px">'+podName(pod)+'</h2>'+games.filter
   :'<div class="card"><div class="team-row"><span>'+(g.home.photo?'<img src="'+g.home.photo+'" alt="" style="width:28px;height:28px;object-fit:cover;border-radius:6px;vertical-align:middle;margin-right:6px">':'')+g.home.name+'</span><strong>'+g.hs+'</strong></div><div class="team-row"><span>'+(g.away.photo?'<img src="'+g.away.photo+'" alt="" style="width:28px;height:28px;object-fit:cover;border-radius:6px;vertical-align:middle;margin-right:6px">':'')+g.away.name+'</span><strong>'+g.as+'</strong></div></div>';
   return face+(can?'<div style="display:flex;gap:6px;margin:6px 0 12px"><input data-game="'+g.key+'" data-side="hs" value="'+g.hs+'" style="width:70px"><input data-game="'+g.key+'" data-side="as" value="'+g.as+'" style="width:70px"></div>':'');
 }).join("")).join("")+
-'<h2 style="margin-top:18px">Season schedule</h2><p class="lede">'+( (rec.board.scope||"division")==="league"?"Full league.":"Division only.")+' Everyone can see the season.</p>'+(can?'<button class="btn '+((rec.board.scope||"division")!=="league"?"btn-lime":"")+'" id="scope-division">Division only</button> <button class="btn '+((rec.board.scope)==="league"?"btn-lime":"")+'" id="scope-league">Full league</button>':'')+
+'<h2 style="margin-top:18px">Season schedule</h2><p class="lede">'+seasonGames+' games. '+( (rec.board.scope||"division")==="league"?"Full league.":"Division only.")+' Everyone can see the season.</p>'+(can?'<label>Games in the season</label><input id="season-games" class="search" value="'+seasonGames+'" style="max-width:120px"><button class="btn btn-lime" id="save-games" style="margin:8px 0">Save season length</button>':'')+(can?'<button class="btn '+((rec.board.scope||"division")!=="league"?"btn-lime":"")+'" id="scope-division">Division only</button> <button class="btn '+((rec.board.scope)==="league"?"btn-lime":"")+'" id="scope-league">Full league</button>':'')+
 seasonSchedule(s).map((week,i)=>'<div class="card" style="margin-top:10px"><h3>Week '+(i+1)+'</h3>'+week.filter(g=>g.home.name!=="BYE"&&g.away.name!=="BYE").map(g=>{const names=[g.home.name.toLowerCase(),g.away.name.toLowerCase()];const list=Array.isArray(rivals)?rivals:Object.values(rivals||{});const hit=list.some(r=>names.includes(String(r.a||"").toLowerCase())&&names.includes(String(r.b||"").toLowerCase()));return '<div class="team-row" style="'+(hit?"background:#c6f25a22;border-radius:8px;padding:6px":"")+'"><span>'+(hit?"<strong>Rival Week</strong> · ":"")+(g.pod&&g.pod!=="league"?podName(g.pod)+" · ":"")+g.home.name+' vs '+g.away.name+'</span></div>';}).join("")+'</div>').join("")+
 (can?'<div class="card no-print" style="margin-top:12px"><h2>This week\'s schedule</h2><p>Pick the matchups. Seat order is only the default.</p>'+pods.map(pod=>{const teams=ensureDraft(s,pod).teams;const saved=schedule[pod]||[];return '<h3>'+podName(pod)+'</h3>'+teams.filter((_,i)=>i%2===0&&teams[i+1]).map((team,i)=>{const pair=saved[i]||[team.id,teams[i+1].id];return '<div class="join-row"><select data-sched="'+pod+'" data-slot="'+i+'" data-side="home">'+teams.map(x=>'<option value="'+x.id+'"'+(Number(x.id)===Number(pair[0])?" selected":"")+'>'+(x.name)+'</option>').join('')+'</select><select data-sched="'+pod+'" data-slot="'+i+'" data-side="away">'+teams.map(x=>'<option value="'+x.id+'"'+(Number(x.id)===Number(pair[1])?" selected":"")+'>'+(x.name)+'</option>').join('')+'</select></div>';}).join('');}).join('')+'</div><button class="btn btn-lime" id="save-board">Save scoreboard</button>':'')+'</div></div>';
+const sg=document.getElementById("save-games"); if(sg) sg.onclick=()=>{ if(!load().owner)return; const n=Number(document.getElementById("season-games").value); if(n<1||n>18){alert("Use 1 to 18 games."); return;} seasonGames=n; publishGames(); renderScoreboard(); };
 const sd=document.getElementById("scope-division"); if(sd) sd.onclick=()=>{const st=load(); st.records.board=st.records.board||{}; st.records.board.scope="division"; save(st); publishRecords(); renderScoreboard();};
 const slg=document.getElementById("scope-league"); if(slg) slg.onclick=()=>{const st=load(); st.records.board=st.records.board||{}; st.records.board.scope="league"; save(st); publishRecords(); renderScoreboard();};
 const ss=document.getElementById("style-standard"); if(ss) ss.onclick=()=>{const st=load(); st.records.board=st.records.board||{}; st.records.board.style="standard"; save(st); publishRecords(); renderScoreboard();};
