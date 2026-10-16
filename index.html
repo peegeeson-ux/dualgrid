@@ -108,7 +108,7 @@ let seedMode = "division";
 cloud.ref("config/seedMode").on("value", snap => { if(snap.val()){seedMode=String(snap.val()); if((location.hash||"").startsWith("#bracket"))renderBracket();} });
 function publishSeed(){cloud.ref("config/seedMode").set(seedMode).catch(()=>{});}
 let rivals = [];
-cloud.ref("config/rivals").on("value", snap => { rivals=snap.val()||[]; if((location.hash||"")===""||(location.hash||"").startsWith("#home")||(location.hash||"").startsWith("#scores")){ if(window._paint)window._paint(); } });
+cloud.ref("config/rivals").on("value", snap => { rivals=snap.val()||[]; const h=location.hash||""; if(h===""||h.startsWith("#home"))renderHome(); if(h.startsWith("#scores"))renderScores(); });
 function publishRivals(){cloud.ref("config/rivals").set(rivals).catch(()=>{});}
 function unlocked(s){return !!(s&&(s.owner||(s.paid&&s.plan)));}
 function grantCommish(code){const s=load(); if(String(code||"").toUpperCase().trim()!==commishCode){alert("Wrong commissioner code."); return false;} s.owner=true; if(!s.plan)s.plan=s.circuit||"dual"; save(s); return true;}
