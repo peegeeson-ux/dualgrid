@@ -91,11 +91,11 @@ function save(s){localStorage.setItem(STORE,JSON.stringify(s));}
 let commishCode = "DUAL-2026";
 let divisionNames = {east:"East",west:"West",north:"North",south:"South"};
 cloud.ref("config/commishCode").on("value", snap => { if (snap.val()) commishCode = String(snap.val()).toUpperCase(); });
-cloud.ref("config/divisionNames").on("value", snap => { const v=snap.val(); if(v){divisionNames=Object.assign({east:"East",west:"West",north:"North",south:"South"}, v); const h=location.hash||""; if(h===""||h.startsWith("#home"))renderHome(); if((h.startsWith("#draft")||h.startsWith("#board")||h.startsWith("#scores"))&&window._paint)window._paint(); if(h.startsWith("#scores"))renderScores(); if(h.startsWith("#wall"))renderWall(); }});
+cloud.ref("config/divisionNames").on("value", snap => { const v=snap.val(); if(v){divisionNames=Object.assign({east:"East",west:"West",north:"North",south:"South"}, v); const h=location.hash||""; if(h.startsWith("#home"))renderHome(); if(h===""||h.startsWith("#lobby"))renderLobby(); if((h.startsWith("#draft")||h.startsWith("#board")||h.startsWith("#scores"))&&window._paint)window._paint(); if(h.startsWith("#scores"))renderScores(); if(h.startsWith("#wall"))renderWall(); }});
 function podName(p){return divisionNames[p]||p;}
 function publishNames(){cloud.ref("config/divisionNames").set(divisionNames).catch(()=>{});}
 let divisionSize = 10;
-cloud.ref("config/divisionSize").on("value", snap => { const n=Number(snap.val()); if(n>=8&&n<=12){divisionSize=n; const h=location.hash||""; if(h===""||h.startsWith("#home"))renderHome();} });
+cloud.ref("config/divisionSize").on("value", snap => { const n=Number(snap.val()); if(n>=8&&n<=12){divisionSize=n; const h=location.hash||""; if(h.startsWith("#home"))renderHome(); if(h===""||h.startsWith("#lobby"))renderLobby();} });
 function teamCount(){return divisionSize;}
 function publishSize(){cloud.ref("config/divisionSize").set(divisionSize).catch(()=>{});}
 let tieRule = "split";
@@ -103,8 +103,8 @@ cloud.ref("config/tieRule").on("value", snap => { if(snap.val()) tieRule=String(
 function publishTie(){cloud.ref("config/tieRule").set(tieRule).catch(()=>{});}
 let leagueName = "DUALGRID";
 let leagueLogo = "";
-cloud.ref("config/leagueName").on("value", snap => { if(snap.val()) leagueName=String(snap.val()); const h=location.hash||""; if(h===""||h.startsWith("#home"))renderHome(); if(h.startsWith("#board")&&window._paint)window._paint(); });
-cloud.ref("config/leagueLogo").on("value", snap => { leagueLogo=snap.val()||""; const h=location.hash||""; if(h===""||h.startsWith("#home"))renderHome(); if(h.startsWith("#board")&&window._paint)window._paint(); });
+cloud.ref("config/leagueName").on("value", snap => { if(snap.val()) leagueName=String(snap.val()); const h=location.hash||""; if(h.startsWith("#home"))renderHome(); if(h===""||h.startsWith("#lobby"))renderLobby(); if(h.startsWith("#board")&&window._paint)window._paint(); });
+cloud.ref("config/leagueLogo").on("value", snap => { leagueLogo=snap.val()||""; const h=location.hash||""; if(h.startsWith("#home"))renderHome(); if(h===""||h.startsWith("#lobby"))renderLobby(); if(h.startsWith("#board")&&window._paint)window._paint(); });
 function publishLeague(){cloud.ref("config/leagueName").set(leagueName).catch(()=>{});}
 function publishLogo(){cloud.ref("config/leagueLogo").set(leagueLogo).catch(()=>{});}
 let playoffSpots = 4;
@@ -117,7 +117,7 @@ let seasonGames = 14;
 cloud.ref("config/seasonGames").on("value", snap => { const n=Number(snap.val()); if(n>=1&&n<=18){seasonGames=n; if((location.hash||"").startsWith("#scoreboard"))renderScoreboard();} });
 function publishGames(){cloud.ref("config/seasonGames").set(seasonGames).catch(()=>{});}
 let rivals = [];
-cloud.ref("config/rivals").on("value", snap => { rivals=snap.val()||[]; const h=location.hash||""; if(h===""||h.startsWith("#home"))renderHome(); if(h.startsWith("#scores"))renderScores(); });
+cloud.ref("config/rivals").on("value", snap => { rivals=snap.val()||[]; const h=location.hash||""; if(h.startsWith("#home"))renderHome(); if(h===""||h.startsWith("#lobby"))renderLobby(); if(h.startsWith("#scores"))renderScores(); });
 function publishRivals(){cloud.ref("config/rivals").set(rivals).catch(()=>{});}
 function unlocked(s){return !!(s&&(s.owner||(s.paid&&s.plan)));}
 function grantCommish(code){const s=load(); if(String(code||"").toUpperCase().trim()!==commishCode){alert("Wrong commissioner code."); return false;} s.owner=true; if(!s.plan)s.plan=s.circuit||"dual"; save(s); return true;}
