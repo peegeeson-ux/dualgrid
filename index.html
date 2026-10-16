@@ -45,6 +45,7 @@ h1{font-size:clamp(28px,6vw,52px);line-height:1.05;margin:8px 0 12px}
 .money{color:var(--lime);font-weight:800}
 .live{font-size:12px;color:var(--lime);font-weight:800}
 label{display:block;margin:8px 0 4px}
+.bulb{display:inline-block;min-width:.72em;text-align:center;color:#3a2a10;text-shadow:0 0 2px #000}.bulb.on{color:#ffe08a;text-shadow:0 0 6px #ffb000,0 0 2px #fff4c2}.bulbs{background:#16110c;background-image:radial-gradient(circle,#4a3418 1.1px,transparent 1.5px);background-size:7px 7px;border:5px solid #5c3d16;border-radius:8px;padding:12px;font-family:ui-monospace,monospace}
 .ticker{position:fixed;left:0;right:0;bottom:0;background:#10140f;border-top:1px solid #2a3228;color:#c6f25a;font-weight:800;font-size:13px;padding:8px 0;overflow:hidden;z-index:8}.ticker span{display:inline-block;padding-left:100%;animation:tick 110s linear infinite;white-space:nowrap}@keyframes tick{0%{transform:translateX(0)}100%{transform:translateX(-100%)}}
 </style>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
@@ -303,6 +304,7 @@ if(sm) sm.onclick=()=>{if(!load().owner)return; const st=load(); const draft=ens
 window._paint=paint; paint();
 }
 
+function bulbs(text){return String(text||"").toUpperCase().split("").map(ch=>'<span class="bulb '+(ch.trim()?"on":"")+'">'+(ch===" "?"·":ch)+'</span>').join("");}
 function renderScoreboard(){
 const s=load(); if(!s.records)s.records={week:1,rows:{}};
 const rec=s.records; if(!rec.board)rec.board={style:"standard"};
@@ -331,7 +333,7 @@ document.getElementById("app").innerHTML=header('<a class="btn" href="#home">Hom
 '<div style="position:relative;z-index:1"><div class="eyebrow">'+(retro?"RETRO SCOREBOARD":"SCOREBOARD")+'</div>'+(leagueLogo&&!retro?'<img src="'+leagueLogo+'" alt="League" style="height:56px;border-radius:8px;margin:8px 0">':'')+'<h1>'+leagueName+'</h1>'+
 (can?'<button class="btn '+(style!=="retro"?"btn-lime":"")+'" id="style-standard">Standard</button> <button class="btn '+(style==="retro"?"btn-lime":"")+'" id="style-retro">Retro</button>':'<p>'+(retro?"Old stadium board.":"Standard board.")+'</p>')+
 pods.map(pod=>'<h2 style="margin:18px 0 8px">'+podName(pod)+'</h2>'+games.filter(g=>g.pod===pod).map(g=>{
-  const face=retro?'<div style="background:#120e08;color:#ffb000;border:4px solid #c9842a;border-radius:6px;padding:10px;font-family:ui-monospace,monospace"><div style="display:flex;justify-content:space-between;font-size:22px;font-weight:900"><span>'+g.home.name.slice(0,16)+'</span><span>'+g.hs+'</span></div><div style="display:flex;justify-content:space-between;font-size:22px;font-weight:900"><span>'+g.away.name.slice(0,16)+'</span><span>'+g.as+'</span></div></div>'
+  const face=retro?'<div class="bulbs"><div style="display:flex;justify-content:space-between;align-items:center;font-size:18px;font-weight:900;margin-bottom:8px"><span>'+bulbs(g.home.name.slice(0,14))+'</span><span>'+bulbs(String(g.hs).padStart(2," "))+'</span></div><div style="display:flex;justify-content:space-between;align-items:center;font-size:18px;font-weight:900"><span>'+bulbs(g.away.name.slice(0,14))+'</span><span>'+bulbs(String(g.as).padStart(2," "))+'</span></div></div>'
   :'<div class="card"><div class="team-row"><span>'+(g.home.photo?'<img src="'+g.home.photo+'" alt="" style="width:28px;height:28px;object-fit:cover;border-radius:6px;vertical-align:middle;margin-right:6px">':'')+g.home.name+'</span><strong>'+g.hs+'</strong></div><div class="team-row"><span>'+(g.away.photo?'<img src="'+g.away.photo+'" alt="" style="width:28px;height:28px;object-fit:cover;border-radius:6px;vertical-align:middle;margin-right:6px">':'')+g.away.name+'</span><strong>'+g.as+'</strong></div></div>';
   return face+(can?'<div style="display:flex;gap:6px;margin:6px 0 12px"><input data-game="'+g.key+'" data-side="hs" value="'+g.hs+'" style="width:70px"><input data-game="'+g.key+'" data-side="as" value="'+g.as+'" style="width:70px"></div>':'');
 }).join("")).join("")+
