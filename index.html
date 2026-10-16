@@ -103,7 +103,7 @@ function takenIds(d){const ids=new Set();(d.teams||[]).forEach(t=>(t.picks||[]).
 function available(d){const t=takenIds(d);return PLAYERS.filter(p=>!t.has(p.id));}
 function fmtTime(s){return Math.floor(s/60)+":"+String(Math.max(0,s)%60).padStart(2,"0");}
 function podFromHash(){return (location.hash.split("/")[1]||"east").toLowerCase();}
-function ticker(d){const bits=(d&&d.log&&d.log.length)?d.log.slice().reverse().map(l=>l.label+" "+l.player+" to "+l.team).join("    ·    "):"Waiting for the first pick";return '<div class="ticker"><span>'+bits+"    ·    "+bits+"</span></div>";}
+function ticker(d){const n=(d&&d.log)?d.log.length:0;const bits=n?d.log.slice().reverse().map(l=>l.label+" "+l.player+" to "+l.team).join("    ·    "):"Waiting for the first pick";const secs=Math.max(110, n*18);return '<div class="ticker"><span style="animation-duration:'+secs+'s">'+bits+"    ·    "+bits+"</span></div>";}
 function header(extra){return '<header class="app-header"><div class="brand"><div class="mark">D</div> DUALGRID <small>PROTOTYPE</small></div><div class="header-actions"><span class="live" id="live">'+(cloudOn?"LIVE BOARD":"CONNECTING")+'</span>'+(extra||"")+"</div></header>";}
 function publish(pod){if(applyingRemote)return;const s=load();const d=s.drafts[pod];if(!d)return;cloud.ref("drafts/"+pod).set(d).catch(()=>{});}
 function publishRecords(){if(applyingRemote)return;const s=load();cloud.ref("records").set(s.records||{week:1,rows:{}}).catch(()=>{});}
