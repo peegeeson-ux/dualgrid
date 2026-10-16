@@ -68,6 +68,12 @@ const PLAYERS=[
 ["Travis Kelce","TE","KC"],["Brock Bowers","TE","LV"],["Sam LaPorta","TE","DET"],["Trey McBride","TE","ARI"],["George Kittle","TE","SF"],["Mark Andrews","TE","BAL"],["T.J. Hockenson","TE","MIN"],["Dallas Goedert","TE","PHI"],["Kyle Pitts","TE","ATL"],["Evan Engram","TE","JAX"],
 ["Justin Tucker","K","BAL"],["Harrison Butker","K","KC"],["Jake Elliott","K","PHI"],["Brandon Aubrey","K","DAL"],["Cameron Dicker","K","LAC"],["Younghoe Koo","K","ATL"],
 ["49ers D","DEF","SF"],["Ravens D","DEF","BAL"],["Cowboys D","DEF","DAL"],["Jets D","DEF","NYJ"],["Browns D","DEF","CLE"],["Bills D","DEF","BUF"],["Eagles D","DEF","PHI"],["Chiefs D","DEF","KC"]
+,["Jalen Hurts","QB","PHI"],["Bo Nix","QB","DEN"],["Kyler Murray","QB","ARI"],["Baker Mayfield","QB","TB"],["Jared Goff","QB","DET"],["Caleb Williams","QB","CHI"],
+["Saquon Barkley","RB","PHI"],["Chuba Hubbard","RB","CAR"],["Chase Brown","RB","CIN"],["David Montgomery","RB","DET"],["Tony Pollard","RB","TEN"],["Najee Harris","RB","LAC"],["Rhamondre Stevenson","RB","NE"],["James Conner","RB","ARI"],
+["Malik Nabers","WR","NYG"],["Brian Thomas Jr.","WR","JAX"],["Ladd McConkey","WR","LAC"],["Rome Odunze","WR","CHI"],["Jaxon Smith-Njigba","WR","SEA"],["Rashee Rice","WR","KC"],["Terry McLaurin","WR","WAS"],["Stefon Diggs","WR","NE"],["Courtland Sutton","WR","DEN"],["Calvin Ridley","WR","TEN"],
+["Trey McBride","TE","ARI"],["Sam LaPorta","TE","DET"],["George Kittle","TE","SF"],["Jake Ferguson","TE","DAL"],["Cole Kmet","TE","CHI"],["Pat Freiermuth","TE","PIT"],
+["Cameron Dicker","K","LAC"],["Jason Myers","K","SEA"],["Chase McLaughlin","K","TB"],["Wil Lutz","K","DEN"],
+["Steelers D","DEF","PIT"],["Broncos D","DEF","DEN"],["Texans D","DEF","HOU"],["Vikings D","DEF","MIN"]
 ].map((p,i)=>({id:i+1,name:p[0],pos:p[1],team:p[2],adp:i+1}));
 const POD_TEAMS={
 east:["Iron Hawks","Night Owls","Grid Kings","Thunderstrike","Blacktop Brigade","Titan Forge","Liberty Rush","Empire X","Shadow Lancers","Riverfront Rush","Queens Guard","Astoria Aces"],
@@ -336,14 +342,19 @@ const rec=s.records; if(!rec.board)rec.board={style:"standard"};
 const pods=podsOf(s); const can=!!s.owner;
 const style=rec.board.style||"standard";
 const games=[];
+const schedule=rec.board.schedule||{};
 pods.forEach(pod=>{
   const teams=ensureDraft(s,pod).teams;
-  for(let i=0;i<teams.length;i+=2){
-    if(!teams[i+1])break;
-    const key=pod+"-"+teams[i].id+"-"+teams[i+1].id;
+  const savedPairs=schedule[pod];
+  const pairs=savedPairs&&savedPairs.length?savedPairs:teams.map((team,i)=>i%2===0&&teams[i+1]?[team.id,teams[i+1].id]:null).filter(Boolean);
+  pairs.forEach(pair=>{
+    const home=teams.find(team=>Number(team.id)===Number(pair[0]))||teams[0];
+    const away=teams.find(team=>Number(team.id)===Number(pair[1]))||teams[1];
+    if(!home||!away)return;
+    const key=pod+"-"+home.id+"-"+away.id;
     const saved=(rec.board.games||[]).find(g=>g.key===key)||{};
-    games.push({key,pod,home:teams[i],away:teams[i+1],hs:saved.hs||0,as:saved.as||0});
-  }
+    games.push({key,pod,home,away,hs:saved.hs||0,as:saved.as||0,teams});
+  });
 });
 const retro=style==="retro";
 const card=games.map(g=>{
@@ -362,10 +373,10 @@ pods.map(pod=>'<h2 style="margin:18px 0 8px">'+podName(pod)+'</h2>'+games.filter
   :'<div class="card"><div class="team-row"><span>'+(g.home.photo?'<img src="'+g.home.photo+'" alt="" style="width:28px;height:28px;object-fit:cover;border-radius:6px;vertical-align:middle;margin-right:6px">':'')+g.home.name+'</span><strong>'+g.hs+'</strong></div><div class="team-row"><span>'+(g.away.photo?'<img src="'+g.away.photo+'" alt="" style="width:28px;height:28px;object-fit:cover;border-radius:6px;vertical-align:middle;margin-right:6px">':'')+g.away.name+'</span><strong>'+g.as+'</strong></div></div>';
   return face+(can?'<div style="display:flex;gap:6px;margin:6px 0 12px"><input data-game="'+g.key+'" data-side="hs" value="'+g.hs+'" style="width:70px"><input data-game="'+g.key+'" data-side="as" value="'+g.as+'" style="width:70px"></div>':'');
 }).join("")).join("")+
-(can?'<button class="btn btn-lime" id="save-board">Save scoreboard</button>':'')+'</div></div>';
+(can?'<div class="card no-print" style="margin-top:12px"><h2>This week\'s schedule</h2><p>Pick the matchups. Seat order is only the default.</p>'+pods.map(pod=>{const teams=ensureDraft(s,pod).teams;return '<h3>'+podName(pod)+'</h3>'+teams.filter((_,i)=>i%2===0&&teams[i+1]).map((team,i)=>'<div class="join-row"><select data-sched="'+pod+'" data-slot="'+i+'" data-side="home">'+teams.map(x=>'<option value="'+x.id+'">'+(x.name)+'</option>').join('')+'</select><select data-sched="'+pod+'" data-slot="'+i+'" data-side="away">'+teams.map(x=>'<option value="'+x.id+'">'+(x.name)+'</option>').join('')+'</select></div>').join('');}).join('')+'</div><button class="btn btn-lime" id="save-board">Save scoreboard</button>':'')+'</div></div>';
 const ss=document.getElementById("style-standard"); if(ss) ss.onclick=()=>{const st=load(); st.records.board=st.records.board||{}; st.records.board.style="standard"; save(st); publishRecords(); renderScoreboard();};
 const sr=document.getElementById("style-retro"); if(sr) sr.onclick=()=>{const st=load(); st.records.board=st.records.board||{}; st.records.board.style="retro"; save(st); publishRecords(); renderScoreboard();};
-const sb=document.getElementById("save-board"); if(sb) sb.onclick=()=>{const st=load(); st.records.board=st.records.board||{style:style}; const by={}; document.querySelectorAll("[data-game]").forEach(inp=>{by[inp.dataset.game]=by[inp.dataset.game]||{key:inp.dataset.game}; by[inp.dataset.game][inp.dataset.side]=Number(inp.value)||0;}); st.records.board.games=Object.values(by); save(st); publishRecords(); renderScoreboard();};
+const sb=document.getElementById("save-board"); if(sb) sb.onclick=()=>{const st=load(); st.records.board=st.records.board||{style:style}; const by={}; document.querySelectorAll("[data-game]").forEach(inp=>{by[inp.dataset.game]=by[inp.dataset.game]||{key:inp.dataset.game}; by[inp.dataset.game][inp.dataset.side]=Number(inp.value)||0;}); st.records.board.games=Object.values(by); const sched={}; document.querySelectorAll('[data-sched]').forEach(sel=>{sched[sel.dataset.sched]=sched[sel.dataset.sched]||{}; const slot=sched[sel.dataset.sched][sel.dataset.slot]=sched[sel.dataset.sched][sel.dataset.slot]||[null,null]; slot[sel.dataset.side==='home'?0:1]=Number(sel.value);}); Object.keys(sched).forEach(pod=>sched[pod]=Object.values(sched[pod])); st.records.board.schedule=sched; save(st); publishRecords(); renderScoreboard();};
 }
 
 function renderBracket(){
