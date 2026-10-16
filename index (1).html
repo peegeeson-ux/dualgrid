@@ -60,18 +60,12 @@ let cloudOn=false, applyingRemote=false;
 cloud.ref(".info/connected").on("value",s=>{cloudOn=!!s.val(); const el=document.getElementById("live"); if(el) el.textContent=cloudOn?"LIVE BOARD":"OFFLINE";});
 
 const PLAYERS=[
-["J. Allen","QB","BUF"],["Lamar Jackson","QB","BAL"],["Jalen Hurts","QB","PHI"],
-["Josh Jacobs","RB","GB"],["Saquon Barkley","RB","PHI"],["Bijan Robinson","RB","ATL"],
-["Jahmyr Gibbs","RB","DET"],["Breece Hall","RB","NYJ"],["Derrick Henry","RB","BAL"],
-["Ja'Marr Chase","WR","CIN"],["Justin Jefferson","WR","MIN"],["CeeDee Lamb","WR","DAL"],
-["Amon-Ra St. Brown","WR","DET"],["Puka Nacua","WR","LAR"],["A.J. Brown","WR","PHI"],
-["Nico Collins","WR","HOU"],["Garrett Wilson","WR","NYJ"],["Malik Nabers","WR","NYG"],
-["Travis Kelce","TE","KC"],["Brock Bowers","TE","LV"],["Sam LaPorta","TE","DET"],
-["Trey McBride","TE","ARI"],["George Kittle","TE","SF"],
-["Joe Burrow","QB","CIN"],["Patrick Mahomes","QB","KC"],["Jayden Daniels","QB","WAS"],
-["De'Von Achane","RB","MIA"],["Kyren Williams","RB","LAR"],["Jonathan Taylor","RB","IND"],
-["Brian Thomas Jr.","WR","JAX"],["Tee Higgins","WR","CIN"],["DK Metcalf","WR","PIT"],
-["CMC","RB","SF"],["Davante Adams","WR","LAR"],["Mark Andrews","TE","BAL"]
+["Josh Allen","QB","BUF"],["Lamar Jackson","QB","BAL"],["Jalen Hurts","QB","PHI"],["Patrick Mahomes","QB","KC"],["Joe Burrow","QB","CIN"],["Jayden Daniels","QB","WAS"],["C.J. Stroud","QB","HOU"],["Justin Herbert","QB","LAC"],["Brock Purdy","QB","SF"],["Jordan Love","QB","GB"],["Dak Prescott","QB","DAL"],["Tua Tagovailoa","QB","MIA"],
+["Bijan Robinson","RB","ATL"],["Jahmyr Gibbs","RB","DET"],["Saquon Barkley","RB","PHI"],["Derrick Henry","RB","BAL"],["Josh Jacobs","RB","GB"],["Breece Hall","RB","NYJ"],["De'Von Achane","RB","MIA"],["Kyren Williams","RB","LAR"],["Jonathan Taylor","RB","IND"],["CMC","RB","SF"],["James Cook","RB","BUF"],["Kenneth Walker","RB","SEA"],["Isiah Pacheco","RB","KC"],["Rachaad White","RB","TB"],["Alvin Kamara","RB","NO"],["Joe Mixon","RB","HOU"],["Aaron Jones","RB","MIN"],["Travis Etienne","RB","JAX"],
+["Ja'Marr Chase","WR","CIN"],["Justin Jefferson","WR","MIN"],["CeeDee Lamb","WR","DAL"],["Amon-Ra St. Brown","WR","DET"],["Puka Nacua","WR","LAR"],["A.J. Brown","WR","PHI"],["Nico Collins","WR","HOU"],["Garrett Wilson","WR","NYJ"],["Malik Nabers","WR","NYG"],["Tyreek Hill","WR","MIA"],["Davante Adams","WR","LAR"],["DK Metcalf","WR","PIT"],["Tee Higgins","WR","CIN"],["Brian Thomas Jr.","WR","JAX"],["Drake London","WR","ATL"],["Chris Olave","WR","NO"],["DeVonta Smith","WR","PHI"],["Jaylen Waddle","WR","MIA"],["Mike Evans","WR","TB"],["Cooper Kupp","WR","LAR"],["Zay Flowers","WR","BAL"],["George Pickens","WR","DAL"],
+["Travis Kelce","TE","KC"],["Brock Bowers","TE","LV"],["Sam LaPorta","TE","DET"],["Trey McBride","TE","ARI"],["George Kittle","TE","SF"],["Mark Andrews","TE","BAL"],["T.J. Hockenson","TE","MIN"],["Dallas Goedert","TE","PHI"],["Kyle Pitts","TE","ATL"],["Evan Engram","TE","JAX"],
+["Justin Tucker","K","BAL"],["Harrison Butker","K","KC"],["Jake Elliott","K","PHI"],["Brandon Aubrey","K","DAL"],["Cameron Dicker","K","LAC"],["Younghoe Koo","K","ATL"],
+["49ers D","DEF","SF"],["Ravens D","DEF","BAL"],["Cowboys D","DEF","DAL"],["Jets D","DEF","NYJ"],["Browns D","DEF","CLE"],["Bills D","DEF","BUF"],["Eagles D","DEF","PHI"],["Chiefs D","DEF","KC"]
 ].map((p,i)=>({id:i+1,name:p[0],pos:p[1],team:p[2],adp:i+1}));
 const POD_TEAMS={
 east:["Iron Hawks","Night Owls","Grid Kings","Thunderstrike","Blacktop Brigade","Titan Forge","Liberty Rush","Empire X","Shadow Lancers","Riverfront Rush","Queens Guard","Astoria Aces"],
@@ -184,7 +178,7 @@ if(hold&&!window._revealTimer){try{const ctx=window._pickAudio||(window._pickAud
 const orderIds=(draft.order&&Object.values(draft.order).length)?Object.values(draft.order).map(Number):draft.teams.map(t=>t.id);
 const boardTeams=orderIds.map(id=>draft.teams.find(t=>Number(t.id)===Number(id))).filter(Boolean);
 let cells='<div class="cell head"></div>';boardTeams.forEach((t,idx)=>{cells+='<div class="cell head">'+(idx+1)+". "+t.name+(t.ownerName?"<div>"+t.ownerName+"</div>":"")+(state.owner&&t.ownerName?'<button class="btn" data-clear="'+t.id+'" style="margin-top:6px;padding:4px 6px">Clear</button>':"")+"</div>";});
-for(let r=1;r<=ROUNDS;r++){cells+='<div class="cell head">RD '+r+"</div>";boardTeams.forEach(team=>{const pick=(team.picks||[])[r-1];const isNew=hold&&pick&&team.picks.length===r&&team.id===draft.teams[snakeSlot(draft.pickIndex-1,draft).teamId].id;const hue=isNew?"#c6f25a":({QB:"#c94b4b",RB:"#3f8f4e",WR:"#3d6fbf",TE:"#c9842a"}[pick&&pick.pos]||"#151a15");cells+='<div class="cell" style="background:'+hue+';color:'+(isNew?"#111":"#e8f0e4")+'">'+(isNew?"PICK IS IN":(pick?pick.name+"<div>"+pick.pos+"</div>":""))+"</div>";});}
+for(let r=1;r<=ROUNDS;r++){cells+='<div class="cell head">RD '+r+"</div>";boardTeams.forEach(team=>{const pick=(team.picks||[])[r-1];const isNew=hold&&pick&&team.picks.length===r&&team.id===draft.teams[snakeSlot(draft.pickIndex-1,draft).teamId].id;const hue=isNew?"#c6f25a":({QB:"#c94b4b",RB:"#3f8f4e",WR:"#3d6fbf",TE:"#c9842a",K:"#8e44ad",DEF:"#7f8c8d"}[pick&&pick.pos]||"#151a15");cells+='<div class="cell" style="background:'+hue+';color:'+(isNew?"#111":"#e8f0e4")+'">'+(isNew?"PICK IS IN":(pick?pick.name+"<div>"+pick.pos+"</div>":""))+"</div>";});}
 document.getElementById("app").innerHTML=header('<a class="btn" href="#draft/'+pod+'">Room</a><a class="btn" href="#home">Home</a>')+'<div class="page"><div class="eyebrow">'+podName(pod)+' · '+CODES[pod]+' · BIG BOARD</div><h1>'+(onClock?onClock.name:"Board")+' <span class="timer">'+fmtTime(draft.secondsLeft)+'</span></h1><div class="board" style="grid-template-columns:80px repeat('+teamCount()+',minmax(70px,1fr))">'+cells+"</div></div>"+ticker(draft);
 document.querySelectorAll("[data-clear]").forEach(btn=>btn.onclick=()=>{if(!confirm("Clear this seat for everyone?"))return;claimSeat(load(),pod,Number(btn.dataset.clear),"",true);paint();});
 };
