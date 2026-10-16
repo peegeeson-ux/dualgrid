@@ -166,7 +166,7 @@ root.innerHTML=header('<a class="btn" href="#lobby">League</a><a class="btn" hre
 document.getElementById("join-btn").onclick=()=>{const raw=(document.getElementById("join-code").value||"").toUpperCase().trim();const hit=Object.keys(CODES).find(k=>CODES[k]===raw||k.toUpperCase()===raw);if(hit)location.hash="#draft/"+hit;else alert("Unknown code. Try EAST-7K2");};
 const cb=document.getElementById("commish-btn"); if(cb) cb.onclick=()=>{ if(grantCommish(document.getElementById("commish-code").value)) renderHome(); };
 return;}
-root.innerHTML=header((s.owner?'<span class="btn btn-ghost">OWNER · COMPED</span>':(on&&s.plan?'<span class="btn btn-ghost">'+s.plan.toUpperCase()+' · PAID</span>':''))+'<a class="btn" href="#scores">Standings</a><a class="btn" href="#scoreboard">Scoreboard</a><a class="btn" href="#bracket">Bracket</a><a class="btn" href="#payout">Payouts</a><a class="btn" href="#wall">Quad wall</a>')+
+root.innerHTML=header((s.owner?'<span class="btn btn-ghost">OWNER · COMPED</span>':(on&&s.plan?'<span class="btn btn-ghost">'+s.plan.toUpperCase()+' · PAID</span>':''))+'<a class="btn" href="#home">Home</a><a class="btn" href="#lobby">Leagues</a><a class="btn" href="#scores">Standings</a><a class="btn" href="#scoreboard">Scoreboard</a><a class="btn" href="#bracket">Bracket</a><a class="btn" href="#payout">Payouts</a><a class="btn" href="#wall">Quad wall</a>')+
 '<div class="page"><div class="eyebrow">' + ((s.league&&s.league.name)||'COMMISSIONER DESK') + '</div><h1>' + ((s.league&&s.league.code)||'Invites are live.') + '</h1><p class="lede">League code. Give this to the other phones.</p><h1>'+(on?"Invites are live.":"You pay once.<br>Players join free.")+'</h1>'+
 '<p class="lede">Shared board is on. Two phones in the same pod should see the same picks.</p>'+
 '<div class="card" style="margin-bottom:16px"><span class="pod-chip '+(s.owner?"east":"west")+'">'+(s.owner?"COMMISH":"LOCKED")+'</span><h2>'+(s.owner?"Commissioner unlocked.":"Commissioner code")+'</h2><p>Players can join and draft. Reset and payouts need the code. First code is DUAL-2026.</p>'+(s.owner?'<button class="btn" id="lock-out">Lock this phone</button>':'<div class="join-row"><input id="commish-code" placeholder="DUAL-2026"/><button class="btn btn-lime" id="commish-btn">Unlock</button></div>')+'</div>'+
@@ -243,7 +243,7 @@ window._paint=paint;paint();
 function renderWall(){
 if(!unlocked(load())){location.hash="#pay/quad";return;}
 const s=load();const pods=podsOf(s);
-document.getElementById("app").innerHTML=header('<a class="btn" href="#home">Home</a>')+'<div class="page"><div class="eyebrow">QUAD WALL</div><h1>Four rooms. One office.</h1><div class="grid-2">'+pods.map(p=>{const d=ensureDraft(s,p);return '<div class="card"><span class="pod-chip '+p+'">'+podName(p)+'</span><h2>'+CODES[p]+"</h2><p>Pick "+d.pickIndex+" · "+d.format+'</p><a class="btn" href="#board/'+p+'">Open board</a></div>';}).join("")+"</div></div>";
+document.getElementById("app").innerHTML=header('<a class="btn" href="#home">Home</a><a class="btn" href="#lobby">Leagues</a>')+'<div class="page"><div class="eyebrow">QUAD WALL</div><h1>Four rooms. One office.</h1><div class="grid-2">'+pods.map(p=>{const d=ensureDraft(s,p);return '<div class="card"><span class="pod-chip '+p+'">'+podName(p)+'</span><h2>'+CODES[p]+"</h2><p>Pick "+d.pickIndex+" · "+d.format+'</p><a class="btn" href="#board/'+p+'">Open board</a></div>';}).join("")+"</div></div>";
 }
 function renderPayout(){
 if(!unlocked(load())){location.hash="#pay/dual";return;}
