@@ -58,6 +58,8 @@ label{display:block;margin:8px 0 4px}
 const firebaseConfig={apiKey:"AIzaSyCPoc8RiH0GtWnyPe9azxQ8lFCLrOBoMts",authDomain:"dualgrid-427ca.firebaseapp.com",databaseURL:"https://dualgrid-427ca-default-rtdb.firebaseio.com",projectId:"dualgrid-427ca",storageBucket:"dualgrid-427ca.firebasestorage.app",messagingSenderId:"52737569543",appId:"1:52737569543:web:cf80fe25c42eb4891a0ba2"};
 firebase.initializeApp(firebaseConfig);
 const cloud=firebase.database();
+function leagueCode(){const s=load();return s.league&&s.league.code||"";}
+function dataRef(path){const code=leagueCode();return cloud.ref(code?("leagues/"+code+"/"+path):path);}
 let cloudOn=false, applyingRemote=false;
 cloud.ref(".info/connected").on("value",s=>{cloudOn=!!s.val(); const el=document.getElementById("live"); if(el) el.textContent=cloudOn?"LIVE BOARD":"OFFLINE";});
 
@@ -90,35 +92,35 @@ function load(){try{const raw=localStorage.getItem(STORE);if(raw)return Object.a
 function save(s){localStorage.setItem(STORE,JSON.stringify(s));}
 let commishCode = "DUAL-2026";
 let divisionNames = {east:"East",west:"West",north:"North",south:"South"};
-cloud.ref("config/commishCode").on("value", snap => { if (snap.val()) commishCode = String(snap.val()).toUpperCase(); });
-cloud.ref("config/divisionNames").on("value", snap => { const v=snap.val(); if(v){divisionNames=Object.assign({east:"East",west:"West",north:"North",south:"South"}, v); const h=location.hash||""; if(h.startsWith("#home"))renderHome(); if(h===""||h.startsWith("#lobby"))renderLobby(); if((h.startsWith("#draft")||h.startsWith("#board")||h.startsWith("#scores"))&&window._paint)window._paint(); if(h.startsWith("#scores"))renderScores(); if(h.startsWith("#wall"))renderWall(); }});
+dataRef("config/commishCode").on("value", snap => { if (snap.val()) commishCode = String(snap.val()).toUpperCase(); });
+dataRef("config/divisionNames").on("value", snap => { const v=snap.val(); if(v){divisionNames=Object.assign({east:"East",west:"West",north:"North",south:"South"}, v); const h=location.hash||""; if(h.startsWith("#home"))renderHome(); if(h===""||h.startsWith("#lobby"))renderLobby(); if((h.startsWith("#draft")||h.startsWith("#board")||h.startsWith("#scores"))&&window._paint)window._paint(); if(h.startsWith("#scores"))renderScores(); if(h.startsWith("#wall"))renderWall(); }});
 function podName(p){return divisionNames[p]||p;}
-function publishNames(){cloud.ref("config/divisionNames").set(divisionNames).catch(()=>{});}
+function publishNames(){dataRef("config/divisionNames").set(divisionNames).catch(()=>{});}
 let divisionSize = 10;
-cloud.ref("config/divisionSize").on("value", snap => { const n=Number(snap.val()); if(n>=8&&n<=12){divisionSize=n; const h=location.hash||""; if(h.startsWith("#home"))renderHome(); if(h===""||h.startsWith("#lobby"))renderLobby();} });
+dataRef("config/divisionSize").on("value", snap => { const n=Number(snap.val()); if(n>=8&&n<=12){divisionSize=n; const h=location.hash||""; if(h.startsWith("#home"))renderHome(); if(h===""||h.startsWith("#lobby"))renderLobby();} });
 function teamCount(){return divisionSize;}
-function publishSize(){cloud.ref("config/divisionSize").set(divisionSize).catch(()=>{});}
+function publishSize(){dataRef("config/divisionSize").set(divisionSize).catch(()=>{});}
 let tieRule = "split";
-cloud.ref("config/tieRule").on("value", snap => { if(snap.val()) tieRule=String(snap.val()); });
-function publishTie(){cloud.ref("config/tieRule").set(tieRule).catch(()=>{});}
+dataRef("config/tieRule").on("value", snap => { if(snap.val()) tieRule=String(snap.val()); });
+function publishTie(){dataRef("config/tieRule").set(tieRule).catch(()=>{});}
 let leagueName = "DUALGRID";
 let leagueLogo = "";
-cloud.ref("config/leagueName").on("value", snap => { if(snap.val()) leagueName=String(snap.val()); const h=location.hash||""; if(h.startsWith("#home"))renderHome(); if(h===""||h.startsWith("#lobby"))renderLobby(); if(h.startsWith("#board")&&window._paint)window._paint(); });
-cloud.ref("config/leagueLogo").on("value", snap => { leagueLogo=snap.val()||""; const h=location.hash||""; if(h.startsWith("#home"))renderHome(); if(h===""||h.startsWith("#lobby"))renderLobby(); if(h.startsWith("#board")&&window._paint)window._paint(); });
-function publishLeague(){cloud.ref("config/leagueName").set(leagueName).catch(()=>{});}
-function publishLogo(){cloud.ref("config/leagueLogo").set(leagueLogo).catch(()=>{});}
+dataRef("config/leagueName").on("value", snap => { if(snap.val()) leagueName=String(snap.val()); const h=location.hash||""; if(h.startsWith("#home"))renderHome(); if(h===""||h.startsWith("#lobby"))renderLobby(); if(h.startsWith("#board")&&window._paint)window._paint(); });
+dataRef("config/leagueLogo").on("value", snap => { leagueLogo=snap.val()||""; const h=location.hash||""; if(h.startsWith("#home"))renderHome(); if(h===""||h.startsWith("#lobby"))renderLobby(); if(h.startsWith("#board")&&window._paint)window._paint(); });
+function publishLeague(){dataRef("config/leagueName").set(leagueName).catch(()=>{});}
+function publishLogo(){dataRef("config/leagueLogo").set(leagueLogo).catch(()=>{});}
 let playoffSpots = 4;
-cloud.ref("config/playoffSpots").on("value", snap => { const n=Number(snap.val()); if(n>=2&&n<=6){playoffSpots=n; if((location.hash||"").startsWith("#bracket"))renderBracket();} });
-function publishSpots(){cloud.ref("config/playoffSpots").set(playoffSpots).catch(()=>{});}
+dataRef("config/playoffSpots").on("value", snap => { const n=Number(snap.val()); if(n>=2&&n<=6){playoffSpots=n; if((location.hash||"").startsWith("#bracket"))renderBracket();} });
+function publishSpots(){dataRef("config/playoffSpots").set(playoffSpots).catch(()=>{});}
 let seedMode = "division";
-cloud.ref("config/seedMode").on("value", snap => { if(snap.val()){seedMode=String(snap.val()); if((location.hash||"").startsWith("#bracket"))renderBracket();} });
-function publishSeed(){cloud.ref("config/seedMode").set(seedMode).catch(()=>{});}
+dataRef("config/seedMode").on("value", snap => { if(snap.val()){seedMode=String(snap.val()); if((location.hash||"").startsWith("#bracket"))renderBracket();} });
+function publishSeed(){dataRef("config/seedMode").set(seedMode).catch(()=>{});}
 let seasonGames = 14;
-cloud.ref("config/seasonGames").on("value", snap => { const n=Number(snap.val()); if(n>=1&&n<=18){seasonGames=n; if((location.hash||"").startsWith("#scoreboard"))renderScoreboard();} });
-function publishGames(){cloud.ref("config/seasonGames").set(seasonGames).catch(()=>{});}
+dataRef("config/seasonGames").on("value", snap => { const n=Number(snap.val()); if(n>=1&&n<=18){seasonGames=n; if((location.hash||"").startsWith("#scoreboard"))renderScoreboard();} });
+function publishGames(){dataRef("config/seasonGames").set(seasonGames).catch(()=>{});}
 let rivals = [];
-cloud.ref("config/rivals").on("value", snap => { rivals=snap.val()||[]; const h=location.hash||""; if(h.startsWith("#home"))renderHome(); if(h===""||h.startsWith("#lobby"))renderLobby(); if(h.startsWith("#scores"))renderScores(); });
-function publishRivals(){cloud.ref("config/rivals").set(rivals).catch(()=>{});}
+dataRef("config/rivals").on("value", snap => { rivals=snap.val()||[]; const h=location.hash||""; if(h.startsWith("#home"))renderHome(); if(h===""||h.startsWith("#lobby"))renderLobby(); if(h.startsWith("#scores"))renderScores(); });
+function publishRivals(){dataRef("config/rivals").set(rivals).catch(()=>{});}
 function unlocked(s){return !!(s&&(s.owner||(s.paid&&s.plan)));}
 function grantCommish(code){const s=load(); if(String(code||"").toUpperCase().trim()!==commishCode){alert("Wrong commissioner code."); return false;} s.owner=true; if(!s.plan)s.plan=s.circuit||"dual"; save(s); return true;}
 function podsOf(s){return s.circuit==="quad"?["east","west","north","south"]:["east","west"];}
@@ -134,8 +136,8 @@ function fmtTime(s){return Math.floor(s/60)+":"+String(Math.max(0,s)%60).padStar
 function podFromHash(){return (location.hash.split("/")[1]||"east").toLowerCase();}
 function ticker(d){const n=(d&&d.log)?d.log.length:0;const bits=n?d.log.slice().reverse().map(l=>l.label+" "+l.player+" to "+l.team).join("    ·    "):"Waiting for the first pick";const secs=Math.max(110, n*18);return '<div class="ticker"><span style="animation-duration:'+secs+'s">'+bits+"    ·    "+bits+"</span></div>";}
 function header(extra){return '<header class="app-header"><div class="brand"><div class="mark">D</div> DUALGRID <small>PROTOTYPE</small></div><div class="header-actions"><span class="live" id="live">'+(cloudOn?"LIVE BOARD":"CONNECTING")+'</span>'+(extra||"")+"</div></header>";}
-function publish(pod){if(applyingRemote)return;const s=load();const d=s.drafts[pod];if(!d)return;cloud.ref("drafts/"+pod).set(d).catch(()=>{});}
-function publishRecords(){if(applyingRemote)return;const s=load();cloud.ref("records").set(s.records||{week:1,rows:{}}).catch(()=>{});}
+function publish(pod){if(applyingRemote)return;const s=load();const d=s.drafts[pod];if(!d)return;dataRef("drafts/"+pod).set(d).catch(()=>{});}
+function publishRecords(){if(applyingRemote)return;const s=load();dataRef("records").set(s.records||{week:1,rows:{}}).catch(()=>{});}
 function makePick(state,pod,playerId){const d=ensureDraft(state,pod);const info=snakeSlot(d.pickIndex,d);const player=PLAYERS.find(p=>p.id===playerId);if(!player)return;if(d.format==="auction"){if(d.nomination)return;d.nomination={playerId,teamId:d.nomIndex%10,bid:1,seconds:BID_SECONDS};save(state);publish(pod);return;}const team=d.teams[info.teamId];team.picks.push(player);d.log.unshift({label:info.label,player:player.name,pos:player.pos,team:team.name});d.pickIndex++;d.started=true;d.clockEnds=Date.now()+PICK_SECONDS*1000;d.secondsLeft=PICK_SECONDS;save(state);publish(pod);}
 function bid(state,pod,teamId){const d=ensureDraft(state,pod);if(!d.nomination)return;const t=d.teams[teamId];const next=d.nomination.bid+1;if(t.budget<next)return;d.nomination.bid=next;d.nomination.teamId=teamId;d.nomination.seconds=BID_SECONDS;save(state);publish(pod);}
 function settleAuction(state,pod){const d=ensureDraft(state,pod);const n=d.nomination;if(!n)return;const player=PLAYERS.find(p=>p.id===n.playerId);const team=d.teams[n.teamId];team.picks.push(player);team.budget-=n.bid;d.log.unshift({label:"$"+n.bid,player:player.name,pos:player.pos,team:team.name});d.nomination=null;d.nomIndex++;d.pickIndex++;d.secondsLeft=BID_SECONDS;save(state);publish(pod);}
@@ -455,13 +457,13 @@ document.getElementById("app").innerHTML=header('')+
 (league.name?'<div class="card" style="margin-top:12px"><h2>'+league.name+'</h2><p>Code '+league.code+'</p><a class="btn btn-lime" href="#home">Open this league</a></div>':"")+
 '</div>';
 const create=document.getElementById("create-league");
-if(create) create.onclick=()=>{const name=(document.getElementById("new-league").value||"").trim().slice(0,28)||"New League"; const code=("LG-"+Math.random().toString(36).slice(2,6)).toUpperCase(); const st=load(); st.league={name,code}; leagueName=name; save(st); publishLeague(); cloud.ref("leagues/"+code).set({name,created:Date.now()}).catch(()=>{}); location.hash="#home"; };
+if(create) create.onclick=()=>{const name=(document.getElementById("new-league").value||"").trim().slice(0,28)||"New League"; const code=("LG-"+Math.random().toString(36).slice(2,6)).toUpperCase(); const st=load(); st.league={name,code}; leagueName=name; save(st); publishLeague(); cloud.ref("leagues/"+code).set({name,created:Date.now()}).catch(()=>{}); location.hash="#home"; location.reload(); };
 const enter=document.getElementById("enter-league");
-if(enter) enter.onclick=()=>{const code=(document.getElementById("join-league").value||"").toUpperCase().trim(); if(!code)return; cloud.ref("leagues/"+code).once("value",snap=>{ if(!snap.val()){alert("No league with that code."); return;} const st=load(); st.league={name:snap.val().name||code,code}; leagueName=st.league.name; save(st); location.hash="#home"; }); };
+if(enter) enter.onclick=()=>{const code=(document.getElementById("join-league").value||"").toUpperCase().trim(); if(!code)return; cloud.ref("leagues/"+code).once("value",snap=>{ if(!snap.val()){alert("No league with that code."); return;} const st=load(); st.league={name:snap.val().name||code,code}; leagueName=st.league.name; save(st); location.hash="#home"; location.reload(); }); };
 }
 function route(){const page=(location.hash.replace("#","").split("/")[0]||"lobby");if(page==="pay")renderPay();else if(page==="draft")renderDraft();else if(page==="board")renderBoard();else if(page==="wall")renderWall();else if(page==="payout"){ if(!unlocked(load())){ alert("Commissioner code required."); location.hash="#home"; return;} renderPayout(); }else if(page==="scores")renderScores();else if(page==="scoreboard")renderScoreboard();else if(page==="bracket")renderBracket();else if(page==="dash")renderDash();else if(page==="lobby"||page==="")renderLobby();else renderHome();}
-["east","west","north","south"].forEach(pod=>{cloud.ref("drafts/"+pod).on("value",snap=>{const remote=snap.val();if(!remote||!remote.teams)return;applyingRemote=true;const s=load();s.drafts[pod]=normalizeDraft(remote);save(s);applyingRemote=false;const page=(location.hash.replace("#","").split("/")[0]||"");const onPod=(location.hash.split("/")[1]||"")===(pod);if((page==="draft"||page==="board")&&onPod&&window._paint)window._paint();});});
-cloud.ref("records").on("value",snap=>{const remote=snap.val();if(!remote)return;applyingRemote=true;const s=load();s.records=remote;save(s);applyingRemote=false;if((location.hash||"").startsWith("#scores"))renderScores();});
+["east","west","north","south"].forEach(pod=>{dataRef("drafts/"+pod).on("value",snap=>{const remote=snap.val();if(!remote||!remote.teams)return;applyingRemote=true;const s=load();s.drafts[pod]=normalizeDraft(remote);save(s);applyingRemote=false;const page=(location.hash.replace("#","").split("/")[0]||"");const onPod=(location.hash.split("/")[1]||"")===(pod);if((page==="draft"||page==="board")&&onPod&&window._paint)window._paint();});});
+dataRef("records").on("value",snap=>{const remote=snap.val();if(!remote)return;applyingRemote=true;const s=load();s.records=remote;save(s);applyingRemote=false;if((location.hash||"").startsWith("#scores"))renderScores();});
 if(!window._draftTick){window._draftTick=setInterval(()=>{const h=location.hash||"";if(!(h.startsWith("#draft")||h.startsWith("#board")))return;const pod=podFromHash();const d=ensureDraft(load(),pod);const left=clockLeft(d);const el=document.querySelector(".timer");if(el)el.textContent=fmtTime(left);if(left<=0&&d.started&&d.pickIndex<ROUNDS*teamCount()&&load().owner&&!window._autoPick){window._autoPick=true;const best=bestAvailable(d);if(best)makePick(load(),pod,best.id);setTimeout(()=>{window._autoPick=false;},1500);}},250);}
 window.addEventListener("hashchange",route);route();
 </script>
