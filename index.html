@@ -167,7 +167,6 @@ const claim=document.getElementById("claim"); if(claim) claim.onclick=()=>{ cons
 const clearer=document.getElementById("clear-seat"); if(clearer) clearer.onclick=()=>{ if(!confirm("Clear this seat for everyone?"))return; const st=load(); const id=Number((document.getElementById("actor")||{}).value||0); claimSeat(st,pod,id,"",true); paint(); };
 };
 window._paint=paint;paint();
-if(!window._draftTick){window._draftTick=setInterval(()=>{const h=location.hash||"";if(!(h.startsWith("#draft")||h.startsWith("#board")))return;const el=document.querySelector(".timer");if(el){const d=ensureDraft(load(),podFromHash());el.textContent=fmtTime(clockLeft(d));}},250);}
 }
 function renderBoard(){
 const pod=podFromHash();
@@ -286,6 +285,7 @@ window._paint=paint; paint();
 function route(){const page=(location.hash.replace("#","").split("/")[0]||"home");if(page==="pay")renderPay();else if(page==="draft")renderDraft();else if(page==="board")renderBoard();else if(page==="wall")renderWall();else if(page==="payout"){ if(!unlocked(load())){ alert("Commissioner code required."); location.hash="#home"; return;} renderPayout(); }else if(page==="scores")renderScores();else if(page==="dash")renderDash();else renderHome();}
 ["east","west","north","south"].forEach(pod=>{cloud.ref("drafts/"+pod).on("value",snap=>{const remote=snap.val();if(!remote||!remote.teams)return;applyingRemote=true;const s=load();s.drafts[pod]=normalizeDraft(remote);save(s);applyingRemote=false;const page=(location.hash.replace("#","").split("/")[0]||"");const onPod=(location.hash.split("/")[1]||"")===(pod);if((page==="draft"||page==="board")&&onPod&&window._paint)window._paint();});});
 cloud.ref("records").on("value",snap=>{const remote=snap.val();if(!remote)return;applyingRemote=true;const s=load();s.records=remote;save(s);applyingRemote=false;if((location.hash||"").startsWith("#scores"))renderScores();});
+if(!window._draftTick){window._draftTick=setInterval(()=>{const h=location.hash||"";if(!(h.startsWith("#draft")||h.startsWith("#board")))return;const el=document.querySelector(".timer");if(el){const d=ensureDraft(load(),podFromHash());el.textContent=fmtTime(clockLeft(d));}},250);}
 window.addEventListener("hashchange",route);route();
 </script>
 </body>
