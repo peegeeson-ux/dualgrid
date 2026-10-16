@@ -235,23 +235,25 @@ const hs=rec.rows[home.key]||{pf:0}; const as=rec.rows[away.key]||{pf:0};
 const gap=Math.abs((Number(hs.pf)||0)-(Number(as.pf)||0));
 const winner=(Number(hs.pf)||0)>=(Number(as.pf)||0)?home.label:away.label;
 const slap='<div class="card" style="margin-top:12px"><div class="eyebrow">PECKERSLAP OF THE WEEK</div><h2>'+winner+'</h2><p>Margin '+gap+'</p><svg viewBox="0 0 120 80" width="140" height="90" aria-label="woodpecker"><rect width="120" height="80" rx="12" fill="#10140f"/><circle cx="34" cy="36" r="16" fill="#f4f1e8"/><path d="M28 18 l8-14 10 10z" fill="#e23b2f"/><path d="M48 34 h22 l-6 6 h-16z" fill="#222"/><rect x="70" y="28" width="28" height="34" rx="4" fill="#d4a017"/><text x="84" y="50" text-anchor="middle" font-size="10" fill="#111">CUP</text></svg>'+(can?'<div class="no-print"><label>Matchup</label><select id="slap-home" class="search">'+opt(home.key)+'</select><select id="slap-away" class="search" style="margin-top:8px">'+opt(away.key)+'</select></div>':'<p>'+home.label+' vs '+away.label+'</p>')+'</div>';
-let rows="";
+let sections="";
 pods.forEach(pod=>{
   const d=ensureDraft(s,pod);
+  let rows="";
   d.teams.forEach(team=>{
     const key=pod+"-"+team.id;
     const row=rec.rows[key]||{w:0,l:0,pf:0,pa:0};
-    rows+='<tr><td>'+podName(pod)+'</td><td>'+(team.photo?'<img src="'+team.photo+'" alt="" style="width:28px;height:28px;object-fit:cover;border-radius:6px;vertical-align:middle;margin-right:6px">':'')+team.name+(team.ownerName?" · "+team.ownerName:"")+'</td>'+
+    rows+='<tr><td>'+(team.photo?'<img src="'+team.photo+'" alt="" style="width:28px;height:28px;object-fit:cover;border-radius:6px;vertical-align:middle;margin-right:6px">':'')+team.name+(team.ownerName?" · "+team.ownerName:"")+'</td>'+
       '<td><input data-k="'+key+'" data-f="w" value="'+row.w+'" style="width:64px"'+(can?"":" disabled")+'></td>'+
       '<td><input data-k="'+key+'" data-f="l" value="'+row.l+'" style="width:64px"'+(can?"":" disabled")+'></td>'+
       '<td><input data-k="'+key+'" data-f="pf" value="'+row.pf+'" style="width:80px"'+(can?"":" disabled")+'></td><td><input data-k="'+key+'" data-f="pa" value="'+(row.pa||0)+'" style="width:80px"'+(can?"":" disabled")+'></td><td>'+((Number(row.pf)||0)-(Number(row.pa)||0))+'</td></tr>';
   });
+  sections+='<h2 style="margin:16px 0 8px">'+podName(pod)+'</h2><div class="card payout"><table><tr><th>Seat</th><th>W</th><th>L</th><th>PF</th><th>PA</th><th>Diff</th></tr>'+rows+'</table></div>';
 });
 document.getElementById("app").innerHTML=header('<a class="btn" href="#home">Home</a>')+
 '<div class="page" style="position:relative">'+'<div style="position:relative">'+ (leagueLogo?'<img src="'+leagueLogo+'" alt="" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:.18;pointer-events:none;border-radius:12px">':'') +'<div style="position:relative;z-index:1"><div class="eyebrow">STANDINGS</div><button class="btn" onclick="window.print()" style="margin-bottom:8px">Print standings</button>'+(leagueLogo?'<img src="'+leagueLogo+'" alt="League" style="height:64px;border-radius:8px;margin:8px 0">':'')+'<h1 style="font-weight:900">'+leagueName+'</h1><p class="lede">Week '+rec.week+'</p>'+
 '<p class="lede no-print">'+(can?"Type wins, losses, and points. Everyone else can read this.":"Read only. The commissioner types the week.")+'</p>'+
 (can?'<div class="no-print"><label>Week</label><input id="week" value="'+rec.week+'" style="max-width:120px"></div>':'')+
-'<div class="card payout" style="margin-top:12px"><table><tr><th>Pod</th><th>Seat</th><th>W</th><th>L</th><th>PF</th><th>PA</th><th>Diff</th></tr>'+rows+'</table>'+
+sections+
 (can?'<button class="btn btn-lime no-print" id="save-scores" style="margin-top:12px">Save week</button>':'')+
 '</div>'+slap+'</div></div></div>';
 const btn=document.getElementById("save-scores");
