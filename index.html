@@ -243,12 +243,12 @@ pods.forEach(pod=>{
   });
 });
 document.getElementById("app").innerHTML=header('<a class="btn" href="#home">Home</a>')+
-'<div class="page"><div class="eyebrow">SEASON RECORD</div>'+(leagueLogo?'<img src="'+leagueLogo+'" alt="League" style="height:64px;border-radius:8px;margin:8px 0">':'')+'<h1>'+leagueName+' · Week '+rec.week+'</h1>'+
+'<div class="page" style="position:relative">'+(leagueLogo?'<img src="'+leagueLogo+'" alt="" style="position:fixed;left:50%;top:120px;transform:translateX(-50%);width:min(70vw,520px);opacity:.16;pointer-events:none;z-index:0">':'')+'<div style="position:relative;z-index:1"><div class="eyebrow">SEASON RECORD</div>'+(leagueLogo?'<img src="'+leagueLogo+'" alt="League" style="height:64px;border-radius:8px;margin:8px 0">':'')+'<h1>'+leagueName+' · Week '+rec.week+'</h1>'+
 '<p class="lede">'+(can?"Type wins, losses, and points. Everyone else can read this.":"Read only. The commissioner types the week.")+'</p>'+
 (can?'<label>Week</label><input id="week" value="'+rec.week+'" style="max-width:120px">':'')+
 '<div class="card payout" style="margin-top:12px"><table><tr><th>Pod</th><th>Seat</th><th>W</th><th>L</th><th>PF</th><th>PA</th><th>Diff</th></tr>'+rows+'</table>'+
 (can?'<button class="btn btn-lime" id="save-scores" style="margin-top:12px">Save week</button>':'')+
-'</div>'+slap+'</div>';
+'</div>'+slap+'</div></div>';
 const btn=document.getElementById("save-scores");
 if(btn) btn.onclick=()=>{
   const st=load(); if(!st.owner){alert("Commissioner only.");return;}
