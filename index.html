@@ -330,12 +330,12 @@ pods.forEach(pod=>{
   sections+='<h2 style="margin:16px 0 8px">'+podName(pod)+'</h2><div class="payout"><table><tr><th>Seat</th><th>W</th><th>L</th><th>PF</th><th>PA</th><th>Diff</th></tr>'+rows+'</table></div>';
 });
 document.getElementById("app").innerHTML=header('<a class="btn btn-lime" href="#home" id="go-home">Home</a>')+
-'<div class="page flat" style="position:relative;background:transparent">'+'<div style="position:relative">'+ (leagueLogo?'<img src="'+leagueLogo+'" alt="" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:.18;pointer-events:none;border-radius:12px">':'') +'<div style="position:relative;z-index:1"><img class="hero-mark" src="mark.png" alt="Dualgrid"><div class="eyebrow">STANDINGS <span class="flag">🇺🇸</span></div><img src="wordmark.png" alt="DUALGRID" style="height:40px;border-radius:8px"><button class="btn" onclick="window.print()" style="margin-bottom:8px">Print standings</button>'+(leagueLogo?'<img src="'+leagueLogo+'" alt="League" style="height:64px;border-radius:8px;margin:8px 0">':'')+'<h1 style="font-weight:900">'+leagueName+'</h1><p class="lede">Week '+rec.week+'</p>'+
+'<div class="page flat" style="position:relative;background:'+(leagueLogo?"url("+leagueLogo+") center/contain no-repeat":"transparent")+';border:0;box-shadow:none"><div style="position:relative;z-index:1"><img class="hero-mark" src="mark.png" alt="Dualgrid"><div class="eyebrow">STANDINGS <span class="flag">🇺🇸</span></div><img src="wordmark.png" alt="DUALGRID" style="height:40px;border-radius:8px"><button class="btn" onclick="window.print()" style="margin-bottom:8px">Print standings</button>'+(leagueLogo?'<img src="'+leagueLogo+'" alt="League" style="height:64px;border-radius:8px;margin:8px 0">':'')+'<h1 style="font-weight:900">'+leagueName+'</h1><p class="lede">Week '+rec.week+'</p>'+
 '<p class="lede no-print">'+(can?"Type wins, losses, and points. Everyone else can read this.":"Read only. The commissioner types the week.")+'</p>'+
 (can?'<div class="no-print"><label>Week</label><input id="week" value="'+rec.week+'" style="max-width:120px"></div>':'')+
 sections+
 (can?'<button class="btn btn-lime no-print" id="save-scores" style="margin-top:12px">Save week</button>':'')+
-'</div>'+slap+'</div></div></div>';
+'</div>'+slap+'</div></div>';
 const btn=document.getElementById("save-scores");
 if(btn) btn.onclick=()=>{
   const st=load(); if(!st.owner){alert("Commissioner only.");return;}
