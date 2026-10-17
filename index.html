@@ -22,7 +22,7 @@ h1{font-size:clamp(28px,6vw,52px);line-height:1.05;margin:8px 0 12px}
 .lede,.card p{color:var(--mute);line-height:1.5}
 .grid-2{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px}
 .grid-4{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;margin-top:16px}
-.card{background:#141814e6;border:1px solid var(--line);border-radius:16px;padding:16px}
+.card{background:linear-gradient(180deg,#1b2418,#141814e6);border:1px solid var(--line);border-radius:16px;padding:16px}
 .pod-chip{display:inline-block;font-size:11px;font-weight:800;letter-spacing:.08em;margin-bottom:8px}
 .pod-chip.east{color:var(--east)}.pod-chip.west{color:var(--west)}.pod-chip.north{color:var(--north)}.pod-chip.south{color:var(--south)}
 .join-row{display:flex;gap:8px;margin-top:10px}
@@ -48,6 +48,13 @@ label{display:block;margin:8px 0 4px}
 .bulb{display:inline-block;min-width:.72em;text-align:center;color:#3a2a10;text-shadow:0 0 2px #000}.bulb.on{color:#ffe08a;text-shadow:0 0 6px #ffb000,0 0 2px #fff4c2}.bulbs{background:#16110c;background-image:radial-gradient(circle,#4a3418 1.1px,transparent 1.5px);background-size:7px 7px;border:5px solid #5c3d16;border-radius:8px;padding:12px;font-family:ui-monospace,monospace}
 .ticker{position:fixed;left:0;right:0;bottom:0;background:#10140f;border-top:1px solid #2a3228;color:#c6f25a;font-weight:800;font-size:13px;padding:8px 0;overflow:hidden;z-index:8}.ticker span{display:inline-block;padding-left:100%;animation:tick 110s linear infinite;white-space:nowrap}@keyframes tick{0%{transform:translateX(0)}100%{transform:translateX(-100%)}}
 @media print{body{background:#fff;color:#111;-webkit-print-color-adjust:exact;print-color-adjust:exact}.app-header,.ticker,.btn,.no-print{display:none!important}.page{max-width:none;padding:12px}.card{break-inside:avoid;background:#fff!important;color:#111;border:1px solid #ccc}h1,h2,.eyebrow{color:#111}.lede{color:#333}img{opacity:1!important}}
+
+.brand{letter-spacing:.14em}
+.flag{font-size:16px;margin:0 4px}
+.hero-mark{width:92px;height:72px;display:block;margin:8px 0 12px}
+.wordmark{font-weight:900;letter-spacing:.08em;color:var(--lime);font-size:22px}
+.league-hero{display:flex;align-items:center;gap:12px;margin:8px 0 14px}
+.league-hero img{width:64px;height:64px;object-fit:cover;border-radius:12px;border:2px solid var(--lime)}
 </style>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
@@ -138,7 +145,7 @@ function clockLeft(d){if(!d||!d.clockEnds)return d&&d.secondsLeft||PICK_SECONDS;
 function fmtTime(s){return Math.floor(s/60)+":"+String(Math.max(0,s)%60).padStart(2,"0");}
 function podFromHash(){return (location.hash.split("/")[1]||"east").toLowerCase();}
 function ticker(d){const n=(d&&d.log)?d.log.length:0;const bits=n?d.log.slice().reverse().map(l=>l.label+" "+l.player+" to "+l.team).join("    ·    "):"Waiting for the first pick";const secs=Math.max(110, n*18);return '<div class="ticker"><span style="animation-duration:'+secs+'s">'+bits+"    ·    "+bits+"</span></div>";}
-function header(extra){return '<header class="app-header"><div class="brand"><div class="mark">D</div> DUALGRID <small>PROTOTYPE</small></div><div class="header-actions"><span class="live" id="live">'+(cloudOn?"LIVE BOARD":"CONNECTING")+'</span>'+(extra||"")+"</div></header>";}
+function header(extra){return '<header class="app-header"><div class="brand"><svg class="hero-mark" viewBox="0 0 120 90" aria-label="Dualgrid"><ellipse cx="60" cy="45" rx="52" ry="34" fill="#c6f25a"/><path d="M18 45h84M28 28h64M28 62h64M40 16c8 18 8 40 0 58M80 16c-8 18-8 40 0 58" stroke="#111" stroke-width="2" fill="none"/><path d="M60 12l6 16 16 2-12 10 4 16-14-8-14 8 4-16-12-10 16-2z" fill="#d4a017"/></svg><div><span class="wordmark">DUALGRID</span><div><span class="flag">🇺🇸</span><small>PROTOTYPE</small><span class="flag">🇺🇸</span></div></div></div><div class="header-actions"><span class="live" id="live">'+(cloudOn?"LIVE BOARD":"CONNECTING")+'</span>'+(extra||"")+"</div></header>";}
 function publish(pod){if(applyingRemote)return;const s=load();const d=s.drafts[pod];if(!d)return;dataRef("drafts/"+pod).set(d).catch(()=>{});}
 function publishRecords(){if(applyingRemote)return;const s=load();dataRef("records").set(s.records||{week:1,rows:{}}).catch(()=>{});}
 function makePick(state,pod,playerId){const d=ensureDraft(state,pod);const info=snakeSlot(d.pickIndex,d);const player=PLAYERS.find(p=>p.id===playerId);if(!player)return;if(d.format==="auction"){if(d.nomination)return;d.nomination={playerId,teamId:d.nomIndex%10,bid:1,seconds:BID_SECONDS};save(state);publish(pod);return;}const team=d.teams[info.teamId];team.picks.push(player);d.log.unshift({label:info.label,player:player.name,pos:player.pos,team:team.name});d.pickIndex++;d.started=true;d.clockEnds=Date.now()+PICK_SECONDS*1000;d.secondsLeft=PICK_SECONDS;save(state);publish(pod);}
@@ -454,10 +461,10 @@ const s=load();
 if(s.league&&s.league.code){rememberLeague(s,s.league.name||s.league.code,s.league.code); save(s);} (s.leagues||[]).forEach(l=>{cloud.ref("leagues/"+l.code+"/name").once("value",snap=>{ if(snap.val()&&snap.val()!==l.name){ l.name=snap.val(); save(s); renderLobby(); } }); cloud.ref("leagues/"+l.code+"/config/leagueLogo").once("value",snap=>{ if(snap.val()&&snap.val()!==l.logo){ l.logo=snap.val(); save(s); renderLobby(); } });});
 const league=s.league||{};
 document.getElementById("app").innerHTML=header('')+
-'<div class="page"><div class="eyebrow">DUALGRID</div><h1 style="font-weight:900">Make a league<br>that feels alive.</h1>'+
+'<div class="page"><svg class="hero-mark" viewBox="0 0 120 90" aria-label="Dualgrid"><ellipse cx="60" cy="45" rx="52" ry="34" fill="#c6f25a"/><path d="M18 45h84M28 28h64M28 62h64M40 16c8 18 8 40 0 58M80 16c-8 18-8 40 0 58" stroke="#111" stroke-width="2" fill="none"/><path d="M60 12l6 16 16 2-12 10 4 16-14-8-14 8 4-16-12-10 16-2z" fill="#d4a017"/></svg><div class="eyebrow">DUALGRID</div><h1 style="font-weight:900">Make a league<br>that feels alive. <span class="flag">🇺🇸</span></h1>'+
 '<p class="lede">Not another gray spreadsheet. A room, a board, a season. Your league, not everyone else\'s.</p>'+
 '<div class="grid-2"><div class="card"><span class="pod-chip east">CREATE</span><h2>Start a league</h2><input id="new-league" class="search" placeholder="Office 2026"><button class="btn btn-lime" id="create-league" style="margin-top:8px">Create</button></div>'+
-'<div class="card"><span class="pod-chip west">JOIN</span><h2>You have a code</h2><input id="join-league" class="search" placeholder="LEAGUE CODE"><button class="btn" id="enter-league" style="margin-top:8px">Enter</button></div></div>'+( (s.leagues||[]).length ? '<div class="card" style="margin-top:12px"><h2>Your leagues</h2>'+(s.leagues||[]).map(l=>'<div class="team-row"><span>'+(l.logo?'<img src="'+l.logo+'" alt="" style="width:36px;height:36px;object-fit:cover;border-radius:8px;vertical-align:middle;margin-right:8px">':'')+'<strong>'+l.name+'</strong><div>'+l.code+(l.team?' · '+l.team:'')+'</div></span><span>'+(l.teamPhoto?'<img src="'+l.teamPhoto+'" alt="" style="width:28px;height:28px;object-fit:cover;border-radius:6px;margin-right:8px">':'')+'<button class="btn btn-lime" data-open-league="'+l.code+'">Open</button></span></div>').join("")+'</div>' : '' )+
+'<div class="card"><span class="pod-chip west">JOIN</span><h2>You have a code</h2><input id="join-league" class="search" placeholder="LEAGUE CODE"><button class="btn" id="enter-league" style="margin-top:8px">Enter</button></div></div>'+( (s.leagues||[]).length ? '<div class="card" style="margin-top:12px"><h2>Your leagues</h2>'+(s.leagues||[]).map(l=>'<div class="team-row"><span>'+(l.logo?'<img src="'+l.logo+'" alt="" style="width:52px;height:52px;object-fit:cover;border-radius:12px;border:2px solid #c6f25a;vertical-align:middle;margin-right:8px">':'')+'<strong>'+l.name+'</strong><div>'+l.code+(l.team?' · '+l.team:'')+'</div></span><span>'+(l.teamPhoto?'<img src="'+l.teamPhoto+'" alt="" style="width:28px;height:28px;object-fit:cover;border-radius:6px;margin-right:8px">':'')+'<button class="btn btn-lime" data-open-league="'+l.code+'">Open</button></span></div>').join("")+'</div>' : '' )+
 '</div>';
 const create=document.getElementById("create-league");
 if(create) create.onclick=()=>{const name=(document.getElementById("new-league").value||"").trim().slice(0,28)||"New League"; const code=("LG-"+Math.random().toString(36).slice(2,6)).toUpperCase(); const st=load(); rememberLeague(st,name,code); st.drafts={}; st.records={week:1,rows:{}}; leagueName=name; save(st); cloud.ref("leagues/"+code).set({name,created:Date.now()}).catch(()=>{}); cloud.ref("leagues/"+code+"/config/commishCode").set("patsy-grid-26").catch(()=>{}); location.hash="#home"; location.reload(); };
