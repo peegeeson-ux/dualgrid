@@ -1,12 +1,12 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
+<head><link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;700&family=Teko:wght@500;600&display=swap" rel="stylesheet">
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/>
 <title>DUALGRID</title>
 <style>
 :root{--bg:#0b0d0a;--panel:#141814;--ink:#e8f0e4;--mute:#8a9684;--lime:#c6f25a;--line:#2a3228;--east:#7cffb2;--west:#7cc8ff;--north:#ffd27c;--south:#ff8ad4}
-*{box-sizing:border-box}html,body{margin:0;background:var(--bg);color:var(--ink);font-family:ui-sans-serif,system-ui,Segoe UI,Helvetica,Arial}
+*{box-sizing:border-box}html,body{margin:0;background:var(--bg);color:var(--ink);font-family:Oswald,Teko,Impact,sans-serif}
 a{color:inherit;text-decoration:none}
 .app-header{display:flex;justify-content:space-between;align-items:center;padding:14px 16px;border-bottom:1px solid var(--line);position:sticky;top:0;background:#0b0d0acc;backdrop-filter:blur(10px);z-index:5}
 .brand{display:flex;align-items:center;gap:10px;font-weight:800;letter-spacing:.08em}
@@ -62,6 +62,7 @@ label{display:block;margin:8px 0 4px}
 .board-wrap{background:linear-gradient(180deg,#10210f,#0b0d0a)}
 .score-card{border-top:3px solid #c6f25a}
 
+.flat .card{background:transparent;border-color:#c6f25a33}
 </style>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
@@ -449,14 +450,14 @@ pods.forEach(pod=>{
 const retro=style==="retro";
 const card=games.map(g=>{
   const face=retro?'<div style="background:#1a1408;color:#f0c14a;border:3px solid #f0c14a;border-radius:8px;padding:10px;font-family:ui-monospace,monospace;letter-spacing:.04em"><div style="font-size:11px;opacity:.7">'+podName(g.pod).toUpperCase()+'</div><div style="display:flex;justify-content:space-between;font-size:20px;font-weight:900"><span>'+g.home.name.slice(0,14)+'</span><span>'+g.hs+'</span></div><div style="display:flex;justify-content:space-between;font-size:20px;font-weight:900"><span>'+g.away.name.slice(0,14)+'</span><span>'+g.as+'</span></div></div>'
-  :'<div class="card" style="background:#141814cc"><div class="pod-chip '+g.pod+'">'+podName(g.pod)+'</div><div class="team-row"><span>'+(g.home.photo?'<img src="'+g.home.photo+'" alt="" style="width:28px;height:28px;object-fit:cover;border-radius:6px;vertical-align:middle;margin-right:6px">':'')+g.home.name+'</span><strong>'+g.hs+'</strong></div><div class="team-row"><span>'+(g.away.photo?'<img src="'+g.away.photo+'" alt="" style="width:28px;height:28px;object-fit:cover;border-radius:6px;vertical-align:middle;margin-right:6px">':'')+g.away.name+'</span><strong>'+g.as+'</strong></div></div>';
+  :'<div class="card" style="background:transparent;border:1px solid #c6f25a55"><div class="pod-chip '+g.pod+'">'+podName(g.pod)+'</div><div class="team-row"><span>'+(g.home.photo?'<img src="'+g.home.photo+'" alt="" style="width:28px;height:28px;object-fit:cover;border-radius:6px;vertical-align:middle;margin-right:6px">':'')+g.home.name+'</span><strong>'+g.hs+'</strong></div><div class="team-row"><span>'+(g.away.photo?'<img src="'+g.away.photo+'" alt="" style="width:28px;height:28px;object-fit:cover;border-radius:6px;vertical-align:middle;margin-right:6px">':'')+g.away.name+'</span><strong>'+g.as+'</strong></div></div>';
   const edit=can?'<div style="display:flex;gap:6px;margin-top:6px"><input data-game="'+g.key+'" data-side="hs" value="'+g.hs+'" style="width:70px"><input data-game="'+g.key+'" data-side="as" value="'+g.as+'" style="width:70px"></div>':'';
   return '<div style="margin-bottom:10px">'+face+edit+'</div>';
 }).join("");
 const sections=pods.map(pod=>'<h2 style="margin:16px 0 8px">'+podName(pod)+'</h2>'+games.filter(g=>g.pod===pod).map(g=>g.key).length?"":"").join("");
 document.getElementById("app").innerHTML=header('<a class="btn btn-lime" href="#home" id="go-home">Home</a><a class="btn" href="#scores">Standings</a>')+
 '<div class="page" style="position:relative">'+((!retro&&leagueLogo)?'<img src="'+leagueLogo+'" alt="" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:.18;pointer-events:none;border-radius:12px">':'')+
-'<div style="position:relative;z-index:1"><img class="hero-mark" src="mark.png" alt="Dualgrid"><div class="eyebrow">'+(retro?"RETRO SCOREBOARD":"SCOREBOARD")+' <span class="flag">🇺🇸</span></div><img src="wordmark.png" alt="DUALGRID" style="height:40px;border-radius:8px">'+(leagueLogo&&!retro?'<img src="'+leagueLogo+'" alt="League" style="height:56px;border-radius:8px;margin:8px 0">':'')+'<h1>'+leagueName+'</h1>'+
+'<div style="position:relative;z-index:1" class="flat"><img class="hero-mark" src="mark.png" alt="Dualgrid"><div class="eyebrow">'+(retro?"RETRO SCOREBOARD":"SCOREBOARD")+' <span class="flag">🇺🇸</span></div><img src="wordmark.png" alt="DUALGRID" style="height:40px;border-radius:8px">'+(leagueLogo&&!retro?'<img src="'+leagueLogo+'" alt="League" style="height:56px;border-radius:8px;margin:8px 0">':'')+'<h1>'+leagueName+'</h1>'+
 (can?'<button class="btn '+(style!=="retro"?"btn-lime":"")+'" id="style-standard">Standard</button> <button class="btn '+(style==="retro"?"btn-lime":"")+'" id="style-retro">Retro</button>':'<p>'+(retro?"Old stadium board.":"Standard board.")+'</p>')+
 pods.map(pod=>'<h2 style="margin:18px 0 8px">'+podName(pod)+'</h2>'+games.filter(g=>g.pod===pod).map(g=>{
   const face=retro?'<div class="bulbs"><div style="display:flex;justify-content:space-between;align-items:center;font-size:18px;font-weight:900;margin-bottom:8px"><span>'+bulbs(g.home.name.slice(0,14))+'</span><span>'+bulbs(String(g.hs).padStart(2," "))+'</span></div><div style="display:flex;justify-content:space-between;align-items:center;font-size:18px;font-weight:900"><span>'+bulbs(g.away.name.slice(0,14))+'</span><span>'+bulbs(String(g.as).padStart(2," "))+'</span></div></div>'
