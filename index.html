@@ -482,7 +482,7 @@ const sr=document.getElementById("style-retro"); if(sr) sr.onclick=()=>{const st
 const sb=document.getElementById("save-board"); if(sb) sb.onclick=()=>{const st=load(); st.records.board=st.records.board||{style:style}; const by={}; document.querySelectorAll("[data-game]").forEach(inp=>{by[inp.dataset.game]=by[inp.dataset.game]||{key:inp.dataset.game}; by[inp.dataset.game][inp.dataset.side]=Number(inp.value)||0;}); st.records.board.games=Object.values(by); const sched={}; document.querySelectorAll('[data-sched]').forEach(sel=>{sched[sel.dataset.sched]=sched[sel.dataset.sched]||{}; const slot=sched[sel.dataset.sched][sel.dataset.slot]=sched[sel.dataset.sched][sel.dataset.slot]||[null,null]; slot[sel.dataset.side==='home'?0:1]=Number(sel.value);}); Object.keys(sched).forEach(pod=>sched[pod]=Object.values(sched[pod])); st.records.board.schedule=sched; save(st); publishRecords(); renderScoreboard();};
 }
 
-function renderBracket(){
+function renderBracket(){try{
 const s=load(); const pods=podsOf(s);
 const per=playoffSpots;
 const take=pod=>ensureDraft(s,pod).teams.slice(0,per).map((team,i)=>{const row=(s.records&&s.records.rows&&s.records.rows[pod+"-"+team.id])||{}; return Object.assign({pod,seed:i+1,proj:row.pf||"—"},team);});
@@ -501,6 +501,7 @@ document.getElementById("app").innerHTML=header('<a class="btn btn-lime" href="#
 '<p class="lede">'+(started?"Actual scores.":"Projected scores. They switch when the games start.")+'</p><div style="display:grid;grid-template-columns:1.2fr .8fr auto .8fr 1.2fr;gap:8px;align-items:center">'+side(left,podName(pods[0]||"east"),false)+semi("left",false)+'<div style="text-align:center;margin-top:40px"><h2 style="color:#fff">CHAMPIONSHIP</h2><svg viewBox="0 0 160 120" width="160" height="120" aria-label="trophy"><path d="M50 28 h60 v18 c0 18-12 32-30 32s-30-14-30-32z" fill="#d4a017"/><path d="M50 34 h-14 c0 16 8 24 14 26z M110 34 h14 c0 16-8 24-14 26z" fill="#e6c15a"/><rect x="72" y="78" width="16" height="16" fill="#d4a017"/><rect x="58" y="94" width="44" height="10" rx="2" fill="#c9842a"/></svg><div class="team-row"><span>Winner</span><span>—</span></div><div class="team-row"><span>Winner</span><span>—</span></div></div>'+semi("right",true)+side(right,podName(pods[1]||"west"),true)+'</div><button class="btn" onclick="window.print()">Print bracket</button></div>';
 const sp=document.getElementById("save-spots"); if(sp) sp.onclick=()=>{ if(!load().owner)return; const n=Number(document.getElementById("playoff-spots").value); if(n<2||n>6){alert("Use 2 to 6 teams per division."); return;} playoffSpots=n; publishSpots(); renderBracket(); };
 const sg=document.getElementById("start-games"); if(sg) sg.onclick=()=>{ if(!load().owner)return; const st=load(); st.records=st.records||{}; st.records.playoffs=st.records.playoffs||{}; st.records.playoffs.started=!st.records.playoffs.started; save(st); publishRecords(); renderBracket(); };
+}catch(e){document.getElementById("app").innerHTML='<div class="page"><h1>Bracket error</h1><p>'+e.message+'</p></div>';}
 }
 
 function renderLobby(){
