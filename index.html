@@ -556,6 +556,8 @@ if(!window._draftTick){window._draftTick=setInterval(()=>{const h=location.hash|
 document.addEventListener("click",e=>{const a=e.target.closest&&e.target.closest("#go-home"); if(!a)return; e.preventDefault(); location.hash="#home"; renderHome();});
 document.addEventListener("click",e=>{if(e.target&&e.target.id==="menu-btn"){const n=document.querySelector(".nav-links"); if(n)n.classList.toggle("open");}});
 document.addEventListener("click",e=>{if(e.target&&e.target.id==="logout-btn"){e.preventDefault(); const st=load(); st.email=""; delete st.email; save(st); localStorage.removeItem("dualgrid-email"); location.href=location.pathname+"?out="+Date.now();}});
+if(location.search.indexOf("out=")>=0){const st=load(); delete st.email; st.email=""; save(st);}
+document.addEventListener("click",e=>{const btn=e.target.closest&&e.target.closest("#logout-btn"); if(!btn)return; e.preventDefault(); const st=load(); delete st.email; st.email=""; save(st); location.replace(location.pathname+"?out="+Date.now()+"#lobby");});
 window.addEventListener("hashchange",route);route();
 </script>
 </body>
