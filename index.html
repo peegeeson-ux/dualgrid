@@ -579,27 +579,23 @@ const b=document.getElementById("save-scoring");
 if(b) b.onclick=()=>{if(!load().owner)return; dataRef("config/scoring").set({ptd:Number(document.getElementById("sc-ptd").value)||4,rtd:Number(document.getElementById("sc-rtd").value)||6,rec:Number(document.getElementById("sc-rec").value)||1,int:Number(document.getElementById("sc-int").value)||2});};
 }
 
+function waiverState(){const s=load(); if(!s.records)s.records={}; return s;}
+function saveWaiver(s){save(s); try{dataRef("config/waiver").set({deadline:s.records.waiverDeadline||"", claims:s.records.claims||[]});}catch(e){}}
 function renderWaiver(){
-  const s=load();
-  if(!s.records)s.records={};
+  const s=waiverState();
   const rec=s.records;
   const deadline=rec.waiverDeadline||"";
   const closed=!!(deadline && Date.now()>new Date(deadline).getTime());
   const claims=rec.claims||[];
-  const taken=new Set();
-  podsOf(s).forEach(pod=>takenIds(ensureDraft(s,pod)).forEach(id=>taken.add(id)));
-  claims.forEach(c=>taken.add(c.id));
+  const taken=new Set(claims.map(c=>c.id));
   const free=PLAYERS.filter(p=>!taken.has(p.id));
-  const q=(rec.waiverQ)||"";
-  const shown=free.filter(p=>!q||p.name.toLowerCase().includes(q.toLowerCase())).slice(0,40);
-  const mode=closed?"Free agents":"Waiver";
-  document.getElementById("app").innerHTML=header('<a class="btn" href="#home">Home</a>')+'<div class="page"><div class="eyebrow">'+mode.toUpperCase()+'</div><h1>'+(closed?"Waiver cleared. Free agent pickups.":"Claims close at the deadline.")+'</h1>'+(s.owner?'<div class="card no-print"><label>Deadline</label><input id="waiver-deadline" class="search" type="datetime-local" value="'+deadline+'"><button class="btn btn-lime" id="save-deadline" type="button">Save deadline</button></div>':'')+'<div class="card"><p>'+(closed?"Players have cleared waivers. Pick one up.":(deadline?"Open until "+deadline:"Set a deadline, then add."))+ '</p><input id="waiver-q" class="search" placeholder="Find a player" value="'+q+'"><table><tr><th>Player</th><th></th></tr>'+shown.map(pl=>'<tr><td>'+pl.name+' · '+pl.pos+'</td><td><button class="btn claim-btn" type="button" data-id="'+pl.id+'">'+(closed?"Pick up":"Add")+'</button></td></tr>').join("")+'</table><p>'+shown.length+' shown · '+free.length+' free</p></div><div class="card"><h2>'+(closed?"Pickups":"Claims")+'</h2>'+(claims.map(c=>'<div class="log-item">'+c.player+(c.kind==="fa"?" · free agent":"")+'</div>').join("")||'<p>None yet.</p>')+'</div></div>';
-  const save=document.getElementById("save-deadline");
-  if(save) save.onclick=()=>{const st=load(); if(!st.owner)return; if(!st.records)st.records={}; st.records.waiverDeadline=document.getElementById("waiver-deadline").value; save(st); renderWaiver();};
-  const box=document.getElementById("waiver-q");
-  if(box) box.oninput=()=>{const st=load(); if(!st.records)st.records={}; st.records.waiverQ=box.value; save(st); renderWaiver();};
-  document.querySelectorAll(".claim-btn").forEach(btn=>btn.onclick=function(e){e.preventDefault(); const st=load(); if(!st.records)st.records={}; const rec=st.records; const closedNow=!!(rec.waiverDeadline && Date.now()>new Date(rec.waiverDeadline).getTime()); const player=PLAYERS.find(p=>p.id===Number(btn.getAttribute("data-id"))); if(!player){alert("Player not found."); return;} rec.claims=rec.claims||[]; rec.claims.unshift({id:player.id, player:player.name, kind:closedNow?"fa":"waiver", at:Date.now()}); save(st); renderWaiver();});
+  const q=rec.waiverQ||"";
+  const shown=free.filter(p=>!q||(p.name||"").toLowerCase().includes(q.toLowerCase())).slice(0,40);
+  document.getElementById("app").innerHTML=header('<a class="btn" href="#home">Home</a>')+'<div class="page"><div class="eyebrow">'+(closed?"FREE AGENTS":"WAIVER")+'</div><h1>'+(closed?"Waiver cleared. Free agent pickups.":"Claims close at the deadline.")+'</h1>'+(s.owner?'<div class="card"><label>Deadline</label><input id="waiver-deadline" class="search" type="datetime-local" value="'+deadline+'"><button class="btn btn-lime" type="button" onclick="saveWaiverDeadline()">Save deadline</button><p id="waiver-note"></p></div>':'')+'<div class="card"><p>'+(deadline?(closed?"Players have cleared waivers.":"Open until "+deadline):"No deadline yet.")+'</p><input id="waiver-q" class="search" placeholder="Find a player" value="'+q+'" oninput="filterWaiver(this.value)"><table><tr><th>Player</th><th></th></tr>'+shown.map(pl=>'<tr><td>'+pl.name+' · '+pl.pos+'</td><td><button class="btn" type="button" onclick="addWaiver('+pl.id+')">'+(closed?"Pick up":"Add")+'</button></td></tr>').join("")+'</table></div><div class="card"><h2>'+(closed?"Pickups":"Claims")+'</h2>'+(claims.map(c=>'<div class="log-item">'+c.player+'</div>').join("")||'<p>None yet.</p>')+'</div></div>';
 }
+function saveWaiverDeadline(){const s=waiverState(); if(!s.owner){alert("Unlock first."); return;} s.records.waiverDeadline=document.getElementById("waiver-deadline").value; saveWaiver(s); renderWaiver();}
+function filterWaiver(v){const s=waiverState(); s.records.waiverQ=v; save(s); renderWaiver();}
+function addWaiver(id){const s=waiverState(); const rec=s.records; const closed=!!(rec.waiverDeadline && Date.now()>new Date(rec.waiverDeadline).getTime()); const player=PLAYERS.find(p=>p.id===Number(id)); if(!player){alert("Player not found."); return;} rec.claims=rec.claims||[]; if(rec.claims.some(c=>c.id===player.id))return; rec.claims.unshift({id:player.id, player:player.name, kind:closed?"fa":"waiver", at:Date.now()}); saveWaiver(s); renderWaiver();}
 
 
 function route(){const page=(location.hash.replace("#","").split("/")[0]||"lobby"); if(page!=="lobby"&&!leagueCode()){location.hash="#lobby"; return renderLobby();}if(page==="pay")renderPay();else if(page==="draft")renderDraft();else if(page==="board")renderBoard();else if(page==="wall")renderWall();else if(page==="payout"){ if(!unlocked(load())){ alert("Commissioner code required."); location.hash="#home"; return;} renderPayout(); }else if(page==="scores")renderScores();else if(page==="scoreboard")renderScoreboard();else if(page==="bracket")renderBracket();else if(page==="talk")renderTalk();else if(page==="waiver")renderWaiver();else if(page==="history")renderHistory();else if(page==="scoring")renderScoring();else if(page==="dash")renderDash();else if(page==="lobby"||page==="")renderLobby();else renderHome();}
