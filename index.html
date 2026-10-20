@@ -610,13 +610,21 @@ function addWaiver(id){const s=waiverState(); const rec=s.records; const closed=
 
 function renderRoster(){
   const s=load();
-  const mine=s.actingAs||{};
-  const pod=mine.pod||"east";
-  const team=(ensureDraft(s,pod).teams||[]).find(tm=>tm.id===mine.teamId)||ensureDraft(s,pod).teams[0];
-  const picks=((ensureDraft(s,pod).picks)||[]).filter(pk=>team&&pk.teamId===team.id);
   const colors={QB:"#e85d4c",RB:"#3d9a6a",WR:"#3d7ea6",TE:"#c9842a",K:"#7a6bb5",DEF:"#5c6b7a"};
-  document.getElementById("app").innerHTML=header('<a class="btn" href="#home">Home</a>')+'<div class="page"><div class="eyebrow">ROSTER</div><h1>'+(team?team.name:"Your team")+'</h1><div class="card">'+(picks.length?picks.map(pk=>{const pl=PLAYERS.find(p=>p.id===pk.playerId)||{name:pk.name||"Player",pos:"?"}; return '<div class="log-item" style="border-left:6px solid '+(colors[pl.pos]||"#999")+'"><b>'+pl.pos+'</b> · '+pl.name+'</div>';}).join(""):'<p>No picks yet. Draft night fills this card.</p>')+'</div></div>';
+  const mine=s.actingAs||{};
+  let html="";
+  podsOf(s).forEach(pod=>{
+    const d=ensureDraft(s,pod);
+    (d.teams||[]).forEach(team=>{
+      const picks=team.picks||[];
+      if(!picks.length) return;
+      const mineHere=mine.pod===pod && mine.teamId===team.id;
+      html+='<div class="card"><h2>'+team.name+(team.ownerName?" · "+team.ownerName:"")+(mineHere?" · you":"")+'</h2>'+picks.map(pl=>'<div class="log-item" style="border-left:6px solid '+(colors[pl.pos]||"#999")+'"><b>'+(pl.pos||"?")+'</b> · '+(pl.name||"Player")+'</div>').join("")+'</div>';
+    });
+  });
+  document.getElementById("app").innerHTML=header('<a class="btn" href="#home">Home</a>')+'<div class="page"><div class="eyebrow">ROSTER</div><h1>Lineup cards</h1>'+(html||'<div class="card"><p>No picks on this device yet. Open a draft room once so the rosters load.</p></div>')+'</div>';
 }
+
 
 function route(){const page=(location.hash.replace("#","").split("/")[0]||"lobby"); if(page!=="lobby"&&!leagueCode()){location.hash="#lobby"; return renderLobby();}if(page==="pay")renderPay();else if(page==="draft")renderDraft();else if(page==="board")renderBoard();else if(page==="wall")renderWall();else if(page==="payout"){ if(!unlocked(load())){ alert("Commissioner code required."); location.hash="#home"; return;} renderPayout(); }else if(page==="scores")renderScores();else if(page==="scoreboard")renderScoreboard();else if(page==="bracket")renderBracket();else if(page==="talk")renderTalk();else if(page==="waiver")renderWaiver();else if(page==="roster")renderRoster();else if(page==="history")renderHistory();else if(page==="scoring")renderScoring();else if(page==="dash")renderDash();else if(page==="lobby"||page==="")renderLobby();else renderHome();}
 ["east","west","north","south"].forEach(pod=>{dataRef("drafts/"+pod).on("value",snap=>{const remote=snap.val();if(!remote||!remote.teams)return;applyingRemote=true;const s=load();s.drafts[pod]=normalizeDraft(remote);save(s);applyingRemote=false;const page=(location.hash.replace("#","").split("/")[0]||"");const onPod=(location.hash.split("/")[1]||"")===(pod);if((page==="draft"||page==="board")&&onPod&&window._paint)window._paint();});});
