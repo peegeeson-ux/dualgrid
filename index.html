@@ -618,8 +618,9 @@ function renderRoster(){
     (d.teams||[]).forEach(team=>{
       const picks=team.picks||[];
       if(!picks.length) return;
+      const row=(s.records&&s.records.rows||{})[pod+"-"+team.id]||{w:0,l:0,pf:0};
       const mineHere=mine.pod===pod && mine.teamId===team.id;
-      html+='<div class="card"><h2>'+team.name+(team.ownerName?" · "+team.ownerName:"")+(mineHere?" · you":"")+'</h2>'+picks.map(pl=>'<div class="log-item" style="border-left:6px solid '+(colors[pl.pos]||"#999")+'"><b>'+(pl.pos||"?")+'</b> · '+(pl.name||"Player")+'</div>').join("")+'</div>';
+      html+='<div class="card" style="background:linear-gradient(160deg,#14233a,#0d1524);color:#fff"><div class="eyebrow">FRANCHISE</div><h2 style="font-size:28px;margin:6px 0">'+(team.name||"Team")+'</h2><p>'+(team.ownerName||"Owner")+' · '+podName(pod)+(mineHere?" · you":"")+'</p><p style="font-size:20px;letter-spacing:1px">'+(row.w||0)+'-'+(row.l||0)+' · '+(row.pf||0)+' PF</p></div><div class="card">'+picks.map(pl=>'<div class="log-item" style="border-left:6px solid '+(colors[pl.pos]||"#999")+'"><b>'+(pl.pos||"?")+'</b> · '+(pl.name||"Player")+'</div>').join("")+'</div>';
     });
   });
   document.getElementById("app").innerHTML=header('<a class="btn" href="#home">Home</a>')+'<div class="page"><div class="eyebrow">ROSTER</div><h1>Lineup cards</h1>'+(html||'<div class="card"><p>No picks on this device yet. Open a draft room once so the rosters load.</p></div>')+'</div>';
