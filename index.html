@@ -128,6 +128,15 @@ dataRef("config/leagueLogo").on("value", snap => { leagueLogo=snap.val()||""; co
 function publishLeague(){dataRef("config/leagueName").set(leagueName).catch(()=>{});}
 function publishLogo(){dataRef("config/leagueLogo").set(leagueLogo).catch(()=>{});}
 let playoffSpots = 4;
+
+dataRef("config/waiver").on("value", snap => {
+  const v=snap.val(); if(!v) return;
+  const s=load(); if(!s.records)s.records={};
+  if(v.deadline) s.records.waiverDeadline=v.deadline;
+  if(Array.isArray(v.claims)) s.records.claims=v.claims;
+  save(s);
+  if((location.hash||"").startsWith("#waiver")) renderWaiver();
+});
 dataRef("config/playoffSpots").on("value", snap => { const n=Number(snap.val()); if(n>=2&&n<=6){playoffSpots=n; if((location.hash||"").startsWith("#bracket"))renderBracket();} });
 function publishSpots(){dataRef("config/playoffSpots").set(playoffSpots).catch(()=>{});}
 let seedMode = "division";
