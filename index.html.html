@@ -829,7 +829,36 @@ document.getElementById("app").innerHTML=header('<a class="btn" href="#home">Hom
 '<div class="page"><div class="eyebrow">WEEK '+week+' MATCHUPS</div><h1>All games</h1><p class="lede">Your team is highlighted. Tap a game to see the lineup.</p>'+list+'</div>';
 }
 
-function route(){const page=(location.hash.replace("#","").split("/")[0]||"lobby"); if(page!=="lobby"&&!leagueCode()&&page!=="draft"&&page!=="board"){location.hash="#lobby"; return renderLobby();}if(page==="pay")renderPay();else if(page==="draft")renderDraft();else if(page==="board")renderBoard();else if(page==="wall")renderWall();else if(page==="payout"){ if(!unlocked(load())){ alert("Commissioner code required."); location.hash="#home"; return;} renderPayout(); }else if(page==="scores")renderScores();else if(page==="scoreboard")renderScoreboard();else if(page==="bracket")renderBracket();else if(page==="talk")renderTalk();else if(page==="waiver")renderWaiver();else if(page==="roster")renderRoster();else if(page==="history")renderHistory();else if(page==="scoring")renderScoring();else if(page==="matchup")renderMatchup();else if(page==="dash")renderDash();else if(page==="lobby"||page==="")renderLobby();else renderHome();}
+
+function renderLogin(){
+  document.getElementById("app").innerHTML =
+    '<div class="page" style="text-align:center;padding-top:40px">' +
+    '<img class="hero-mark" src="mark.png" alt="Dualgrid" style="width:88px;height:88px;margin:0 auto 12px">' +
+    '<img src="wordmark.png" alt="DUALGRID" style="height:48px;border-radius:8px;margin:8px auto 18px;display:block">' +
+    '<h1 style="font-weight:900;margin:0 0 8px">Sign in</h1>' +
+    '<p class="lede" style="margin-bottom:18px">Use your email. You’ll land on the leagues and teams you belong to.</p>' +
+    '<div class="card" style="max-width:360px;margin:0 auto;text-align:left">' +
+    '<label>Email</label>' +
+    '<input id="login-email" class="search" placeholder="you@email.com" style="margin-bottom:10px">' +
+    '<button class="btn btn-lime" id="login-btn" style="width:100%">Continue</button>' +
+    '</div>' +
+    '<p class="lede" style="margin-top:16px;font-size:12px">No password yet. Email is enough for now.</p>' +
+    '</div>';
+  const btn = document.getElementById("login-btn");
+  if(btn) btn.onclick = ()=>{
+    const email = (document.getElementById("login-email").value||"").trim().toLowerCase();
+    if(!email || !email.includes("@")){ alert("Enter a real email."); return; }
+    const st = load();
+    st.email = email;
+    if(email === "patsy@dualgrid.com"){ st.owner = true; st.paid = true; }
+    save(st);
+    localStorage.setItem("dualgrid-email", email);
+    location.hash = "#lobby";
+    route();
+  };
+}
+
+function route(){const page=(location.hash.replace("#","").split("/")[0]||"lobby"); const st=load(); if(!st.email && page!=="login"){ location.hash="#login"; return renderLogin(); } if(page==="login"){ return renderLogin(); } if(page!=="lobby"&&!leagueCode()&&page!=="draft"&&page!=="board"){location.hash="#lobby"; return renderLobby();}if(page==="pay")renderPay();else if(page==="draft")renderDraft();else if(page==="board")renderBoard();else if(page==="wall")renderWall();else if(page==="payout"){ if(!unlocked(load())){ alert("Commissioner code required."); location.hash="#home"; return;} renderPayout(); }else if(page==="scores")renderScores();else if(page==="scoreboard")renderScoreboard();else if(page==="bracket")renderBracket();else if(page==="talk")renderTalk();else if(page==="waiver")renderWaiver();else if(page==="roster")renderRoster();else if(page==="history")renderHistory();else if(page==="scoring")renderScoring();else if(page==="matchup")renderMatchup();else if(page==="dash")renderDash();else if(page==="lobby"||page==="")renderLobby();else renderHome();}
 ["east","west","north","south"].forEach(pod=>{dataRef("drafts/"+pod).on("value",snap=>{const remote=snap.val();if(!remote||!remote.teams)return;applyingRemote=true;const s=load();s.drafts[pod]=normalizeDraft(remote);save(s);applyingRemote=false;const page=(location.hash.replace("#","").split("/")[0]||"");const onPod=(location.hash.split("/")[1]||"")===(pod);if((page==="draft"||page==="board")&&onPod&&window._paint)window._paint();});});
 dataRef("records").on("value",snap=>{const remote=snap.val();if(!remote)return;applyingRemote=true;const s=load();s.records=remote;save(s);applyingRemote=false;if((location.hash||"").startsWith("#scores"))renderScores(); if((location.hash||"").startsWith("#bracket"))renderBracket();});
 if(!window._draftTick){window._draftTick=setInterval(()=>{const h=location.hash||"";if(!(h.startsWith("#draft")||h.startsWith("#board")))return;const pod=podFromHash();const d=ensureDraft(load(),pod);const left=clockLeft(d);const el=document.querySelector(".timer");if(el)el.textContent=fmtTime(left);if(left<=0&&d.started&&d.pickIndex<ROUNDS*teamCount()&&load().owner&&!window._autoPick){window._autoPick=true;const best=bestAvailable(d);if(best)makePick(load(),pod,best.id);setTimeout(()=>{window._autoPick=false;},1500);}},250);}
