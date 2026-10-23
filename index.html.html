@@ -29,7 +29,7 @@ h1{font-size:clamp(28px,6vw,52px);line-height:1.05;margin:8px 0 12px;color:#fff}
 .pod-chip.east{color:var(--east);border:1px solid var(--east)33}.pod-chip.west{color:var(--west);border:1px solid var(--west)33}.pod-chip.north{color:var(--north);border:1px solid var(--north)33}.pod-chip.south{color:var(--south);border:1px solid var(--south)33}
 .join-row{display:flex;gap:8px;margin-top:10px}
 .search,input,select{width:100%;background:#0f130f;border:1px solid var(--line);color:var(--ink);padding:10px;border-radius:10px}
-.draft-shell{display:grid;grid-template-columns:240px 1fr 240px;gap:10px;padding:12px}
+.draft-shell{display:grid;grid-template-columns:220px 1fr 200px 200px;gap:10px;padding:12px}
 @media(max-width:900px){.draft-shell{grid-template-columns:1fr;gap:8px;padding:8px}.panel{min-height:auto}.clock-box{padding:8px}.who{font-size:18px}.timer{font-size:28px}}
 .panel{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:12px;min-height:200px}
 .clock-box{background:#0f130f;border-radius:12px;padding:12px;margin:8px 0}
@@ -320,7 +320,7 @@ root.innerHTML=header('<a class="btn" href="#home">Circuit</a><a class="btn" hre
     }
   }
   return "You pick —";
-})()+'</div>'+(load().owner?'<div class="no-print"><button class="btn" id="pause-clock">'+(draft.paused?"Resume clock":"Pause clock")+'</button><button class="btn" id="wipe-pick">Wipe last pick</button><select id="change-pick" class="search" style="max-width:180px"></select><button class="btn" id="change-btn">Change last pick</button><label>Seconds per pick</label><input id="pick-seconds" class="search" value="'+(draft.pickSeconds||PICK_SECONDS)+'" style="max-width:120px"><button class="btn btn-lime" id="save-seconds">Set clock</button></div>':'')+(auction&&draft.nomination?'<button class="btn btn-lime" id="bid">Bid $'+(draft.nomination.bid+1)+'</button>':'')+draft.teams.map(t=>'<div class="team-row '+(t.id===onClock.id&&!done?"active":"")+'"><span>'+(t.photo?'<img src="'+t.photo+'" alt="" style="width:28px;height:28px;object-fit:cover;border-radius:6px;vertical-align:middle;margin-right:6px">':"")+t.name+(t.ownerName?" · "+t.ownerName:"")+"</span><span>"+(auction?"$"+t.budget:t.picks.length)+"</span></div>").join("")+''+'</aside><section class="panel"><h3>'+(auction?(draft.nomination?"WAITING ON BIDS":"NOMINATE"):"AVAILABLE")+'</h3><input class="search" id="q" placeholder="Search" value="'+filter+'"/><div class="card" id="queue-alert" style="margin:8px 0;display:none;border:1px solid var(--lime)"></div><div class="card" style="margin:8px 0"><h3>Your queue</h3><div id="queue-list"></div></div>'+avail.slice(0,40).map((p,idx)=>{const canDraft=!!load().owner||(mine&&mine.pod===pod&&onClock&&Number(mine.teamId)===Number(onClock.id)); return '<div class="player"><span style="width:22px;color:#c6f25a;font-size:12px;font-weight:800">'+(idx+1)+'</span><div class="pos '+p.pos+'">'+p.pos+'</div><div style="flex:1"><div class="name">'+p.name+'</div><div class="sub" style="font-size:11px;color:var(--mute)">'+p.team+'</div></div><button class="btn" data-queue="'+p.id+'" style="border-radius:20px;padding:6px 14px">QUEUE</button>'+(canDraft?'<button class="btn btn-lime pick-btn" data-id="'+p.id+'" style="margin-left:6px" '+(done||(auction&&draft.nomination)?"disabled":"")+'>'+(auction?"NOM":"DRAFT")+'</button>':'')+'</div>';}).join("")+'</section><aside class="panel"><h3>FEED</h3>'+(draft.log.length?draft.log.map(l=>'<div class="log-item"><strong>'+l.label+"</strong> "+l.player+"<div>"+l.team+"</div></div>").join(""):'<div class="log-item">Waiting for a pick.</div>')+"</aside></div>"+ticker(draft);
+})()+'</div>'+(load().owner?'<div class="no-print"><button class="btn" id="pause-clock">'+(draft.paused?"Resume clock":"Pause clock")+'</button><button class="btn" id="wipe-pick">Wipe last pick</button><select id="change-pick" class="search" style="max-width:180px"></select><button class="btn" id="change-btn">Change last pick</button><label>Seconds per pick</label><input id="pick-seconds" class="search" value="'+(draft.pickSeconds||PICK_SECONDS)+'" style="max-width:120px"><button class="btn btn-lime" id="save-seconds">Set clock</button></div>':'')+(auction&&draft.nomination?'<button class="btn btn-lime" id="bid">Bid $'+(draft.nomination.bid+1)+'</button>':'')+draft.teams.map(t=>'<div class="team-row '+(t.id===onClock.id&&!done?"active":"")+'"><span>'+(t.photo?'<img src="'+t.photo+'" alt="" style="width:28px;height:28px;object-fit:cover;border-radius:6px;vertical-align:middle;margin-right:6px">':"")+t.name+(t.ownerName?" · "+t.ownerName:"")+"</span><span>"+(auction?"$"+t.budget:t.picks.length)+"</span></div>").join("")+''+'</aside><section class="panel"><h3>'+(auction?(draft.nomination?"WAITING ON BIDS":"NOMINATE"):"AVAILABLE")+'</h3><input class="search" id="q" placeholder="Search" value="'+filter+'"/><div class="card" id="queue-alert" style="margin:8px 0;display:none;border:1px solid var(--lime)"></div><div class="card" style="margin:8px 0"><h3>Your queue</h3><div id="queue-list"></div></div>'+avail.slice(0,40).map((p,idx)=>{const canDraft=!!load().owner||(mine&&mine.pod===pod&&onClock&&Number(mine.teamId)===Number(onClock.id)); return '<div class="player"><span style="width:22px;color:#c6f25a;font-size:12px;font-weight:800">'+(idx+1)+'</span><div class="pos '+p.pos+'">'+p.pos+'</div><div style="flex:1"><div class="name">'+p.name+'</div><div class="sub" style="font-size:11px;color:var(--mute)">'+p.team+'</div></div><button class="btn" data-queue="'+p.id+'" style="border-radius:20px;padding:6px 14px">QUEUE</button>'+(canDraft?'<button class="btn btn-lime pick-btn" data-id="'+p.id+'" style="margin-left:6px" '+(done||(auction&&draft.nomination)?"disabled":"")+'>'+(auction?"NOM":"DRAFT")+'</button>':'')+'</div>';}).join("")+'</section><aside class="panel"><h3>FEED</h3>'+(draft.log.length?draft.log.map(l=>'<div class="log-item"><strong>'+l.label+"</strong> "+l.player+"<div>"+l.team+"</div></div>").join(""):'<div class="log-item">Waiting for a pick.</div>')+"</aside><aside class="panel" id="my-roster"><h3>YOUR ROSTER</h3><div id="roster-body">Claim a seat to see your roster.</div></aside></div>"+ticker(draft);
 const q=document.getElementById("q");if(q)q.oninput=e=>{filter=e.target.value;paint();};
 function currentSeat(){try{return (JSON.parse(localStorage.getItem("dualgrid-my-seats")||"{}")[leagueCode()]||JSON.parse(localStorage.getItem("dualgrid-my-seat")||"null"))}catch(e){return null}}
 const here=currentSeat(); const seat=here&&here.pod===pod?here.teamId:null;
@@ -329,6 +329,31 @@ const asList=v=>Array.isArray(v)?v:(v&&typeof v==="object"?Object.values(v):[]);
 const clean=list=>asList(list).map(Number).filter(id=>available(draft).some(p=>p.id===id));
 const showQueue=(list)=>{const el=document.getElementById("queue-list"); if(!el)return; el.innerHTML=clean(list).map(id=>{const p=PLAYERS.find(x=>x.id===Number(id)); return p?'<div class="team-row"><span>'+p.name+' · '+p.pos+'</span><button class="btn" data-unqueue="'+p.id+'">Remove</button></div>':"";}).join("")||"<p>No one queued.</p>";};
 let queue=clean(myTeam&&myTeam.queue);
+// Render controlled team's roster by position
+const rosterEl = document.getElementById("roster-body");
+if (rosterEl && myTeam) {
+  const byPos = {};
+  (myTeam.picks||[]).forEach(p => {
+    const pos = p.pos || "?";
+    if (!byPos[pos]) byPos[pos] = [];
+    byPos[pos].push(p.name);
+  });
+  const order = ["QB","RB","WR","TE","FLEX","K","DEF","TEAM DEF","IR"];
+  let body = "";
+  order.forEach(pos => {
+    if (byPos[pos] && byPos[pos].length) {
+      body += '<div style="margin:6px 0"><strong>'+pos+'</strong><div style="font-size:13px;color:var(--mute)">'+byPos[pos].join("<br>")+'</div></div>';
+    }
+  });
+  // Any other positions
+  Object.keys(byPos).forEach(pos => {
+    if (!order.includes(pos)) body += '<div style="margin:6px 0"><strong>'+pos+'</strong><div style="font-size:13px;color:var(--mute)">'+byPos[pos].join("<br>")+'</div></div>';
+  });
+  rosterEl.innerHTML = body || "<p>No picks yet.</p>";
+} else if (rosterEl) {
+  rosterEl.innerHTML = "<p>Claim a seat to see your roster.</p>";
+}
+
 showQueue(queue);
 if(!window._qClick){window._qClick=true; document.addEventListener("click",e=>{const add=e.target.closest&&e.target.closest("[data-queue]"); const rem=e.target.closest&&e.target.closest("[data-unqueue]"); if(!add&&!rem)return; const here=currentSeat(); if(!here||here.pod!==pod){alert("Claim or link your team on the home screen first."); return;} const st=load(); const d=ensureDraft(st,pod); const team=d.teams.find(team=>Number(team.id)===Number(here.teamId)); if(!team){alert("That team is not in this room."); return;} const list=asList(team.queue).map(Number).filter(id=>available(d).some(p=>p.id===id)); if(add){const id=Number(add.dataset.queue); if(!list.includes(id))list.push(id);} if(rem){const id=Number(rem.dataset.unqueue); const i=list.indexOf(id); if(i>=0)list.splice(i,1);} team.queue=list; save(st); publish(pod); paint();});}
 const saveQueue=(list)=>{if(!myTeam)return; myTeam.queue=clean(list); const st=load(); const d=ensureDraft(st,pod); const team=d.teams.find(team=>Number(team.id)===Number(seat)); if(team){team.queue=myTeam.queue; save(st); publish(pod);} showQueue(myTeam.queue);};
