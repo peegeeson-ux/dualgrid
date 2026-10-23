@@ -163,17 +163,15 @@ dataRef("config/leagueLogo").on("value", snap => { leagueLogo=snap.val()||""; co
 function publishLeague(){dataRef("config/leagueName").set(leagueName).catch(()=>{});}
 function publishLogo(){dataRef("config/leagueLogo").set(leagueLogo).catch(()=>{});}
 let playoffSpots = 4;
-let rosterSize = 15;
-let irSpots = 1;
-let allowDefense = false;
+let rosterSettings = {qb:1, rb:2, wr:2, te:1, def:0, k:1, bench:6, ir:1};
 dataRef("config/roster").on("value", snap => {
-  const v = snap.val() || {};
-  if (v.size) rosterSize = Number(v.size);
-  if (v.ir != null) irSpots = Number(v.ir);
-  if (v.defense != null) allowDefense = !!v.defense;
+  const v = snap.val();
+  if (v && typeof v === "object") {
+    rosterSettings = Object.assign({qb:1, rb:2, wr:2, te:1, def:0, k:1, bench:6, ir:1}, v);
+  }
   if ((location.hash||"").startsWith("#roster")) renderRoster();
 });
-function publishRoster(){ dataRef("config/roster").set({size:rosterSize, ir:irSpots, defense:allowDefense}).catch(()=>{}); }
+function publishRoster(){ dataRef("config/roster").set(rosterSettings).catch(()=>{}); }
 
 
 dataRef("config/waiver").on("value", snap => {
@@ -723,6 +721,8 @@ function renderRoster(){
   const s=load();
   const colors={QB:"#e85d4c",RB:"#3d9a6a",WR:"#3d7ea6",TE:"#c9842a",K:"#7a6bb5",DEF:"#5c6b7a"};
   const mine=s.actingAs||{};
+  const rs = rosterSettings;
+  const total = (Number(rs.qb)||0)+(Number(rs.rb)||0)+(Number(rs.wr)||0)+(Number(rs.te)||0)+(Number(rs.def)||0)+(Number(rs.k)||0)+(Number(rs.bench)||0);
   let html="";
   podsOf(s).forEach(pod=>{
     const d=ensureDraft(s,pod);
@@ -731,17 +731,24 @@ function renderRoster(){
       if(!picks.length) return;
       const row=(s.records&&s.records.rows||{})[pod+"-"+team.id]||{w:0,l:0,pf:0};
       const mineHere=mine.pod===pod && mine.teamId===team.id;
-      html+='<div class="card" style="background:linear-gradient(160deg,#14233a,#0d1524);color:#fff;border-left:8px dashed #c9a227"><div class="eyebrow">SEASON TICKET · '+podName(pod).toUpperCase()+'</div><h2 style="font-size:28px;margin:6px 0">'+(team.name||"Team")+'</h2><p>'+(team.ownerName||"Owner")+(mineHere?" · you":"")+'</p><p style="font-size:20px;letter-spacing:1px">'+(row.w||0)+'-'+(row.l||0)+' · '+(row.pf||0)+' PF</p><p style="opacity:.7">Seat '+(team.id+1)+' · '+ (s.season||"2026")+' · Roster '+rosterSize+' + '+irSpots+' IR</p><div style="margin-top:12px;width:92px;height:64px;border-radius:8px;background:linear-gradient(#2a241c,#16120e);border:1px solid #c9a227;box-shadow:inset 0 0 0 3px #3a3126;display:flex;align-items:center;justify-content:center"><span style="width:26px;height:26px;border-radius:50%;border:4px solid #e6c35c;box-shadow:inset 0 0 0 5px #1a140c, 0 0 8px rgba(230,195,92,.4);display:inline-block"></span></div><p style="opacity:.7;margin-top:6px">Ring case · empty</p><div style="margin-top:8px;height:28px;background:repeating-linear-gradient(90deg,#fff 0 2px,transparent 2px 4px,#fff 4px 5px,transparent 5px 8px,#fff 8px 11px,transparent 11px 13px);opacity:.8"></div></div><div class="card">'+picks.map(pl=>'<div class="log-item" style="border-left:6px solid '+(colors[pl.pos]||"#999")+'"><b>'+(pl.pos||"?")+'</b> · '+(pl.name||"Player")+'</div>').join("")+'</div>';
+      html+='<div class="card" style="background:linear-gradient(160deg,#14233a,#0d1524);color:#fff;border-left:8px dashed #c9a227"><div class="eyebrow">SEASON TICKET · '+podName(pod).toUpperCase()+'</div><h2 style="font-size:28px;margin:6px 0">'+(team.name||"Team")+'</h2><p>'+(team.ownerName||"Owner")+(mineHere?" · you":"")+'</p><p style="font-size:20px;letter-spacing:1px">'+(row.w||0)+'-'+(row.l||0)+' · '+(row.pf||0)+' PF</p><p style="opacity:.7">Seat '+(team.id+1)+' · '+ (s.season||"2026")+' · Roster '+total+' + '+(rs.ir||1)+' IR</p><div style="margin-top:12px;width:92px;height:64px;border-radius:8px;background:linear-gradient(#2a241c,#16120e);border:1px solid #c9a227;box-shadow:inset 0 0 0 3px #3a3126;display:flex;align-items:center;justify-content:center"><span style="width:26px;height:26px;border-radius:50%;border:4px solid #e6c35c;box-shadow:inset 0 0 0 5px #1a140c, 0 0 8px rgba(230,195,92,.4);display:inline-block"></span></div><p style="opacity:.7;margin-top:6px">Ring case · empty</p><div style="margin-top:8px;height:28px;background:repeating-linear-gradient(90deg,#fff 0 2px,transparent 2px 4px,#fff 4px 5px,transparent 5px 8px,#fff 8px 11px,transparent 11px 13px);opacity:.8"></div></div><div class="card">'+picks.map(pl=>'<div class="log-item" style="border-left:6px solid '+(colors[pl.pos]||"#999")+'"><b>'+(pl.pos||"?")+'</b> · '+(pl.name||"Player")+'</div>').join("")+'</div>';
     });
   });
-  const settings = s.owner ? '<div class="card no-print"><h3>Roster settings</h3><label>Roster size</label><input id="roster-size" type="number" value="'+rosterSize+'" style="max-width:120px"><label>IR spots</label><input id="ir-spots" type="number" value="'+irSpots+'" style="max-width:120px"><label style="display:flex;align-items:center;gap:8px;margin-top:8px"><input type="checkbox" id="allow-defense" '+(allowDefense?"checked":"")+'> Allow defensive players</label><button class="btn btn-lime" id="save-roster" style="margin-top:12px">Save roster settings</button></div>' : '<div class="card"><p>Roster size: '+rosterSize+' · IR: '+irSpots+(allowDefense?" · Defense on":"")+'</p></div>';
+  const settings = s.owner ? '<div class="card no-print"><h3>Roster settings</h3><div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:10px"><div><label>QB</label><input id="rs-qb" type="number" value="'+(rs.qb||1)+'"></div><div><label>RB</label><input id="rs-rb" type="number" value="'+(rs.rb||2)+'"></div><div><label>WR</label><input id="rs-wr" type="number" value="'+(rs.wr||2)+'"></div><div><label>TE</label><input id="rs-te" type="number" value="'+(rs.te||1)+'"></div><div><label>DEF</label><input id="rs-def" type="number" value="'+(rs.def||0)+'"></div><div><label>K</label><input id="rs-k" type="number" value="'+(rs.k||1)+'"></div><div><label>Bench</label><input id="rs-bench" type="number" value="'+(rs.bench||6)+'"></div><div><label>IR</label><input id="rs-ir" type="number" value="'+(rs.ir||1)+'"></div></div><p style="margin-top:8px">Active roster: '+total+'</p><button class="btn btn-lime" id="save-roster" style="margin-top:12px">Save roster settings</button></div>' : '<div class="card"><p>QB '+(rs.qb||1)+' · RB '+(rs.rb||2)+' · WR '+(rs.wr||2)+' · TE '+(rs.te||1)+' · DEF '+(rs.def||0)+' · K '+(rs.k||1)+' · Bench '+(rs.bench||6)+' · IR '+(rs.ir||1)+'</p></div>';
   document.getElementById("app").innerHTML=header('<a class="btn" href="#home">Home</a>')+'<div class="page"><div class="eyebrow">ROSTER</div><h1>Lineup cards</h1>'+settings+(html||'<div class="card"><p>No picks on this device yet. Open a draft room once so the rosters load.</p></div>')+'</div>';
   const btn=document.getElementById("save-roster");
   if(btn) btn.onclick=()=>{
     if(!load().owner) return;
-    rosterSize = Number(document.getElementById("roster-size").value)||15;
-    irSpots = Number(document.getElementById("ir-spots").value)||0;
-    allowDefense = document.getElementById("allow-defense").checked;
+    rosterSettings = {
+      qb: Number(document.getElementById("rs-qb").value)||0,
+      rb: Number(document.getElementById("rs-rb").value)||0,
+      wr: Number(document.getElementById("rs-wr").value)||0,
+      te: Number(document.getElementById("rs-te").value)||0,
+      def: Number(document.getElementById("rs-def").value)||0,
+      k: Number(document.getElementById("rs-k").value)||0,
+      bench: Number(document.getElementById("rs-bench").value)||0,
+      ir: Number(document.getElementById("rs-ir").value)||0
+    };
     publishRoster();
     alert("Roster settings saved.");
     renderRoster();
