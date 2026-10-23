@@ -235,7 +235,7 @@ root.innerHTML=header('<a class="btn" href="#lobby">League</a><a class="btn" hre
 '<div class="page"><img class="hero-mark" src="mark.png" alt="Dualgrid"><div class="eyebrow">'+((s.league&&s.league.name)||leagueName)+' <span class="flag">🇺🇸</span></div><img src="wordmark.png" alt="DUALGRID" style="height:54px;border-radius:8px;margin:6px 0;display:block"><h1>'+((s.league&&s.league.code)||'Your league.')+'</h1><p class="lede">Give this code to the other phones. <span class="flag">🇺🇸</span></p><div class="card" style="margin:12px 0;border-top:3px solid var(--lime)"><h2>Your team</h2>'+(mine&&mine.teamId!=null?'<p>You are locked to '+((ensureDraft(s,mine.pod).teams.find(team=>team.id===Number(mine.teamId))||{}).name||"your team")+'.</p><input id="home-rename" class="search" placeholder="New team name"><button class="btn btn-lime" id="home-rename-btn" style="margin-top:8px">Rename team</button><input id="link-name" class="search" placeholder="Already claimed? Type your name" style="margin-top:8px"><button class="btn" id="link-seat" style="margin-top:8px">Link this phone</button>':'<p>Claim a seat here. You only get one.</p><input id="link-name" class="search" placeholder="Already claimed? Type your name"><button class="btn" id="link-seat" style="margin-top:8px">Link this phone</button><label>Division</label><select id="home-pod" class="search">'+pods.map(p=>'<option value="'+p+'">'+podName(p)+'</option>').join("")+'</select><label>Team</label><select id="home-team" class="search"></select><input id="home-seat-name" class="search" placeholder="Your name" style="margin-top:8px"><button class="btn btn-lime" id="home-claim" style="margin-top:8px">Claim this team</button><input id="home-rename" class="search" placeholder="New team name" style="margin-top:8px"><button class="btn" id="home-rename-btn" style="margin-top:8px">Rename team</button>')+'</div>'+
 '<div class="command-center">'+
 '<details class="card" open><summary>Draft <span class="flag">🇺🇸</span></summary><p>Join a room or watch the board.</p><div class="join-row"><input id="join-code" placeholder="EAST-7K2"/><button class="btn btn-lime" id="join-btn">Join</button></div><div style="margin-top:10px">'+rooms+'</div></details>'+
-'<details class="card"><summary>League</summary><div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px"><a class="btn" href="#scores">Standings</a><a class="btn" href="#scoreboard">Scoreboard</a><a class="btn" href="#bracket">Bracket</a><a class="btn" href="#talk">Talk</a><a class="btn" href="#waiver">Waiver</a><a class="btn" href="#roster">Roster</a><a class="btn" href="#history">History</a><a class="btn" href="#scoring">Scoring</a><a class="btn" href="#matchup">Matchup</a><a class="btn" href="#payout">Payouts</a></div>'+( (Array.isArray(rivals)?rivals:Object.values(rivals||{})).length ? '<h2 style="margin:12px 0 6px">Rival Week</h2>'+(Array.isArray(rivals)?rivals:Object.values(rivals||{})).map(r=>'<div class="team-row"><strong>'+r.a+'</strong><span>vs</span><strong>'+r.b+'</strong></div>').join('') : '' )+'</details>'+
+'<details class="card"><summary>League</summary><div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px"><a class="btn" href="#scores">Standings</a><a class="btn" href="#scoreboard">Scoreboard</a><a class="btn" href="#bracket">Bracket</a><a class="btn" href="#talk">Talk</a><a class="btn" href="#waiver">Waiver</a><a class="btn" href="#roster">Roster</a><a class="btn" href="#history">History</a><a class="btn" href="#scoring">Scoring</a><a class="btn" href="#matchup">Matchup</a><a class="btn" href="#trade">Trade</a><a class="btn" href="#payout">Payouts</a></div>'+( (Array.isArray(rivals)?rivals:Object.values(rivals||{})).length ? '<h2 style="margin:12px 0 6px">Rival Week</h2>'+(Array.isArray(rivals)?rivals:Object.values(rivals||{})).map(r=>'<div class="team-row"><strong>'+r.a+'</strong><span>vs</span><strong>'+r.b+'</strong></div>').join('') : '' )+'</details>'+
 '<details class="card"><summary>Commissioner</summary><div class="join-row"><input id="commish-code" placeholder="Commissioner code"/><button class="btn" id="commish-btn">Unlock</button></div></details>'+
 '</div></div>';
 document.getElementById("join-btn").onclick=()=>{const raw=(document.getElementById("join-code").value||"").toUpperCase().trim();const hit=Object.keys(CODES).find(k=>CODES[k]===raw||k.toUpperCase()===raw);if(hit)location.hash="#draft/"+hit;else alert("Unknown code. Try EAST-7K2");};
@@ -250,7 +250,7 @@ const hr=document.getElementById("home-rename-btn"); if(hr) hr.onclick=()=>{cons
 const hp=document.getElementById("home-pod"); if(hp){}
 const cb=document.getElementById("commish-btn"); if(cb) cb.onclick=()=>{ if(grantCommish(document.getElementById("commish-code").value)) renderHome(); }; const easy=document.getElementById("easy-unlock"); if(easy) easy.onclick=()=>{ const s=load(); s.owner=true; s.commish=s.commish||{}; s.commish[leagueCode()||"default"]=true; save(s); try{localStorage.setItem("dualgrid_owner","1");}catch(e){} alert("Unlocked as commissioner."); renderHome(); };
 return;}
-root.innerHTML=header((s.owner?'<span class="btn btn-ghost">OWNER · COMPED</span>':(on&&s.plan?'<span class="btn btn-ghost">'+s.plan.toUpperCase()+' · PAID</span>':''))+'<a class="btn btn-lime" href="#home" id="go-home">Home</a><a class="btn" href="#lobby">Leagues</a><a class="btn" href="#scores">Standings</a><a class="btn" href="#scoreboard">Scoreboard</a><a class="btn" href="#bracket">Bracket</a><a class="btn" href="#talk">Talk</a><a class="btn" href="#waiver">Waiver</a><a class="btn" href="#roster">Roster</a><a class="btn" href="#history">History</a><a class="btn" href="#scoring">Scoring</a><a class="btn" href="#matchup">Matchup</a><a class="btn" href="#payout">Payouts</a><a class="btn" href="#wall">Quad wall</a>')+
+root.innerHTML=header((s.owner?'<span class="btn btn-ghost">OWNER · COMPED</span>':(on&&s.plan?'<span class="btn btn-ghost">'+s.plan.toUpperCase()+' · PAID</span>':''))+'<a class="btn btn-lime" href="#home" id="go-home">Home</a><a class="btn" href="#lobby">Leagues</a><a class="btn" href="#scores">Standings</a><a class="btn" href="#scoreboard">Scoreboard</a><a class="btn" href="#bracket">Bracket</a><a class="btn" href="#talk">Talk</a><a class="btn" href="#waiver">Waiver</a><a class="btn" href="#roster">Roster</a><a class="btn" href="#history">History</a><a class="btn" href="#scoring">Scoring</a><a class="btn" href="#matchup">Matchup</a><a class="btn" href="#trade">Trade</a><a class="btn" href="#payout">Payouts</a><a class="btn" href="#wall">Quad wall</a>')+
 '<div class="page"><img class="hero-mark" src="mark.png" alt="Dualgrid"><div class="eyebrow">' + ((s.league&&s.league.name)||'COMMISSIONER DESK') + ' <span class="flag">🇺🇸</span></div><img src="wordmark.png" alt="DUALGRID" style="height:54px;border-radius:8px;margin:6px 0"><h1>' + ((s.league&&s.league.code)||'Invites are live.') + '</h1><p class="lede">League code. Give this to the other phones.</p><details class="card"><summary style="font-weight:800;cursor:pointer">Draft dates</summary><p>Each division can have its own night.</p>'+pods.map(p=>'<div class="team-row"><span>'+podName(p)+'</span><span><input type="date" id="date-'+p+'"><input type="time" id="time-'+p+'"></span></div>').join("")+'<button class="btn btn-lime" id="save-times" style="margin-top:8px">Save draft times</button></details><div class="card"><h2>Your team</h2><label>Division</label><select id="desk-pod" class="search">'+pods.map(p=>'<option value="'+p+'">'+podName(p)+'</option>').join("")+'</select><label>Team</label><select id="desk-team" class="search"></select><input id="desk-seat-name" class="search" placeholder="Your name" style="margin-top:8px"><button class="btn btn-lime" id="desk-claim" style="margin-top:8px">Claim this team</button><input id="desk-link-name" class="search" placeholder="Already claimed? Type your name" style="margin-top:8px"><button class="btn" id="desk-link" style="margin-top:8px">Link this phone</button><input id="desk-rename" class="search" placeholder="New team name" style="margin-top:8px"><button class="btn" id="desk-rename-btn" style="margin-top:8px">Rename selected team</button><p id="claimed-names" class="lede"></p><h3 style="margin-top:14px">Fix a mistake</h3><p>Only you can move someone.</p><button class="btn" id="desk-clear" style="margin-top:8px">Clear the selected team</button></div><p class="lede">Commissioner code: '+((s.commishCodes&&s.commishCodes[leagueCode()])||commishCode)+'</p><h1>'+(on?"Invites are live.":"You pay once.<br>Players join free.")+'</h1>'+
 '<p class="lede">Shared board is on. Two phones in the same pod should see the same picks.</p>'+
 '<div class="card" style="margin-bottom:16px"><span class="pod-chip '+(s.owner?"east":"west")+'">'+(s.owner?"COMMISH":"LOCKED")+'</span><h2>'+(s.owner?"Commissioner unlocked.":"Commissioner code")+'</h2><p>Players can join and draft. Reset and payouts need the code. First code is DUAL-2026.</p>'+(s.owner?'<button class="btn" id="lock-out">Lock this phone</button>':'<div class="join-row"><input id="commish-code" placeholder="DUAL-2026"/><button class="btn btn-lime" id="commish-btn">Unlock</button></div>')+'</div>'+
@@ -858,7 +858,67 @@ function renderLogin(){
   };
 }
 
-function route(){const page=(location.hash.replace("#","").split("/")[0]||"lobby"); const st=load(); if(!st.email && page!=="login"){ location.hash="#login"; return renderLogin(); } if(page==="login"){ return renderLogin(); } if(page!=="lobby"&&!leagueCode()&&page!=="draft"&&page!=="board"){location.hash="#lobby"; return renderLobby();}if(page==="pay")renderPay();else if(page==="draft")renderDraft();else if(page==="board")renderBoard();else if(page==="wall")renderWall();else if(page==="payout"){ if(!unlocked(load())){ alert("Commissioner code required."); location.hash="#home"; return;} renderPayout(); }else if(page==="scores")renderScores();else if(page==="scoreboard")renderScoreboard();else if(page==="bracket")renderBracket();else if(page==="talk")renderTalk();else if(page==="waiver")renderWaiver();else if(page==="roster")renderRoster();else if(page==="history")renderHistory();else if(page==="scoring")renderScoring();else if(page==="matchup")renderMatchup();else if(page==="dash")renderDash();else if(page==="lobby"||page==="")renderLobby();else renderHome();}
+
+function renderTrade(){
+  const s = load();
+  if(!s.records) s.records = {};
+  const trades = s.records.trades || [];
+  const mode = s.records.tradeMode || "commish";
+  const deadline = s.records.tradeDeadline || "Thursday 8:00 PM";
+  const isCommish = !!s.owner;
+  const seat = currentSeat() || {};
+  let list = trades.map((t,i) => {
+    const status = t.status || "pending";
+    return '<div class="card" style="margin:8px 0"><strong>'+ (t.from||"Team") +' → '+ (t.to||"Team") +'</strong><div class="sub">'+ (t.picks||"Picks") +' · '+status+'</div>'+(isCommish && status==="pending" ? '<button class="btn btn-lime" onclick="approveTrade('+i+')">Approve</button> <button class="btn" onclick="rejectTrade('+i+')">Reject</button>' : '')+'</div>';
+  }).join("") || "<p class=\"lede\">No pending trades.</p>";
+  let form = "";
+  if(seat.teamId != null){
+    form = '<div class="card"><h3>Propose a trade</h3><label>Other team</label><input id="trade-to" class="search" placeholder="Team name"><label>Picks / players</label><input id="trade-picks" class="search" placeholder="e.g. 2027 1st for 2027 2nd"><button class="btn btn-lime" id="propose-trade" style="margin-top:8px">Propose</button></div>';
+  }
+  let settings = "";
+  if(isCommish){
+    settings = '<div class="card"><h3>Trade settings</h3><label>How trades finalize</label><select id="trade-mode" class="search"><option value="commish"'+(mode==="commish"?" selected":"")+'>Commissioner only</option><option value="vote"'+(mode==="vote"?" selected":"")+'>League vote</option><option value="vote-commish"'+(mode==="vote-commish"?" selected":"")+'>League vote + commissioner</option></select><label>Deadline (goes through if no objection)</label><input id="trade-deadline" class="search" value="'+deadline+'"><button class="btn" id="save-trade-settings" style="margin-top:8px">Save settings</button></div>';
+  }
+  document.getElementById("app").innerHTML = header('<a class="btn" href="#home">Home</a>') +
+    '<div class="page"><div class="eyebrow">TRADES</div><h1>Trade center</h1><p class="lede">Draft picks and players. Mode: '+mode+' · Deadline: '+deadline+'</p>'+settings+form+list+'</div>';
+  const prop = document.getElementById("propose-trade");
+  if(prop) prop.onclick = ()=>{
+    const to = (document.getElementById("trade-to").value||"").trim();
+    const picks = (document.getElementById("trade-picks").value||"").trim();
+    if(!to || !picks){ alert("Fill both fields."); return; }
+    const st = load();
+    st.records.trades = st.records.trades || [];
+    st.records.trades.push({ from: seat.name || "You", to, picks, status: "pending", time: Date.now() });
+    save(st);
+    try{ dataRef("config/trades").set(st.records.trades); }catch(e){}
+    renderTrade();
+  };
+  const saveBtn = document.getElementById("save-trade-settings");
+  if(saveBtn) saveBtn.onclick = ()=>{
+    const st = load();
+    st.records.tradeMode = document.getElementById("trade-mode").value;
+    st.records.tradeDeadline = document.getElementById("trade-deadline").value;
+    save(st);
+    try{ dataRef("config/tradeSettings").set({ mode: st.records.tradeMode, deadline: st.records.tradeDeadline }); }catch(e){}
+    renderTrade();
+  };
+}
+function approveTrade(i){
+  const st = load();
+  if(st.records.trades && st.records.trades[i]) st.records.trades[i].status = "approved";
+  save(st);
+  try{ dataRef("config/trades").set(st.records.trades); }catch(e){}
+  renderTrade();
+}
+function rejectTrade(i){
+  const st = load();
+  if(st.records.trades && st.records.trades[i]) st.records.trades[i].status = "rejected";
+  save(st);
+  try{ dataRef("config/trades").set(st.records.trades); }catch(e){}
+  renderTrade();
+}
+
+function route(){const page=(location.hash.replace("#","").split("/")[0]||"lobby"); const st=load(); if(!st.email && page!=="login"){ location.hash="#login"; return renderLogin(); } if(page==="login"){ return renderLogin(); } if(page!=="lobby"&&!leagueCode()&&page!=="draft"&&page!=="board"){location.hash="#lobby"; return renderLobby();}if(page==="pay")renderPay();else if(page==="draft")renderDraft();else if(page==="board")renderBoard();else if(page==="wall")renderWall();else if(page==="payout"){ if(!unlocked(load())){ alert("Commissioner code required."); location.hash="#home"; return;} renderPayout(); }else if(page==="scores")renderScores();else if(page==="scoreboard")renderScoreboard();else if(page==="bracket")renderBracket();else if(page==="talk")renderTalk();else if(page==="waiver")renderWaiver();else if(page==="roster")renderRoster();else if(page==="history")renderHistory();else if(page==="scoring")renderScoring();else if(page==="matchup")renderMatchup();else if(page==="trade")renderTrade();else if(page==="dash")renderDash();else if(page==="lobby"||page==="")renderLobby();else renderHome();}
 ["east","west","north","south"].forEach(pod=>{dataRef("drafts/"+pod).on("value",snap=>{const remote=snap.val();if(!remote||!remote.teams)return;applyingRemote=true;const s=load();s.drafts[pod]=normalizeDraft(remote);save(s);applyingRemote=false;const page=(location.hash.replace("#","").split("/")[0]||"");const onPod=(location.hash.split("/")[1]||"")===(pod);if((page==="draft"||page==="board")&&onPod&&window._paint)window._paint();});});
 dataRef("records").on("value",snap=>{const remote=snap.val();if(!remote)return;applyingRemote=true;const s=load();s.records=remote;save(s);applyingRemote=false;if((location.hash||"").startsWith("#scores"))renderScores(); if((location.hash||"").startsWith("#bracket"))renderBracket();});
 if(!window._draftTick){window._draftTick=setInterval(()=>{const h=location.hash||"";if(!(h.startsWith("#draft")||h.startsWith("#board")))return;const pod=podFromHash();const d=ensureDraft(load(),pod);const left=clockLeft(d);const el=document.querySelector(".timer");if(el)el.textContent=fmtTime(left);if(left<=0&&d.started&&d.pickIndex<ROUNDS*teamCount()&&load().owner&&!window._autoPick){window._autoPick=true;const best=bestAvailable(d);if(best)makePick(load(),pod,best.id);setTimeout(()=>{window._autoPick=false;},1500);}},250);}
