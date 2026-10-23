@@ -430,13 +430,21 @@ const btn=document.getElementById("save-scores");
 if(btn) btn.onclick=()=>{
   const st=load(); if(!st.owner){alert("Commissioner only.");return;}
   if(!st.records)st.records={week:1,rows:{}};
+  if(!st.records.rows)st.records.rows={};
   st.records.week=Number(document.getElementById("week").value)||1;
+  const rows=st.records.rows;
   document.querySelectorAll("[data-k]").forEach(inp=>{
-    const k=inp.dataset.k; if(!st.records.rows[k])st.records.rows[k]={w:0,l:0,pf:0,pa:0};
-    st.records.rows[k][inp.dataset.f]=Number(inp.value)||0;
+    const k=inp.dataset.k;
+    const f=inp.dataset.f;
+    if(!k||!f)return;
+    if(!rows[k])rows[k]={w:0,l:0,pf:0,pa:0};
+    rows[k][f]=Number(inp.value)||0;
   });
   st.records.slap={home:document.getElementById("slap-home").value,away:document.getElementById("slap-away").value};
-  save(st); publishRecords(); alert("Week saved for every phone."); renderScores();
+  save(st);
+  publishRecords();
+  alert("Week saved for every phone.");
+  setTimeout(()=>{renderScores(); if((location.hash||"").startsWith("#bracket"))renderBracket();}, 100);
 };
 }
 
