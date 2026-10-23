@@ -436,7 +436,7 @@ if(btn) btn.onclick=()=>{
     st.records.rows[k][inp.dataset.f]=Number(inp.value)||0;
   });
   st.records.slap={home:document.getElementById("slap-home").value,away:document.getElementById("slap-away").value};
-  save(st); publishRecords(); alert("Week saved for every phone.");
+  save(st); publishRecords(); alert("Week saved for every phone."); renderScores();
 };
 }
 
@@ -571,7 +571,15 @@ function renderBracket(){
 try{
 const s=load(); const pods=podsOf(s);
 const per=Number(playoffSpots)||4;
-const take=pod=>ensureDraft(s,pod).teams.slice(0,per).map((team,i)=>{const row=(s.records&&s.records.rows&&s.records.rows[pod+"-"+team.id])||{}; return {pod,seed:i+1,name:team.name||"TBD",photo:team.photo||"",proj:row.pf||"—"};});
+const take=pod=>{
+  const teams=ensureDraft(s,pod).teams;
+  const ranked=teams.map(team=>{
+    const key=pod+"-"+team.id;
+    const row=(s.records&&s.records.rows&&s.records.rows[key])||{w:0,l:0,pf:0};
+    return {team,key,w:Number(row.w)||0,l:Number(row.l)||0,pf:Number(row.pf)||0};
+  }).sort((a,b)=>b.w-a.w||a.l-b.l||b.pf-a.pf);
+  return ranked.slice(0,per).map((item,i)=>({pod,seed:i+1,name:item.team.name||"TBD",photo:item.team.photo||"",proj:item.pf||"—"}));
+};
 const left=take(pods[0]||"east");
 const right=take(pods[1]||"west");
 const started=!!(s.records&&s.records.playoffs&&s.records.playoffs.started);
@@ -751,7 +759,7 @@ document.getElementById("app").innerHTML=header('<a class="btn" href="#home">Hom
 
 function route(){const page=(location.hash.replace("#","").split("/")[0]||"lobby"); if(page!=="lobby"&&!leagueCode()&&page!=="draft"&&page!=="board"){location.hash="#lobby"; return renderLobby();}if(page==="pay")renderPay();else if(page==="draft")renderDraft();else if(page==="board")renderBoard();else if(page==="wall")renderWall();else if(page==="payout"){ if(!unlocked(load())){ alert("Commissioner code required."); location.hash="#home"; return;} renderPayout(); }else if(page==="scores")renderScores();else if(page==="scoreboard")renderScoreboard();else if(page==="bracket")renderBracket();else if(page==="talk")renderTalk();else if(page==="waiver")renderWaiver();else if(page==="roster")renderRoster();else if(page==="history")renderHistory();else if(page==="scoring")renderScoring();else if(page==="matchup")renderMatchup();else if(page==="dash")renderDash();else if(page==="lobby"||page==="")renderLobby();else renderHome();}
 ["east","west","north","south"].forEach(pod=>{dataRef("drafts/"+pod).on("value",snap=>{const remote=snap.val();if(!remote||!remote.teams)return;applyingRemote=true;const s=load();s.drafts[pod]=normalizeDraft(remote);save(s);applyingRemote=false;const page=(location.hash.replace("#","").split("/")[0]||"");const onPod=(location.hash.split("/")[1]||"")===(pod);if((page==="draft"||page==="board")&&onPod&&window._paint)window._paint();});});
-dataRef("records").on("value",snap=>{const remote=snap.val();if(!remote)return;applyingRemote=true;const s=load();s.records=remote;save(s);applyingRemote=false;if((location.hash||"").startsWith("#scores"))renderScores();});
+dataRef("records").on("value",snap=>{const remote=snap.val();if(!remote)return;applyingRemote=true;const s=load();s.records=remote;save(s);applyingRemote=false;if((location.hash||"").startsWith("#scores"))renderScores(); if((location.hash||"").startsWith("#bracket"))renderBracket();});
 if(!window._draftTick){window._draftTick=setInterval(()=>{const h=location.hash||"";if(!(h.startsWith("#draft")||h.startsWith("#board")))return;const pod=podFromHash();const d=ensureDraft(load(),pod);const left=clockLeft(d);const el=document.querySelector(".timer");if(el)el.textContent=fmtTime(left);if(left<=0&&d.started&&d.pickIndex<ROUNDS*teamCount()&&load().owner&&!window._autoPick){window._autoPick=true;const best=bestAvailable(d);if(best)makePick(load(),pod,best.id);setTimeout(()=>{window._autoPick=false;},1500);}},250);}
 document.addEventListener("click",e=>{const a=e.target.closest&&e.target.closest("#go-home"); if(!a)return; e.preventDefault(); location.hash="#home"; renderHome();});
 document.addEventListener("click",e=>{if(e.target&&e.target.id==="menu-btn"){const n=document.querySelector(".nav-links"); if(n)n.classList.toggle("open");}});
