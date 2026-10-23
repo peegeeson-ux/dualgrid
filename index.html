@@ -9,6 +9,7 @@
 *{box-sizing:border-box}html,body{margin:0;background:var(--bg);color:var(--ink);font-family:Oswald,Teko,Impact,sans-serif}
 a{color:inherit;text-decoration:none}
 .app-header{display:flex;justify-content:space-between;align-items:center;padding:14px 16px;border-bottom:1px solid var(--line);position:sticky;top:0;background:#0b0d0acc;backdrop-filter:blur(10px);z-index:5}
+@media(max-width:700px){body.draft-room .app-header{position:static}}
 .brand{display:flex;align-items:center;gap:10px;font-weight:800;letter-spacing:.08em}
 .mark{width:28px;height:28px;border-radius:8px;background:var(--lime);color:#111;display:grid;place-items:center;font-weight:900}
 .brand small{color:var(--mute);font-weight:600;letter-spacing:.12em}
@@ -67,6 +68,7 @@ details.card{margin-bottom:12px}
 .command-center .card:nth-child(3){border-top-color:var(--west)}
 .command-center .card:nth-child(4){border-top-color:var(--north)}
 .pos{font-size:10px;font-weight:800;padding:2px 6px;border-radius:4px;min-width:28px;text-align:center;color:#fff}.pos.QB{background:#3b82f6}.pos.RB{background:#f97316}.pos.WR{background:#22c55e}.pos.TE{background:#a855f7}.pos.K{background:#eab308;color:#111}.pos.DEF{background:#64748b}.clock-box .timer{font-size:48px;letter-spacing:.02em}.player{padding:10px 4px}.player .name{font-weight:700;font-size:15px}
+@media(max-width:700px){body.draft-page .app-header{position:static;padding:8px 12px}.body.draft-page .hero-mark{width:28px;height:28px}}
 </style>
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
@@ -247,7 +249,7 @@ function renderPay(){
 const plan=(location.hash.split("/")[1]||"dual").toLowerCase()==="quad"?"quad":"dual";
 document.getElementById("pay-now").onclick=()=>{const s=load();s.paid=true;s.plan=plan;s.circuit=plan;s.paidAt=new Date().toLocaleDateString();save(s);location.hash="#home";};
 }
-function renderDraft(){
+function renderDraft(){document.body.classList.add('draft-page');
 /* players can draft */
 const pod=podFromHash();const root=document.getElementById("app");let filter="";
 const paint=()=>{
