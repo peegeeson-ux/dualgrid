@@ -331,9 +331,36 @@ setTimeout(()=>{
     const aside = document.createElement("aside");
     aside.className = "panel";
     aside.id = "my-roster";
-    aside.innerHTML = "<h3>YOUR ROSTER</h3><div id=\"roster-body\">Claim a seat to see your roster.</div>";
+    aside.innerHTML = "<h3>YOUR ROSTER</h3><div id=\"roster-body\"></div>";
     shell.appendChild(aside);
   }
+  // Fill roster now that the element exists
+  const rosterEl = document.getElementById("roster-body");
+  if (!rosterEl) return;
+  const here = currentSeat();
+  const seatId = here && here.pod === pod ? here.teamId : null;
+  const myTeam = seatId != null ? draft.teams.find(t => Number(t.id) === Number(seatId)) : null;
+  if (!myTeam) {
+    rosterEl.innerHTML = "<p>Claim a seat to see your roster.</p>";
+    return;
+  }
+  const byPos = {};
+  (myTeam.picks || []).forEach(p => {
+    const pos = p.pos || "?";
+    if (!byPos[pos]) byPos[pos] = [];
+    byPos[pos].push(p.name);
+  });
+  const order = ["QB","RB","WR","TE","FLEX","K","DEF","TEAM DEF","IR"];
+  let body = "<p style=\"font-weight:800;margin-bottom:6px\">" + (myTeam.name || "Your team") + "</p>";
+  order.forEach(pos => {
+    if (byPos[pos] && byPos[pos].length) {
+      body += "<div style=\"margin:6px 0\"><strong>" + pos + "</strong><div style=\"font-size:13px;color:var(--mute)\">" + byPos[pos].join("<br>") + "</div></div>";
+    }
+  });
+  Object.keys(byPos).forEach(pos => {
+    if (!order.includes(pos)) body += "<div style=\"margin:6px 0\"><strong>" + pos + "</strong><div style=\"font-size:13px;color:var(--mute)\">" + byPos[pos].join("<br>") + "</div></div>";
+  });
+  rosterEl.innerHTML = body || "<p>No picks yet.</p>";
 }, 0);
 const q=document.getElementById("q");if(q)q.oninput=e=>{filter=e.target.value;paint();};
 function currentSeat(){try{return (JSON.parse(localStorage.getItem("dualgrid-my-seats")||"{}")[leagueCode()]||JSON.parse(localStorage.getItem("dualgrid-my-seat")||"null"))}catch(e){return null}}
@@ -343,30 +370,7 @@ const asList=v=>Array.isArray(v)?v:(v&&typeof v==="object"?Object.values(v):[]);
 const clean=list=>asList(list).map(Number).filter(id=>available(draft).some(p=>p.id===id));
 const showQueue=(list)=>{const el=document.getElementById("queue-list"); if(!el)return; el.innerHTML=clean(list).map(id=>{const p=PLAYERS.find(x=>x.id===Number(id)); return p?'<div class="team-row"><span>'+p.name+' · '+p.pos+'</span><button class="btn" data-unqueue="'+p.id+'">Remove</button></div>':"";}).join("")||"<p>No one queued.</p>";};
 let queue=clean(myTeam&&myTeam.queue);
-// Render controlled team's roster by position
-const rosterEl = document.getElementById("roster-body");
-if (rosterEl && myTeam) {
-  const byPos = {};
-  (myTeam.picks||[]).forEach(p => {
-    const pos = p.pos || "?";
-    if (!byPos[pos]) byPos[pos] = [];
-    byPos[pos].push(p.name);
-  });
-  const order = ["QB","RB","WR","TE","FLEX","K","DEF","TEAM DEF","IR"];
-  let body = "";
-  order.forEach(pos => {
-    if (byPos[pos] && byPos[pos].length) {
-      body += '<div style="margin:6px 0"><strong>'+pos+'</strong><div style="font-size:13px;color:var(--mute)">'+byPos[pos].join("<br>")+'</div></div>';
-    }
-  });
-  // Any other positions
-  Object.keys(byPos).forEach(pos => {
-    if (!order.includes(pos)) body += '<div style="margin:6px 0"><strong>'+pos+'</strong><div style="font-size:13px;color:var(--mute)">'+byPos[pos].join("<br>")+'</div></div>';
-  });
-  rosterEl.innerHTML = body || "<p>No picks yet.</p>";
-} else if (rosterEl) {
-  rosterEl.innerHTML = "<p>Claim a seat to see your roster.</p>";
-}
+
 
 showQueue(queue);
 if(!window._qClick){window._qClick=true; document.addEventListener("click",e=>{const add=e.target.closest&&e.target.closest("[data-queue]"); const rem=e.target.closest&&e.target.closest("[data-unqueue]"); if(!add&&!rem)return; const here=currentSeat(); if(!here||here.pod!==pod){alert("Claim or link your team on the home screen first."); return;} const st=load(); const d=ensureDraft(st,pod); const team=d.teams.find(team=>Number(team.id)===Number(here.teamId)); if(!team){alert("That team is not in this room."); return;} const list=asList(team.queue).map(Number).filter(id=>available(d).some(p=>p.id===id)); if(add){const id=Number(add.dataset.queue); if(!list.includes(id))list.push(id);} if(rem){const id=Number(rem.dataset.unqueue); const i=list.indexOf(id); if(i>=0)list.splice(i,1);} team.queue=list; save(st); publish(pod); paint();});}
