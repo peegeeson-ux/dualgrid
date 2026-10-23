@@ -640,12 +640,14 @@ const s=load();
 const fields=[
   ["ptd","Passing TD",4],["pyd","Passing yard",0.04],["int","Interception",-2],
   ["rtd","Rushing TD",6],["ryd","Rushing yard",0.1],
-  ["rec","Reception",1],["recyd","Receiving yard",0.1],["rectd","Receiving TD",6],
-  ["bonus100","100+ yard bonus",3],["bonus40td","40+ TD bonus",2]
+  ["rec","Reception (PPR)",1],["recyd","Receiving yard",0.1],["rectd","Receiving TD",6],
+  ["bonus100","100+ yard bonus",3],["bonus40yd","40+ yard TD bonus",2],
+  ["defTD","Defense / ST TD",6],["sack","Sack",1],["intDef","Defense INT",2],
+  ["fumRec","Fumble recovery",2],["safety","Safety",2],["ptsAllowed","Points allowed (0-6)",10]
 ];
 const inputs=fields.map(f=>'<label>'+f[1]+'</label><input id="sc-'+f[0]+'" type="number" step="0.01" value="'+f[2]+'">').join("");
 document.getElementById("app").innerHTML=header('<a class="btn" href="#home">Home</a>')+
-'<div class="page"><div class="eyebrow">'+((s.league&&s.league.name)||leagueName)+'</div><h1>Scoring</h1><p class="lede">Full customization. These rules stay with this league.</p><div class="card">'+inputs+(s.owner?'<button class="btn btn-lime" id="save-scoring" style="margin-top:12px">Save scoring</button>':"")+'</div><div id="sc-show" class="card" style="margin-top:12px"></div></div>';
+'<div class="page"><div class="eyebrow">'+((s.league&&s.league.name)||leagueName)+'</div><h1>Scoring</h1><p class="lede">Full customization. These rules stay with this league.</p><div class="card"><div style="display:flex;gap:8px;margin-bottom:12px"><button class="btn" id="preset-ppr">PPR</button><button class="btn" id="preset-half">Half PPR</button><button class="btn" id="preset-std">Traditional</button></div>'+inputs+(s.owner?'<button class="btn btn-lime" id="save-scoring" style="margin-top:12px">Save scoring</button>':"")+'</div><div id="sc-show" class="card" style="margin-top:12px"></div></div>';
 dataRef("config/scoring").on("value",snap=>{
   const v=snap.val()||{};
   fields.forEach(f=>{const el=document.getElementById("sc-"+f[0]); if(el&&v[f[0]]!=null)el.value=v[f[0]];});
@@ -653,6 +655,12 @@ dataRef("config/scoring").on("value",snap=>{
 });
 const b=document.getElementById("save-scoring");
 if(b) b.onclick=()=>{if(!load().owner)return; const out={}; fields.forEach(f=>out[f[0]]=Number(document.getElementById("sc-"+f[0]).value)||0); dataRef("config/scoring").set(out);};
+
+const setPreset=(rec)=>{const el=document.getElementById("sc-rec"); if(el)el.value=rec;};
+const ppr=document.getElementById("preset-ppr"); if(ppr)ppr.onclick=()=>setPreset(1);
+const half=document.getElementById("preset-half"); if(half)half.onclick=()=>setPreset(0.5);
+const std=document.getElementById("preset-std"); if(std)std.onclick=()=>setPreset(0);
+
 }
 
 function waiverState(){const s=load(); if(!s.records)s.records={}; return s;}
