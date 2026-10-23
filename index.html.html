@@ -656,10 +656,18 @@ dataRef("config/scoring").on("value",snap=>{
 const b=document.getElementById("save-scoring");
 if(b) b.onclick=()=>{if(!load().owner)return; const out={}; fields.forEach(f=>out[f[0]]=Number(document.getElementById("sc-"+f[0]).value)||0); dataRef("config/scoring").set(out);};
 
-const setPreset=(rec)=>{const el=document.getElementById("sc-rec"); if(el)el.value=rec;};
-const ppr=document.getElementById("preset-ppr"); if(ppr)ppr.onclick=()=>setPreset(1);
-const half=document.getElementById("preset-half"); if(half)half.onclick=()=>setPreset(0.5);
-const std=document.getElementById("preset-std"); if(std)std.onclick=()=>setPreset(0);
+function applyPreset(val){
+  const el=document.getElementById("sc-rec");
+  if(el) el.value=val;
+  const show=document.getElementById("sc-show");
+  if(show){
+    const recLine=show.innerHTML.split("<div>").find(x=>x.includes("Reception"));
+    if(recLine) show.innerHTML=show.innerHTML.replace(recLine, "Reception (PPR): "+val+"</div>");
+  }
+}
+const ppr=document.getElementById("preset-ppr"); if(ppr) ppr.onclick=()=>applyPreset(1);
+const half=document.getElementById("preset-half"); if(half) half.onclick=()=>applyPreset(0.5);
+const std=document.getElementById("preset-std"); if(std) std.onclick=()=>applyPreset(0);
 
 }
 
