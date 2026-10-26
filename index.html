@@ -712,7 +712,8 @@ const fields=[
   ["rec","Reception (PPR)",1],["recyd","Receiving yard",0.1],["rectd","Receiving TD",6],
   ["bonus100","100+ yard bonus",3],["bonus40yd","40+ yard TD bonus",2],
   ["defTD","Defense / ST TD",6],["sack","Sack",1],["intDef","Defense INT",2],
-  ["fumRec","Fumble recovery",2],["safety","Safety",2],["ptsAllowed","Points allowed (0-6)",10]
+  ["fumRec","Fumble recovery",2],["tackle","Tackle",1],["ast","Assisted tackle",0.5],
+  ["safety","Safety",2],["ptsAllowed","Points allowed (0-6)",10]
 ];
 const inputs=fields.map(f=>'<label>'+f[1]+'</label><input id="sc-'+f[0]+'" type="number" step="0.01" value="'+f[2]+'">').join("");
 document.getElementById("app").innerHTML=header('<a class="btn" href="#home">Home</a>')+
