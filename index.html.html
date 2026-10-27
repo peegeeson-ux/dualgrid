@@ -762,29 +762,28 @@ function addWaiver(id){const s=waiverState(); const rec=s.records; const closed=
 
 
 function movePlayer(pod, teamId, playerId, to){
-  alert('clicked '+to+' '+playerId);
-  const st=load();
-  const tid=Number(teamId);
-  const overrideOn = localStorage.getItem("dualgrid-override-"+pod+"-"+tid)==="1";
-  if(!canEditTeam(st, pod, tid) && !(st.owner && overrideOn)){ alert("You can only edit your own lineup."); return; }
-  const d=ensureDraft(st,pod);
-  const team=d.teams[tid];
-  if(!team){ alert("Team not found"); return; }
-  const all=team.picks||[];
-  const pl=all.find(p=>Number(p.id)===Number(playerId));
-  if(!pl){ alert("Player not found"); return; }
-  const lineup = team.lineup || {starters:[],bench:[],ir:[]};
-  lineup.starters = (lineup.starters||[]).filter(p=>Number(p.id)!==Number(playerId));
-  lineup.bench = (lineup.bench||[]).filter(p=>Number(p.id)!==Number(playerId));
-  lineup.ir = (lineup.ir||[]).filter(p=>Number(p.id)!==Number(playerId));
-  if(to==="starter") lineup.starters.push(pl);
-  else if(to==="ir") lineup.ir.push(pl);
-  else lineup.bench.push(pl);
-  team.lineup = lineup;
-  st.drafts[pod] = d;
-  save(st); 
-  publish(pod); 
-  renderRoster();
+  try{
+    const st=load();
+    const tid=Number(teamId);
+    const d=ensureDraft(st,pod);
+    const team=d.teams[tid];
+    if(!team){ alert("no team"); return; }
+    const pl=(team.picks||[]).find(p=>Number(p.id)===Number(playerId));
+    if(!pl){ alert("no player"); return; }
+    const lineup = {starters:[],bench:[],ir:[]};
+    const existing = team.lineup || {};
+    lineup.starters = (existing.starters||[]).filter(p=>Number(p.id)!==Number(playerId));
+    lineup.bench = (existing.bench||[]).filter(p=>Number(p.id)!==Number(playerId));
+    lineup.ir = (existing.ir||[]).filter(p=>Number(p.id)!==Number(playerId));
+    if(to==="starter") lineup.starters.push(pl);
+    else if(to==="ir") lineup.ir.push(pl);
+    else lineup.bench.push(pl);
+    team.lineup = lineup;
+    save(st);
+    publish(pod);
+    alert("saved, starters:"+lineup.starters.length+" bench:"+lineup.bench.length);
+    renderRoster();
+  }catch(e){ alert("error: "+e.message); }
 }
 
 function renderRoster(){
