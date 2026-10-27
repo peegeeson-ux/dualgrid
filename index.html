@@ -762,7 +762,6 @@ function addWaiver(id){const s=waiverState(); const rec=s.records; const closed=
 
 
 function movePlayer(pod, teamId, playerId, to){
-  alert('move '+to+' for '+playerId);
   const st=load();
   const tid=Number(teamId);
   const overrideOn = localStorage.getItem("dualgrid-override-"+pod+"-"+tid)==="1";
@@ -773,14 +772,18 @@ function movePlayer(pod, teamId, playerId, to){
   const all=team.picks||[];
   const pl=all.find(p=>Number(p.id)===Number(playerId));
   if(!pl){ alert("Player not found"); return; }
-  team.lineup=team.lineup||{starters:[],bench:[],ir:[]};
-  team.lineup.starters=(team.lineup.starters||[]).filter(p=>Number(p.id)!==Number(playerId));
-  team.lineup.bench=(team.lineup.bench||[]).filter(p=>Number(p.id)!==Number(playerId));
-  team.lineup.ir=(team.lineup.ir||[]).filter(p=>Number(p.id)!==Number(playerId));
-  if(to==="starter") team.lineup.starters.push(pl);
-  else if(to==="ir") team.lineup.ir.push(pl);
-  else team.lineup.bench.push(pl);
-  save(st); publish(pod); renderRoster();
+  const lineup = team.lineup || {starters:[],bench:[],ir:[]};
+  lineup.starters = (lineup.starters||[]).filter(p=>Number(p.id)!==Number(playerId));
+  lineup.bench = (lineup.bench||[]).filter(p=>Number(p.id)!==Number(playerId));
+  lineup.ir = (lineup.ir||[]).filter(p=>Number(p.id)!==Number(playerId));
+  if(to==="starter") lineup.starters.push(pl);
+  else if(to==="ir") lineup.ir.push(pl);
+  else lineup.bench.push(pl);
+  team.lineup = lineup;
+  st.drafts[pod] = d;
+  save(st); 
+  publish(pod); 
+  renderRoster();
 }
 
 function renderRoster(){
