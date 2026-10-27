@@ -762,6 +762,7 @@ function addWaiver(id){const s=waiverState(); const rec=s.records; const closed=
 
 
 function renderRoster(){
+  try{
   const s=load();
   const colors={QB:"#e85d4c",RB:"#3d9a6a",WR:"#3d7ea6",TE:"#c9842a",K:"#7a6bb5",DEF:"#5c6b7a"};
   const mine=s.actingAs||{};
@@ -835,6 +836,7 @@ function renderRoster(){
       save(st); publish(pod); renderRoster();
     };
   });
+  }catch(err){ console.error(err); document.getElementById('app').innerHTML='<div class="page"><h1>Roster page error</h1><pre style="color:#c6f25a">'+err.message+'</pre><a class="btn" href="#home">Home</a></div>'; }
 }
 
 function renderMatchup(){
