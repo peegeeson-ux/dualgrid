@@ -782,13 +782,14 @@ function renderRoster(){
         lineup.starters = picks.slice(0, total);
         lineup.bench = picks.slice(total);
       }
-      html+='<div class="card" style="background:linear-gradient(160deg,#14233a,#0d1524);color:#fff;border-left:8px dashed #c9a227"><div class="eyebrow">SEASON TICKET · '+podName(pod).toUpperCase()+'</div><h2 style="font-size:28px;margin:6px 0">'+(team.name||"Team")+'</h2><p>'+(team.ownerName||"Owner")+(mineHere?" · you":"")+'</p><p style="font-size:20px;letter-spacing:1px">'+(row.w||0)+'-'+(row.l||0)+' · '+(row.pf||0)+' PF</p><p style="opacity:.7">Seat '+(team.id+1)+' · '+ (s.season||"2026")+' · Roster '+total+' + '+(rs.ir||1)+' IR</p></div>';
+      const override = s.owner && (localStorage.getItem("dualgrid-override-"+pod+"-"+team.id)==="1");
+      html+='<div class="card" style="background:linear-gradient(160deg,#14233a,#0d1524);color:#fff;border-left:8px dashed #c9a227"><div class="eyebrow">SEASON TICKET · '+podName(pod).toUpperCase()+'</div><h2 style="font-size:28px;margin:6px 0">'+(team.name||"Team")+'</h2><p>'+(team.ownerName||"Owner")+(mineHere?" · you":"")+'</p><p style="font-size:20px;letter-spacing:1px">'+(row.w||0)+'-'+(row.l||0)+' · '+(row.pf||0)+' PF</p><p style="opacity:.7">Seat '+(team.id+1)+' · '+ (s.season||"2026")+' · Roster '+total+' + '+(rs.ir||1)+' IR</p>'+(s.owner?'<label style="display:flex;align-items:center;gap:8px;margin-top:10px"><input type="checkbox" data-override="'+pod+'-'+team.id+'" '+(override?"checked":"")+'> Commissioner override</label>':'')+'</div>';
       const starters = Array.isArray(lineup.starters) ? lineup.starters : [];
       const bench = Array.isArray(lineup.bench) ? lineup.bench : [];
       const ir = Array.isArray(lineup.ir) ? lineup.ir : [];
-      html+='<div class="card"><h3>Starters</h3>'+starters.map(pl=>'<div class="log-item" style="border-left:6px solid '+(colors[pl.pos]||"#999")+'"><b>'+(pl.pos||"?")+'</b> · '+(pl.name||"Player")+(mineHere?' <button class="btn" data-move="bench" data-id="'+pl.id+'" data-pod="'+pod+'" data-team="'+team.id+'">Bench</button>':"")+'</div>').join("")+'</div>';
-      html+='<div class="card"><h3>Bench</h3>'+bench.map(pl=>'<div class="log-item"><b>'+(pl.pos||"?")+'</b> · '+(pl.name||"Player")+(mineHere?' <button class="btn" data-move="starter" data-id="'+pl.id+'" data-pod="'+pod+'" data-team="'+team.id+'">Start</button> <button class="btn" data-move="ir" data-id="'+pl.id+'" data-pod="'+pod+'" data-team="'+team.id+'">IR</button>':"")+'</div>').join("")+'</div>';
-      html+='<div class="card"><h3>IR</h3>'+ir.map(pl=>'<div class="log-item"><b>'+(pl.pos||"?")+'</b> · '+(pl.name||"Player")+(mineHere?' <button class="btn" data-move="bench" data-id="'+pl.id+'" data-pod="'+pod+'" data-team="'+team.id+'">Bench</button>':"")+'</div>').join("")+'</div>';
+      html+='<div class="card"><h3>Starters</h3>'+starters.map(pl=>'<div class="log-item" style="border-left:6px solid '+(colors[pl.pos]||"#999")+'"><b>'+(pl.pos||"?")+'</b> · '+(pl.name||"Player")+((mineHere||override)?' <button class="btn" data-move="bench" data-id="'+pl.id+'" data-pod="'+pod+'" data-team="'+team.id+'">Bench</button>':"")+'</div>').join("")+'</div>';
+      html+='<div class="card"><h3>Bench</h3>'+bench.map(pl=>'<div class="log-item"><b>'+(pl.pos||"?")+'</b> · '+(pl.name||"Player")+((mineHere||override)?' <button class="btn" data-move="starter" data-id="'+pl.id+'" data-pod="'+pod+'" data-team="'+team.id+'">Start</button> <button class="btn" data-move="ir" data-id="'+pl.id+'" data-pod="'+pod+'" data-team="'+team.id+'">IR</button>':"")+'</div>').join("")+'</div>';
+      html+='<div class="card"><h3>IR</h3>'+ir.map(pl=>'<div class="log-item"><b>'+(pl.pos||"?")+'</b> · '+(pl.name||"Player")+((mineHere||override)?' <button class="btn" data-move="bench" data-id="'+pl.id+'" data-pod="'+pod+'" data-team="'+team.id+'">Bench</button>':"")+'</div>').join("")+'</div>';
     });
   });
   const settings = s.owner ? '<div class="card no-print"><h3>Roster settings</h3><div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:10px"><div><label>QB</label><input id="rs-qb" type="number" value="'+(rs.qb||1)+'"></div><div><label>RB</label><input id="rs-rb" type="number" value="'+(rs.rb||2)+'"></div><div><label>WR</label><input id="rs-wr" type="number" value="'+(rs.wr||2)+'"></div><div><label>TE</label><input id="rs-te" type="number" value="'+(rs.te||1)+'"></div><div><label>Team DEF</label><input id="rs-teamDef" type="number" value="'+(rs.teamDef||0)+'"></div><div><label>Def players</label><input id="rs-defPlayers" type="number" value="'+(rs.defPlayers||0)+'"></div><div><label>K</label><input id="rs-k" type="number" value="'+(rs.k||1)+'"></div><div><label>FLEX</label><input id="rs-flex" type="number" value="'+(rs.flex||1)+'"></div><div><label>Bench</label><input id="rs-bench" type="number" value="'+(rs.bench||6)+'"></div><div><label>IR</label><input id="rs-ir" type="number" value="'+(rs.ir||1)+'"></div></div><button class="btn btn-lime" id="save-roster" style="margin-top:12px">Save roster settings</button><p style="margin-top:10px;opacity:.7">Commissioner can edit any lineup. Owners can only edit their own team.</p></div>' : '<div class="card"><p>QB '+(rs.qb||1)+' · RB '+(rs.rb||2)+' · WR '+(rs.wr||2)+' · TE '+(rs.te||1)+' · Team DEF '+(rs.teamDef||0)+' · Def players '+(rs.defPlayers||0)+' · K '+(rs.k||1)+' · FLEX '+(rs.flex||1)+' · Bench '+(rs.bench||6)+' · IR '+(rs.ir||1)+'</p></div>';
@@ -819,7 +820,7 @@ function renderRoster(){
       const pod=b.dataset.pod;
       const tid=Number(b.dataset.team);
       const st=load();
-      if(!canEditTeam(st, pod, tid)){ alert("You can only edit your own lineup."); return; }
+      const overrideOn = localStorage.getItem("dualgrid-override-"+pod+"-"+tid)==="1"; if(!canEditTeam(st, pod, tid) && !(st.owner && overrideOn)){ alert("You can only edit your own lineup."); return; }
       const d=ensureDraft(st,pod);
       const team=d.teams[tid];
       if(!team) return;
@@ -834,6 +835,13 @@ function renderRoster(){
       else if(to==="ir") team.lineup.ir.push(pl);
       else team.lineup.bench.push(pl);
       save(st); publish(pod); renderRoster();
+    };
+  });
+  document.querySelectorAll("[data-override]").forEach(cb=>{
+    cb.onchange=()=>{
+      const key="dualgrid-override-"+cb.dataset.override;
+      localStorage.setItem(key, cb.checked?"1":"0");
+      renderRoster();
     };
   });
   }catch(err){ console.error(err); document.getElementById('app').innerHTML='<div class="page"><h1>Roster page error</h1><pre style="color:#c6f25a">'+err.message+'</pre><a class="btn" href="#home">Home</a></div>'; }
