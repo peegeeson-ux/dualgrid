@@ -762,6 +762,7 @@ function addWaiver(id){const s=waiverState(); const rec=s.records; const closed=
 
 
 function movePlayer(pod, teamId, playerId, to){
+  alert('move '+to+' for '+playerId);
   const st=load();
   const tid=Number(teamId);
   const overrideOn = localStorage.getItem("dualgrid-override-"+pod+"-"+tid)==="1";
