@@ -776,9 +776,9 @@ function renderRoster(){
       if(!picks.length) return;
       const row=(s.records&&s.records.rows||{})[pod+"-"+team.id]||{w:0,l:0,pf:0};
       const mineHere = canEditTeam(s, pod, team.id);
-      const lineup = team.lineup || {starters:[], bench:[], ir:[]}; if(!lineup.ir) lineup.ir=[];
+      const lineup = team.lineup || {starters:[], bench:[], ir:[]}; lineup.starters = lineup.starters || []; lineup.bench = lineup.bench || []; lineup.ir = lineup.ir || [];
       // simple auto-fill if empty
-      if(!lineup.starters.length && picks.length){
+      if(!(lineup.starters||[]).length && (picks||[]).length){
         lineup.starters = picks.slice(0, total);
         lineup.bench = picks.slice(total);
       }
