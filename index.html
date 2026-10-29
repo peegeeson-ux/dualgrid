@@ -320,9 +320,10 @@ const auction=draft.format==="auction";const info=snakeSlot(draft.pickIndex,draf
 const onClock=auction?draft.teams[draft.nomination?draft.nomination.teamId:draft.nomIndex%teamCount()]:draft.teams[info.teamId];
 const done=draft.pickIndex>=draftRounds()*teamCount();
 const avail=available(draft).filter(p=>{const q=filter.toLowerCase();return !q||p.name.toLowerCase().includes(q)||p.pos.toLowerCase()===q;});
-  const roundsLeft = Math.max(0, draftRounds() - Math.floor((draft.pickIndex||0)/teamCount()));
-const restrict = restrictedPositions(onClock, rosterSettings, roundsLeft);
-if(restrict) avail = avail.filter(p => restrict.includes(p.pos) || (restrict.includes("DEF") && (p.pos==="DEF"||p.pos==="DST")));
+// late-round restriction temporarily off
+// const roundsLeft = Math.max(0, draftRounds() - Math.floor((draft.pickIndex||0)/teamCount()));
+// const restrict = restrictedPositions(onClock, rosterSettings, roundsLeft);
+// if(restrict) avail = avail.filter(p => restrict.includes(p.pos) || (restrict.includes("DEF") && (p.pos==="DEF"||p.pos==="DST")));
 const mine=(()=>{try{return (JSON.parse(localStorage.getItem('dualgrid-my-seats')||'{}')[leagueCode()]||JSON.parse(localStorage.getItem('dualgrid-my-seat')||'null'))}catch(e){return null}})(); 
 const claimedHere = mine && mine.pod === pod;
 const acting = claimedHere ? Number(mine.teamId) : ((onClock&&onClock.id)||0);
@@ -330,11 +331,11 @@ const seatStatus = claimedHere ? "You are locked to " + ((draft.teams.find(t=>Nu
 root.innerHTML=header('<a class="btn" href="#home">Circuit</a><a class="btn" href="#payout">Payouts</a><a class="btn btn-lime" href="#board/'+pod+'">Cast Big Board</a><button class="btn" id="reset">Reset</button>')+
 '<div class="draft-shell"><aside class="panel"><h3>'+(auction?"AUCTION":"ON THE CLOCK")+' · '+podName(pod)+' · '+CODES[pod]+'</h3><div class="clock-box"><div style="font-size:13px;color:#c6f25a;margin-bottom:4px">'+seatStatus+'</div><div class="who">'+(done?"Complete":onClock.name)+'</div><div class="meta">'+(done?"Board locked":(auction?(draft.nomination?"High bid $"+draft.nomination.bid:"Nominate"):"Pick "+info.label))+'</div><div class="timer">'+fmtTime(auction&&draft.nomination?draft.nomination.seconds:clockLeft(draft))+'</div>'+(onClock&&onClock.ownerName?'<div style="font-size:12px;color:var(--mute);margin-top:4px">Owner: '+onClock.ownerName+'</div>':'')+'</div><div class="you-pick" style="font-size:20px;font-weight:900;color:#c6f25a;margin:8px 0 12px;text-align:center">'+(()=>{
   let myId = acting;
-  // Fallback: if localStorage seat missing, find team by claimed ownerName on this device
   if (myId === undefined || myId === null || myId === 0 && !mine) {
     const claimed = draft.teams.find(t => t.ownerName && t.ownerName.toLowerCase().includes((JSON.parse(localStorage.getItem("dualgrid-my-seats")||"{}")[leagueCode()]||{}).name||""));
     if (claimed) myId = claimed.id;
   }
+  // rest of the original paint function continues below...
   if (myId === undefined || myId === null) return "You pick —";
   let n = draft.pickIndex;
   for (let i = 0; i < draftRounds() * teamCount(); i++) {
