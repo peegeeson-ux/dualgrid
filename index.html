@@ -256,11 +256,6 @@ function snakeSlot(i,draft){
     : (r % 2 === 0 ? p : n - 1 - p);
   return { round: r + 1, slot: p + 1, teamId, label: r + 1 + "." + String(p + 1).padStart(2, "0") };
 }
-  const teamId = order
-    ? (r % 2 === 0 ? order[p] : order[n - 1 - p])
-    : (r % 2 === 0 ? p : n - 1 - p);
-  return { round: r + 1, slot: p + 1, teamId, label: r + 1 + "." + String(p + 1).padStart(2, "0") };
-}
 function takenIds(d){const ids=new Set();(d.teams||[]).forEach(t=>(t.picks||[]).forEach(p=>ids.add(p.id)));return ids;}
 const RANK=["Ja'Marr Chase","Bijan Robinson","Justin Jefferson","CeeDee Lamb","Jahmyr Gibbs","Amon-Ra St. Brown","Saquon Barkley","Puka Nacua","Josh Allen","A.J. Brown","Lamar Jackson","Malik Nabers","Derrick Henry","Nico Collins","Jalen Hurts","Breece Hall","Garrett Wilson","De'Von Achane","Patrick Mahomes","Drake London","Jonathan Taylor","Brock Bowers","Joe Burrow","Kyren Williams","Jayden Daniels"];
 function bestAvailable(d){const pool=available(d);return pool.slice().sort((a,b)=>{const ar=RANK.indexOf(a.name);const br=RANK.indexOf(b.name);return (ar<0?999:ar)-(br<0?999:br);})[0];}
