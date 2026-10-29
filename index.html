@@ -249,8 +249,13 @@ function snakeSlot(i,draft){
   if (draft && draft.order) {
     const raw = Array.isArray(draft.order) ? draft.order : Object.values(draft.order);
     const nums = raw.map(Number).filter(x => !isNaN(x));
-    if (nums.length === n) order = nums;   // only use it if it has the full number of teams
+    if (nums.length === n) order = nums;
   }
+  const teamId = order
+    ? (r % 2 === 0 ? order[p] : order[n - 1 - p])
+    : (r % 2 === 0 ? p : n - 1 - p);
+  return { round: r + 1, slot: p + 1, teamId, label: r + 1 + "." + String(p + 1).padStart(2, "0") };
+}
   const teamId = order
     ? (r % 2 === 0 ? order[p] : order[n - 1 - p])
     : (r % 2 === 0 ? p : n - 1 - p);
