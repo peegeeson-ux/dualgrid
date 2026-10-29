@@ -297,6 +297,20 @@ function renderPay(){
 const plan=(location.hash.split("/")[1]||"dual").toLowerCase()==="quad"?"quad":"dual";
 document.getElementById("pay-now").onclick=()=>{const s=load();s.paid=true;s.plan=plan;s.circuit=plan;s.paidAt=new Date().toLocaleDateString();save(s);location.hash="#home";};
 }
+function restrictedPositions(team, rs, roundsLeft){
+  if(!team || !team.picks) return null;
+  const need = {QB:rs.qb||0, RB:rs.rb||0, WR:rs.wr||0, TE:rs.te||0, K:rs.k||0, DEF:rs.teamDef||0};
+  const have = {QB:0,RB:0,WR:0,TE:0,K:0,DEF:0};
+  team.picks.forEach(p=>{
+    const pos = p.pos||"";
+    if(have.hasOwnProperty(pos)) have[pos]++;
+    else if(pos==="DST"||pos==="DEF") have.DEF++;
+  });
+  const missing = [];
+  Object.keys(need).forEach(pos=>{ if(have[pos] < need[pos]) missing.push(pos); });
+  if(missing.length && roundsLeft <= missing.length) return missing;
+  return null;
+}
 function renderDraft(){document.body.classList.add('draft-page');
 /* players can draft */
 const pod=podFromHash();const root=document.getElementById("app");let filter="";
@@ -306,6 +320,9 @@ const auction=draft.format==="auction";const info=snakeSlot(draft.pickIndex,draf
 const onClock=auction?draft.teams[draft.nomination?draft.nomination.teamId:draft.nomIndex%teamCount()]:draft.teams[info.teamId];
 const done=draft.pickIndex>=draftRounds()*teamCount();
 const avail=available(draft).filter(p=>{const q=filter.toLowerCase();return !q||p.name.toLowerCase().includes(q)||p.pos.toLowerCase()===q;});
+  const roundsLeft = Math.max(0, draftRounds() - Math.floor((draft.pickIndex||0)/teamCount()));
+const restrict = restrictedPositions(onClock, rosterSettings, roundsLeft);
+if(restrict) avail = avail.filter(p => restrict.includes(p.pos) || (restrict.includes("DEF") && (p.pos==="DEF"||p.pos==="DST")));
 const mine=(()=>{try{return (JSON.parse(localStorage.getItem('dualgrid-my-seats')||'{}')[leagueCode()]||JSON.parse(localStorage.getItem('dualgrid-my-seat')||'null'))}catch(e){return null}})(); 
 const claimedHere = mine && mine.pod === pod;
 const acting = claimedHere ? Number(mine.teamId) : ((onClock&&onClock.id)||0);
