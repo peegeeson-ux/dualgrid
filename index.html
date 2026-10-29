@@ -199,15 +199,15 @@ dataRef("config/leagueLogo").on("value", snap => { leagueLogo=snap.val()||""; co
 function publishLeague(){dataRef("config/leagueName").set(leagueName).catch(()=>{});}
 function publishLogo(){dataRef("config/leagueLogo").set(leagueLogo).catch(()=>{});}
 let playoffSpots = 4;
-let rosterSettings = {qb:1, rb:2, wr:2, te:1, teamDef:0, defPlayers:0, k:1, flex:1, bench:6, ir:1};
+window.rosterSettings = window.rosterSettings || {qb:1, rb:2, wr:2, te:1, teamDef:0, defPlayers:0, k:1, flex:1, bench:6, ir:1};
 dataRef("config/roster").on("value", snap => {
   const v = snap.val();
   if (v && typeof v === "object") {
-    rosterSettings = Object.assign({qb:1, rb:2, wr:2, te:1, teamDef:0, defPlayers:0, k:1, flex:1, bench:6, ir:1}, v);
+    window.rosterSettings = Object.assign({qb:1, rb:2, wr:2, te:1, teamDef:0, defPlayers:0, k:1, flex:1, bench:6, ir:1}, v);
   }
   if ((location.hash||"").startsWith("#roster")) renderRoster();
 });
-function publishRoster(){ dataRef("config/roster").set(rosterSettings).catch(()=>{}); }
+function publishRoster(){ dataRef("config/roster").set(window.rosterSettings).catch(()=>{}); }
 
 
 dataRef("config/waiver").on("value", snap => {
