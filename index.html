@@ -320,7 +320,7 @@ root.innerHTML=header('<a class="btn" href="#home">Circuit</a><a class="btn" hre
   }
   if (myId === undefined || myId === null) return "You pick —";
   let n = draft.pickIndex;
- for (let i = 0; i < draftRounds() * teamCount(); i++)
+  for (let i = 0; i < draftRounds() * teamCount(); i++) {
     const s = snakeSlot(n + i, draft);
     if (s.teamId === myId) {
       const num = n + i + 1;
