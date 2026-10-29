@@ -819,7 +819,7 @@ function renderRoster(){
       html+='<div class="card"><h3>IR</h3>'+ir.map(pl=>'<div class="log-item"><b>'+(pl.pos||"?")+'</b> · '+(pl.name||"Player")+(((mineHere && !s.owner) || override)?' <button class="btn" data-move="bench" data-pod="'+pod+'" data-team="'+team.id+'" data-id="'+pl.id+'">Bench</button>':'')+'</div>').join("")+'</div>';
     });
   });
-  const settings = s.owner ? '<div class="card no-print"><h3>Roster settings</h3><div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:10px"><div><label>QB</label><input id="rs-qb" type="number" value="'+(rs.qb||1)+'"></div><div><label>RB</label><input id="rs-rb" type="number" value="'+(rs.rb||2)+'"></div><div><label>WR</label><input id="rs-wr" type="number" value="'+(rs.wr||2)+'"></div><div><label>TE</label><input id="rs-te" type="number" value="'+(rs.te||1)+'"></div><div><label>Team DEF</label><input id="rs-teamDef" type="number" value="'+(rs.teamDef||0)+'"></div><div><label>Def players</label><input id="rs-defPlayers" type="number" value="'+(rs.defPlayers||0)+'"></div><div><label>K</label><input id="rs-k" type="number" value="'+(rs.k||1)+'"></div><div><label>FLEX</label><input id="rs-flex" type="number" value="'+(rs.flex||1)+'"></div><div><label>Bench</label><input id="rs-bench" type="number" value="'+(rs.bench||6)+'"></div><div><label>IR</label><input id="rs-ir" type="number" value="'+(rs.ir||1)+'"></div></div><label style="margin-top:10px;display:block"><input type="checkbox" id="rs-matchRounds" checked> Make draft rounds equal the total roster slots (starters + bench)</label><button class="btn btn-lime" id="save-roster" style="margin-top:12px">Save roster settings</button><p style="margin-top:10px;opacity:.7">Commissioner can edit any lineup. Owners can only edit their own team.</p></div>' : '<div class="card"><p>QB '+(rs.qb||1)+' · RB '+(rs.rb||2)+' · WR '+(rs.wr||2)+' · TE '+(rs.te||1)+' · Team DEF '+(rs.teamDef||0)+' · Def players '+(rs.defPlayers||0)+' · K '+(rs.k||1)+' · FLEX '+(rs.flex||1)+' · Bench '+(rs.bench||6)+' · IR '+(rs.ir||1)+'</p></div>';
+  const settings = s.owner ? '<div class="card no-print"><h3>Must-start positions</h3><p style="opacity:.8;margin-bottom:10px">Set the minimum number of each position that must be started. Owners cannot lock a lineup until these are filled.</p><div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:10px"><div><label>QB</label><input id="rs-qb" type="number" min="0" value="'+(rs.qb||1)+'"></div><div><label>RB</label><input id="rs-rb" type="number" min="0" value="'+(rs.rb||2)+'"></div><div><label>WR</label><input id="rs-wr" type="number" min="0" value="'+(rs.wr||2)+'"></div><div><label>TE</label><input id="rs-te" type="number" min="0" value="'+(rs.te||1)+'"></div><div><label>Team DEF</label><input id="rs-teamDef" type="number" min="0" value="'+(rs.teamDef||0)+'"></div><div><label>Def players</label><input id="rs-defPlayers" type="number" min="0" value="'+(rs.defPlayers||0)+'"></div><div><label>K</label><input id="rs-k" type="number" min="0" value="'+(rs.k||1)+'"></div><div><label>FLEX</label><input id="rs-flex" type="number" min="0" value="'+(rs.flex||1)+'"></div><div><label>Bench</label><input id="rs-bench" type="number" min="0" value="'+(rs.bench||6)+'"></div><div><label>IR</label><input id="rs-ir" type="number" min="0" value="'+(rs.ir||1)+'"></div></div><label style="margin-top:10px;display:block"><input type="checkbox" id="rs-matchRounds" checked> Make draft rounds equal the total roster slots (starters + bench)</label><button class="btn btn-lime" id="save-roster" style="margin-top:12px">Save must-start settings</button></div>' : '<div class="card"><p>Required starters: QB '+(rs.qb||1)+' · RB '+(rs.rb||2)+' · WR '+(rs.wr||2)+' · TE '+(rs.te||1)+' · Team DEF '+(rs.teamDef||0)+' · Def players '+(rs.defPlayers||0)+' · K '+(rs.k||1)+' · FLEX '+(rs.flex||1)+'</p></div>';
   document.getElementById("app").innerHTML=header('<a class="btn" href="#home">Home</a>')+'<div class="page"><div class="eyebrow">ROSTER</div><h1>Lineups</h1>'+settings+(html||'<div class="card"><p>No picks yet. Draft first.</p></div>')+'</div>';
   const btn=document.getElementById("save-roster");
   if(btn) btn.onclick=()=>{
@@ -838,7 +838,7 @@ function renderRoster(){
       ir: Number(document.getElementById("rs-ir").value)||0
     };
     publishRoster();
-    alert("Roster settings saved.");
+    alert("Must-start settings saved.");
     renderRoster();
   };
   document.querySelectorAll("[data-move]").forEach(b=>{
@@ -862,6 +862,14 @@ function renderRoster(){
       if(to==="starter") team.lineup.starters.push(pl);
       else if(to==="ir") team.lineup.ir.push(pl);
       else team.lineup.bench.push(pl);
+      // fail-safe check when moving to starter
+      if(to==="starter" || true){
+        const check = validateMustStart(team.lineup.starters, rosterSettings);
+        if(!check.ok && !st.owner){
+          alert("Must start requirements not met: " + check.missing.join(", "));
+          // still allow the move so they can fix it, but warn
+        }
+      }
       save(st); publish(pod); renderRoster();
     };
   });
@@ -872,6 +880,24 @@ function renderRoster(){
       renderRoster();
     };
   });
+}
+
+function validateMustStart(starters, rs){
+  const counts = {QB:0,RB:0,WR:0,TE:0,K:0,DEF:0,FLEX:0};
+  (starters||[]).forEach(p=>{
+    const pos = p.pos||"";
+    if(counts.hasOwnProperty(pos)) counts[pos]++;
+    else if(pos==="DST" || pos==="DEF") counts.DEF++;
+    else counts.FLEX++;
+  });
+  const missing = [];
+  if(counts.QB < (rs.qb||0)) missing.push("QB");
+  if(counts.RB < (rs.rb||0)) missing.push("RB");
+  if(counts.WR < (rs.wr||0)) missing.push("WR");
+  if(counts.TE < (rs.te||0)) missing.push("TE");
+  if(counts.K < (rs.k||0)) missing.push("K");
+  if(counts.DEF < (rs.teamDef||0)) missing.push("DEF");
+  return {ok: missing.length===0, missing};
 }
 
 function renderMatchup(){
