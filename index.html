@@ -116,7 +116,6 @@ function dataRef(path){const code=leagueCode();return cloud.ref(code?("leagues/"
 let cloudOn=false, applyingRemote=false;
 cloud.ref(".info/connected").on("value",s=>{cloudOn=!!s.val(); const el=document.getElementById("live"); if(el) el.textContent=cloudOn?"LIVE BOARD":"OFFLINE";});
 
-const rosterSettings = {qb:1, rb:2, wr:2, te:1, k:1, teamDef:1, flex:1, bench:6};
 const PLAYERS = [
   // QBs
   {id:1,name:"Josh Allen",pos:"QB",team:"BUF"},{id:2,name:"Lamar Jackson",pos:"QB",team:"BAL"},{id:3,name:"Patrick Mahomes",pos:"QB",team:"KC"},
