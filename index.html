@@ -809,7 +809,6 @@ function renderRoster(){
       const row=(s.records&&s.records.rows||{})[pod+"-"+team.id]||{w:0,l:0,pf:0};
       const mineHere = canEditTeam(s, pod, team.id);
       const lineup = team.lineup || {starters:[], bench:[], ir:[]}; lineup.starters = lineup.starters || []; lineup.bench = lineup.bench || []; lineup.ir = lineup.ir || [];
-      // lineup is set by the owner/commissioner; do not auto-reset
       const override = s.owner && (localStorage.getItem("dualgrid-override-"+pod+"-"+team.id)==="1");
       html+='<div class="card" style="background:linear-gradient(160deg,#14233a,#0d1524);color:#fff;border-left:8px dashed #c9a227"><div class="eyebrow">SEASON TICKET · '+podName(pod).toUpperCase()+'</div><h2 style="font-size:28px;margin:6px 0">'+(team.name||"Team")+'</h2><p>'+(team.ownerName||"Owner")+(mineHere?" · you":"")+'</p><p style="font-size:20px;letter-spacing:1px">'+(row.w||0)+'-'+(row.l||0)+' · '+(row.pf||0)+' PF</p><p style="opacity:.7">Seat '+(team.id+1)+' · '+ (s.season||"2026")+' · Roster '+total+' + '+(rs.ir||1)+' IR</p>'+(s.owner?'<label style="display:flex;align-items:center;gap:8px;margin-top:10px"><input type="checkbox" data-override="'+pod+'-'+team.id+'" '+(override?"checked":"")+'> Commissioner override</label>':'')+'</div>';
       const starters = Array.isArray(lineup.starters) ? lineup.starters : [];
@@ -818,28 +817,30 @@ function renderRoster(){
       html+='<div class="card"><h3>Starters</h3>'+starters.map(pl=>'<div class="log-item" style="border-left:6px solid '+(colors[pl.pos]||"#999")+'"><b>'+(pl.pos||"?")+'</b> · '+(pl.name||"Player")+(((mineHere && !s.owner) || override)?' <button class="btn" data-move="bench" data-pod="'+pod+'" data-team="'+team.id+'" data-id="'+pl.id+'">Bench</button>':'')+'</div>').join("")+'</div>';
       html+='<div class="card"><h3>Bench</h3>'+bench.map(pl=>'<div class="log-item"><b>'+(pl.pos||"?")+'</b> · '+(pl.name||"Player")+(((mineHere && !s.owner) || override)?' <button class="btn" data-move="starter" data-pod="'+pod+'" data-team="'+team.id+'" data-id="'+pl.id+'">Start</button> <button class="btn" data-move="ir" data-pod="'+pod+'" data-team="'+team.id+'" data-id="'+pl.id+'">IR</button>':'')+'</div>').join("")+'</div>';
       html+='<div class="card"><h3>IR</h3>'+ir.map(pl=>'<div class="log-item"><b>'+(pl.pos||"?")+'</b> · '+(pl.name||"Player")+(((mineHere && !s.owner) || override)?' <button class="btn" data-move="bench" data-pod="'+pod+'" data-team="'+team.id+'" data-id="'+pl.id+'">Bench</button>':'')+'</div>').join("")+'</div>';
+    });
   });
-  });
-const btn=document.getElementById("save-roster");
-if(btn) btn.onclick=()=>{
-  if(!load().owner) return;
-  rosterSettings = {
-    qb: Number(document.getElementById("rs-qb").value)||0,
-    rb: Number(document.getElementById("rs-rb").value)||0,
-    wr: Number(document.getElementById("rs-wr").value)||0,
-    te: Number(document.getElementById("rs-te").value)||0,
-    teamDef: Number(document.getElementById("rs-teamDef").value)||0,
-    defPlayers: Number(document.getElementById("rs-defPlayers").value)||0,
-    k: Number(document.getElementById("rs-k").value)||0,
-    flex: Number(document.getElementById("rs-flex").value)||0,
-    bench: Number(document.getElementById("rs-bench").value)||0,
-    matchRounds: document.getElementById("rs-matchRounds") ? document.getElementById("rs-matchRounds").checked : true,
-    ir: Number(document.getElementById("rs-ir").value)||0
+  const settings = s.owner ? '<div class="card no-print"><h3>Roster settings</h3><div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:10px"><div><label>QB</label><input id="rs-qb" type="number" value="'+(rs.qb||1)+'"></div><div><label>RB</label><input id="rs-rb" type="number" value="'+(rs.rb||2)+'"></div><div><label>WR</label><input id="rs-wr" type="number" value="'+(rs.wr||2)+'"></div><div><label>TE</label><input id="rs-te" type="number" value="'+(rs.te||1)+'"></div><div><label>Team DEF</label><input id="rs-teamDef" type="number" value="'+(rs.teamDef||0)+'"></div><div><label>Def players</label><input id="rs-defPlayers" type="number" value="'+(rs.defPlayers||0)+'"></div><div><label>K</label><input id="rs-k" type="number" value="'+(rs.k||1)+'"></div><div><label>FLEX</label><input id="rs-flex" type="number" value="'+(rs.flex||1)+'"></div><div><label>Bench</label><input id="rs-bench" type="number" value="'+(rs.bench||6)+'"></div><div><label>IR</label><input id="rs-ir" type="number" value="'+(rs.ir||1)+'"></div></div><label style="margin-top:10px;display:block"><input type="checkbox" id="rs-matchRounds" checked> Make draft rounds equal the total roster slots (starters + bench)</label><button class="btn btn-lime" id="save-roster" style="margin-top:12px">Save roster settings</button><p style="margin-top:10px;opacity:.7">Commissioner can edit any lineup. Owners can only edit their own team.</p></div>' : '<div class="card"><p>QB '+(rs.qb||1)+' · RB '+(rs.rb||2)+' · WR '+(rs.wr||2)+' · TE '+(rs.te||1)+' · Team DEF '+(rs.teamDef||0)+' · Def players '+(rs.defPlayers||0)+' · K '+(rs.k||1)+' · FLEX '+(rs.flex||1)+' · Bench '+(rs.bench||6)+' · IR '+(rs.ir||1)+'</p></div>';
+  document.getElementById("app").innerHTML=header('<a class="btn" href="#home">Home</a>')+'<div class="page"><div class="eyebrow">ROSTER</div><h1>Lineups</h1>'+settings+(html||'<div class="card"><p>No picks yet. Draft first.</p></div>')+'</div>';
+  const btn=document.getElementById("save-roster");
+  if(btn) btn.onclick=()=>{
+    if(!load().owner) return;
+    rosterSettings = {
+      qb: Number(document.getElementById("rs-qb").value)||0,
+      rb: Number(document.getElementById("rs-rb").value)||0,
+      wr: Number(document.getElementById("rs-wr").value)||0,
+      te: Number(document.getElementById("rs-te").value)||0,
+      teamDef: Number(document.getElementById("rs-teamDef").value)||0,
+      defPlayers: Number(document.getElementById("rs-defPlayers").value)||0,
+      k: Number(document.getElementById("rs-k").value)||0,
+      flex: Number(document.getElementById("rs-flex").value)||0,
+      bench: Number(document.getElementById("rs-bench").value)||0,
+      matchRounds: document.getElementById("rs-matchRounds") ? document.getElementById("rs-matchRounds").checked : true,
+      ir: Number(document.getElementById("rs-ir").value)||0
+    };
+    publishRoster();
+    alert("Roster settings saved.");
+    renderRoster();
   };
-  publishRoster();
-  alert("Roster settings saved.");
-  renderRoster();
-};
   document.querySelectorAll("[data-move]").forEach(b=>{
     b.onclick=()=>{
       const id=Number(b.dataset.id);
