@@ -824,6 +824,17 @@ function renderRoster(){
     (d.teams||[]).forEach(team=>{
       const picks=team.picks||[];
       if(!picks.length) return;
+      // auto-fill lineup from picks if lineup is empty
+if(!team.lineup || (!(team.lineup.starters||[]).length && !(team.lineup.bench||[]).length)){
+  team.lineup = team.lineup || {starters:[], bench:[], ir:[]};
+  team.lineup.bench = team.lineup.bench || [];
+  picks.forEach(p=>{
+    if(!team.lineup.bench.some(x=>x.id===p.id) && !team.lineup.starters.some(x=>x.id===p.id)){
+      team.lineup.bench.push(p);
+    }
+  });
+  save(s);
+}
       const row=(s.records&&s.records.rows||{})[pod+"-"+team.id]||{w:0,l:0,pf:0};
       const mineHere = canEditTeam(s, pod, team.id);
       const lineup = team.lineup || {starters:[], bench:[], ir:[]}; lineup.starters = lineup.starters || []; lineup.bench = lineup.bench || []; lineup.ir = lineup.ir || [];
