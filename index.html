@@ -348,16 +348,17 @@ document.getElementById("pay-now").onclick=()=>{const s=load();s.paid=true;s.pla
 }
 function restrictedPositions(team, rs, roundsLeft){
   if(!team || !team.picks) return null;
-  const need = {QB:rs.qb||0, RB:rs.rb||0, WR:rs.wr||0, TE:rs.te||0, K:rs.k||0, DEF:rs.teamDef||0};
+  rs = rs || window.rosterSettings || {};
+  const need = {QB:Number(rs.qb)||1, RB:Number(rs.rb)||2, WR:Number(rs.wr)||2, TE:Number(rs.te)||1, K:Number(rs.k)||1, DEF:Number(rs.teamDef)||1};
   const have = {QB:0,RB:0,WR:0,TE:0,K:0,DEF:0};
   team.picks.forEach(p=>{
-    const pos = p.pos||"";
+    const pos = (p.pos||"").toUpperCase();
     if(have.hasOwnProperty(pos)) have[pos]++;
     else if(pos==="DST"||pos==="DEF") have.DEF++;
   });
   const missing = [];
   Object.keys(need).forEach(pos=>{ if(have[pos] < need[pos]) missing.push(pos); });
-  if(missing.length && roundsLeft <= missing.length) return missing;
+  if(missing.length && roundsLeft <= missing.length + 1) return missing;
   return null;
 }
 function renderDraft(){document.body.classList.add('draft-page');
