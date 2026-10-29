@@ -116,26 +116,55 @@ function dataRef(path){const code=leagueCode();return cloud.ref(code?("leagues/"
 let cloudOn=false, applyingRemote=false;
 cloud.ref(".info/connected").on("value",s=>{cloudOn=!!s.val(); const el=document.getElementById("live"); if(el) el.textContent=cloudOn?"LIVE BOARD":"OFFLINE";});
 
-const PLAYERS=[
-["Josh Allen","QB","BUF"],["Lamar Jackson","QB","BAL"],["Jalen Hurts","QB","PHI"],["Patrick Mahomes","QB","KC"],["Joe Burrow","QB","CIN"],["Jayden Daniels","QB","WAS"],["C.J. Stroud","QB","HOU"],["Justin Herbert","QB","LAC"],["Brock Purdy","QB","SF"],["Jordan Love","QB","GB"],["Dak Prescott","QB","DAL"],["Tua Tagovailoa","QB","MIA"],
-["Bijan Robinson","RB","ATL"],["Jahmyr Gibbs","RB","DET"],["Saquon Barkley","RB","PHI"],["Derrick Henry","RB","BAL"],["Josh Jacobs","RB","GB"],["Breece Hall","RB","NYJ"],["De'Von Achane","RB","MIA"],["Kyren Williams","RB","LAR"],["Jonathan Taylor","RB","IND"],["CMC","RB","SF"],["James Cook","RB","BUF"],["Kenneth Walker","RB","SEA"],["Isiah Pacheco","RB","KC"],["Rachaad White","RB","TB"],["Alvin Kamara","RB","NO"],["Joe Mixon","RB","HOU"],["Aaron Jones","RB","MIN"],["Travis Etienne","RB","JAX"],
-["Ja'Marr Chase","WR","CIN"],["Justin Jefferson","WR","MIN"],["CeeDee Lamb","WR","DAL"],["Amon-Ra St. Brown","WR","DET"],["Puka Nacua","WR","LAR"],["A.J. Brown","WR","PHI"],["Nico Collins","WR","HOU"],["Garrett Wilson","WR","NYJ"],["Malik Nabers","WR","NYG"],["Tyreek Hill","WR","MIA"],["Davante Adams","WR","LAR"],["DK Metcalf","WR","PIT"],["Tee Higgins","WR","CIN"],["Brian Thomas Jr.","WR","JAX"],["Drake London","WR","ATL"],["Chris Olave","WR","NO"],["DeVonta Smith","WR","PHI"],["Jaylen Waddle","WR","MIA"],["Mike Evans","WR","TB"],["Cooper Kupp","WR","LAR"],["Zay Flowers","WR","BAL"],["George Pickens","WR","DAL"],
-["Travis Kelce","TE","KC"],["Brock Bowers","TE","LV"],["Sam LaPorta","TE","DET"],["Trey McBride","TE","ARI"],["George Kittle","TE","SF"],["Mark Andrews","TE","BAL"],["T.J. Hockenson","TE","MIN"],["Dallas Goedert","TE","PHI"],["Kyle Pitts","TE","ATL"],["Evan Engram","TE","JAX"],
-["Justin Tucker","K","BAL"],["Harrison Butker","K","KC"],["Jake Elliott","K","PHI"],["Brandon Aubrey","K","DAL"],["Cameron Dicker","K","LAC"],["Younghoe Koo","K","ATL"],
-["49ers D","DEF","SF"],["Ravens D","DEF","BAL"],["Cowboys D","DEF","DAL"],["Jets D","DEF","NYJ"],["Browns D","DEF","CLE"],["Bills D","DEF","BUF"],["Eagles D","DEF","PHI"],["Chiefs D","DEF","KC"]
-,["Jalen Hurts","QB","PHI"],["Bo Nix","QB","DEN"],["Kyler Murray","QB","ARI"],["Baker Mayfield","QB","TB"],["Jared Goff","QB","DET"],["Caleb Williams","QB","CHI"],
-["Saquon Barkley","RB","PHI"],["Chuba Hubbard","RB","CAR"],["Chase Brown","RB","CIN"],["David Montgomery","RB","DET"],["Tony Pollard","RB","TEN"],["Najee Harris","RB","LAC"],["Rhamondre Stevenson","RB","NE"],["James Conner","RB","ARI"],
-["Malik Nabers","WR","NYG"],["Brian Thomas Jr.","WR","JAX"],["Ladd McConkey","WR","LAC"],["Rome Odunze","WR","CHI"],["Jaxon Smith-Njigba","WR","SEA"],["Rashee Rice","WR","KC"],["Terry McLaurin","WR","WAS"],["Stefon Diggs","WR","NE"],["Courtland Sutton","WR","DEN"],["Calvin Ridley","WR","TEN"],
-["Trey McBride","TE","ARI"],["Sam LaPorta","TE","DET"],["George Kittle","TE","SF"],["Jake Ferguson","TE","DAL"],["Cole Kmet","TE","CHI"],["Pat Freiermuth","TE","PIT"],
-["Cameron Dicker","K","LAC"],["Jason Myers","K","SEA"],["Chase McLaughlin","K","TB"],["Wil Lutz","K","DEN"],
-["Steelers D","DEF","PIT"],["Broncos D","DEF","DEN"],["Texans D","DEF","HOU"],["Vikings D","DEF","MIN"]
-].map((p,i)=>({id:i+1,name:p[0],pos:p[1],team:p[2],adp:i+1}));
-const POD_TEAMS={
-east:["Iron Hawks","Night Owls","Grid Kings","Thunderstrike","Blacktop Brigade","Titan Forge","Liberty Rush","Empire X","Shadow Lancers","Riverfront Rush","Queens Guard","Astoria Aces"],
-west:["Velocity Vipers","Desert Rattlers","Pacific Predators","Storm Riders","Neon Knights","Harbor Seals","Summit Sentinels","Canyon Wranglers","Arctic Foxes","Golden Aces","Sunset Kings","Pier Pressure"],
-north:["Iron Harbor Dragons","Northpoint Sentinels","Stonewall Defenders","Riverdale Raiders","Frost Giants","Metro Lynx","Pinebox","Lake Effect","Steel Chapel","North Gate","Bronx Battery","Harlem Yard"],
-south:["Desert Ridge Renegades","Coastal Predators","Valley Outlaws","Southpoint Stallions","Gulfstream","Palmetto","Bayou Kings","Red Clay","Sunbelt","Lowcountry","Staten Ferry","Bay Ridge"]
-};
+const PLAYERS = [
+  // QBs
+  {id:1,name:"Josh Allen",pos:"QB",team:"BUF"},{id:2,name:"Lamar Jackson",pos:"QB",team:"BAL"},{id:3,name:"Patrick Mahomes",pos:"QB",team:"KC"},
+  {id:4,name:"Jalen Hurts",pos:"QB",team:"PHI"},{id:5,name:"Joe Burrow",pos:"QB",team:"CIN"},{id:6,name:"Dak Prescott",pos:"QB",team:"DAL"},
+  {id:7,name:"Tua Tagovailoa",pos:"QB",team:"MIA"},{id:8,name:"Justin Herbert",pos:"QB",team:"LAC"},{id:9,name:"Caleb Williams",pos:"QB",team:"CHI"},
+  {id:10,name:"Jayden Daniels",pos:"QB",team:"WAS"},{id:11,name:"Jordan Love",pos:"QB",team:"GB"},{id:12,name:"Brock Purdy",pos:"QB",team:"SF"},
+  {id:13,name:"Anthony Richardson",pos:"QB",team:"IND"},{id:14,name:"C.J. Stroud",pos:"QB",team:"HOU"},{id:15,name:"Trevor Lawrence",pos:"QB",team:"JAX"},
+  {id:16,name:"Baker Mayfield",pos:"QB",team:"TB"},{id:17,name:"Sam Darnold",pos:"QB",team:"MIN"},{id:18,name:"Geno Smith",pos:"QB",team:"SEA"},
+  {id:19,name:"Kirk Cousins",pos:"QB",team:"ATL"},{id:20,name:"Aaron Rodgers",pos:"QB",team:"PIT"},{id:21,name:"Matthew Stafford",pos:"QB",team:"LAR"},
+  {id:22,name:"Jared Goff",pos:"QB",team:"DET"},{id:23,name:"Bo Nix",pos:"QB",team:"DEN"},{id:24,name:"Drake Maye",pos:"QB",team:"NE"},
+
+  // RBs
+  {id:25,name:"Bijan Robinson",pos:"RB",team:"ATL"},{id:26,name:"Saquon Barkley",pos:"RB",team:"PHI"},{id:27,name:"Jahmyr Gibbs",pos:"RB",team:"DET"},
+  {id:28,name:"Christian McCaffrey",pos:"RB",team:"SF"},{id:29,name:"Derrick Henry",pos:"RB",team:"BAL"},{id:30,name:"Breece Hall",pos:"RB",team:"NYJ"},
+  {id:31,name:"Kyren Williams",pos:"RB",team:"LAR"},{id:32,name:"Josh Jacobs",pos:"RB",team:"GB"},{id:33,name:"De'Von Achane",pos:"RB",team:"MIA"},
+  {id:34,name:"Jonathan Taylor",pos:"RB",team:"IND"},{id:35,name:"James Cook",pos:"RB",team:"BUF"},{id:36,name:"Travis Etienne",pos:"RB",team:"JAX"},
+  {id:37,name:"Alvin Kamara",pos:"RB",team:"NO"},{id:38,name:"Joe Mixon",pos:"RB",team:"HOU"},{id:39,name:"Rachaad White",pos:"RB",team:"TB"},
+  {id:40,name:"Isiah Pacheco",pos:"RB",team:"KC"},{id:41,name:"Aaron Jones",pos:"RB",team:"MIN"},{id:42,name:"Tony Pollard",pos:"RB",team:"TEN"},
+  {id:43,name:"Najee Harris",pos:"RB",team:"PIT"},{id:44,name:"Rhamondre Stevenson",pos:"RB",team:"NE"},{id:45,name:"D'Andre Swift",pos:"RB",team:"CHI"},
+  {id:46,name:"Zack Moss",pos:"RB",team:"CIN"},{id:47,name:"James Conner",pos:"RB",team:"ARI"},{id:48,name:"Chuba Hubbard",pos:"RB",team:"CAR"},
+
+  // WRs
+  {id:49,name:"CeeDee Lamb",pos:"WR",team:"DAL"},{id:50,name:"Tyreek Hill",pos:"WR",team:"MIA"},{id:51,name:"Ja'Marr Chase",pos:"WR",team:"CIN"},
+  {id:52,name:"Amon-Ra St. Brown",pos:"WR",team:"DET"},{id:53,name:"Justin Jefferson",pos:"WR",team:"MIN"},{id:54,name:"A.J. Brown",pos:"WR",team:"PHI"},
+  {id:55,name:"Puka Nacua",pos:"WR",team:"LAR"},{id:56,name:"Garrett Wilson",pos:"WR",team:"NYJ"},{id:57,name:"Drake London",pos:"WR",team:"ATL"},
+  {id:58,name:"Chris Olave",pos:"WR",team:"NO"},{id:59,name:"Davante Adams",pos:"WR",team:"LV"},{id:60,name:"Malik Nabers",pos:"WR",team:"NYG"},
+  {id:61,name:"Marvin Harrison Jr.",pos:"WR",team:"ARI"},{id:62,name:"Nico Collins",pos:"WR",team:"HOU"},{id:63,name:"Tee Higgins",pos:"WR",team:"CIN"},
+  {id:64,name:"DeVonta Smith",pos:"WR",team:"PHI"},{id:65,name:"DK Metcalf",pos:"WR",team:"SEA"},{id:66,name:"Mike Evans",pos:"WR",team:"TB"},
+  {id:67,name:"Stefon Diggs",pos:"WR",team:"HOU"},{id:68,name:"Brandon Aiyuk",pos:"WR",team:"SF"},{id:69,name:"Jaylen Waddle",pos:"WR",team:"MIA"},
+  {id:70,name:"Cooper Kupp",pos:"WR",team:"LAR"},{id:71,name:"Rashee Rice",pos:"WR",team:"KC"},{id:72,name:"George Pickens",pos:"WR",team:"PIT"},
+
+  // TEs
+  {id:73,name:"Sam LaPorta",pos:"TE",team:"DET"},{id:74,name:"Travis Kelce",pos:"TE",team:"KC"},{id:75,name:"Trey McBride",pos:"TE",team:"ARI"},
+  {id:76,name:"Mark Andrews",pos:"TE",team:"BAL"},{id:77,name:"George Kittle",pos:"TE",team:"SF"},{id:78,name:"Kyle Pitts",pos:"TE",team:"ATL"},
+  {id:79,name:"Dalton Kincaid",pos:"TE",team:"BUF"},{id:80,name:"T.J. Hockenson",pos:"TE",team:"MIN"},{id:81,name:"Evan Engram",pos:"TE",team:"JAX"},
+  {id:82,name:"Dallas Goedert",pos:"TE",team:"PHI"},{id:83,name:"David Njoku",pos:"TE",team:"CLE"},{id:84,name:"Jake Ferguson",pos:"TE",team:"DAL"},
+
+  // Kickers
+  {id:85,name:"Justin Tucker",pos:"K",team:"BAL"},{id:86,name:"Harrison Butker",pos:"K",team:"KC"},{id:87,name:"Jake Elliott",pos:"K",team:"PHI"},
+  {id:88,name:"Brandon Aubrey",pos:"K",team:"DAL"},{id:89,name:"Younghoe Koo",pos:"K",team:"ATL"},{id:90,name:"Cairo Santos",pos:"K",team:"CHI"},
+  {id:91,name:"Jason Myers",pos:"K",team:"SEA"},{id:92,name:"Evan McPherson",pos:"K",team:"CIN"},{id:93,name:"Tyler Bass",pos:"K",team:"BUF"},
+  {id:94,name:"Cameron Dicker",pos:"K",team:"LAC"},{id:95,name:"Jake Moody",pos:"K",team:"SF"},{id:96,name:"Matt Gay",pos:"K",team:"IND"},
+
+  // Team DEF
+  {id:97,name:"Ravens D/ST",pos:"DEF",team:"BAL"},{id:98,name:"49ers D/ST",pos:"DEF",team:"SF"},{id:99,name:"Cowboys D/ST",pos:"DEF",team:"DAL"},
+  {id:100,name:"Jets D/ST",pos:"DEF",team:"NYJ"},{id:101,name:"Bills D/ST",pos:"DEF",team:"BUF"},{id:102,name:"Chiefs D/ST",pos:"DEF",team:"KC"},
+  {id:103,name:"Eagles D/ST",pos:"DEF",team:"PHI"},{id:104,name:"Steelers D/ST",pos:"DEF",team:"PIT"},{id:105,name:"Browns D/ST",pos:"DEF",team:"CLE"},
+  {id:106,name:"Lions D/ST",pos:"DEF",team:"DET"},{id:107,name:"Dolphins D/ST",pos:"DEF",team:"MIA"},{id:108,name:"Chargers D/ST",pos:"DEF",team:"LAC"}
+];
 const CODES={east:"EAST-7K2",west:"WEST-4N9",north:"NTH-1Q8",south:"STH-6P3"};
 const PRICE={dual:59,quad:119};
 const STORE="dualgrid-v5";
