@@ -139,7 +139,14 @@ south:["Desert Ridge Renegades","Coastal Predators","Valley Outlaws","Southpoint
 const CODES={east:"EAST-7K2",west:"WEST-4N9",north:"NTH-1Q8",south:"STH-6P3"};
 const PRICE={dual:59,quad:119};
 const STORE="dualgrid-v5";
-const ROUNDS=8,PICK_SECONDS=90,BID_SECONDS=12,BUDGET=200;
+const PICK_SECONDS=90,BID_SECONDS=12,BUDGET=200;
+function draftRounds(){
+  const rs = rosterSettings || {};
+  const starters = (Number(rs.qb)||0)+(Number(rs.rb)||0)+(Number(rs.wr)||0)+(Number(rs.te)||0)+(Number(rs.teamDef)||0)+(Number(rs.defPlayers)||0)+(Number(rs.k)||0)+(Number(rs.flex)||0);
+  const bench = Number(rs.bench)||0;
+  return Math.max(1, starters + bench);
+}
+const ROUNDS = 8; // fallback
 function defaultState(){return{circuit:"dual",format:"snake",actingAs:{},drafts:{},paid:false,plan:null,season:"2026",paidAt:null,owner:false,payout:{buyIn:50,commishPct:0,useCommish:false,weeklyHigh:20,divRecord:40,first:200,second:100,third:50}};}
 function load(){try{const raw=localStorage.getItem(STORE);if(raw)return syncOwner(Object.assign(defaultState(),JSON.parse(raw)));}catch(e){}return syncOwner(defaultState());}
 function save(s){localStorage.setItem(STORE,JSON.stringify(s));}
