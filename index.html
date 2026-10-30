@@ -1003,6 +1003,9 @@ if(!team.lineup || (!(team.lineup.starters||[]).length && !(team.lineup.bench||[
         if(pl) used.add(pl.id);
         assigned.push(pl || null);
       });
+      // force extras back to bench
+      starters.forEach(p => { if(!used.has(p.id)) team.lineup.bench.push(p); });
+      team.lineup.starters = assigned.filter(Boolean);
       html+='<div class="card"><h3>Starters</h3>'+slots.map((slot,i)=>{
         const pl = assigned[i];
         return '<div class="log-item" style="border-left:6px solid '+(pl?colors[pl.pos]||"#999":"#444")+'"><b>'+slot.label+'</b> · '+(pl?pl.name:"empty")+(pl && ((mineHere && !s.owner) || override)?' <button class="btn" data-move="bench" data-pod="'+pod+'" data-team="'+team.id+'" data-id="'+pl.id+'">Bench</button>':'')+'</div>';
