@@ -122,12 +122,34 @@ document.addEventListener("click", e => {
   team.lineup.starters = team.lineup.starters.filter(p=>p.id!=id);
   team.lineup.bench = team.lineup.bench.filter(p=>p.id!=id);
   team.lineup.ir = team.lineup.ir.filter(p=>p.id!=id);
-  if(to==="starter") team.lineup.starters.push(pl);
-  else if(to==="ir") team.lineup.ir.push(pl);
+  if(to==="starter"){
+    const slots = ["QB","RB","RB","WR","WR","TE","FLEX","K","DEF"];
+    const used = team.lineup.starters.length;
+    if(used >= slots.length){ alert("All starter slots filled"); return; }
+    const slot = slots[used];
+    const ok = pl.pos === slot || (slot==="FLEX" && ["RB","WR","TE"].includes(pl.pos));
+    if(!ok){ alert(pl.name+" cannot go in the "+slot+" slot"); return; }
+    team.lineup.starters.push(pl);
+  } else if(to==="ir") team.lineup.ir.push(pl);
   else team.lineup.bench.push(pl);
   save(s);
   dataRef("drafts/"+pod+"/teams/"+teamId+"/lineup").set(team.lineup).catch(()=>{});
   renderRoster();
+});
+
+dataRef("drafts").on("value", snap => {
+  const s = load();
+  const all = snap.val() || {};
+  Object.keys(all).forEach(pod => {
+    const d = ensureDraft(s, pod);
+    const teams = all[pod].teams || {};
+    Object.keys(teams).forEach(tid => {
+      const t = d.teams.find(x => x.id === Number(tid));
+      if(t && teams[tid].lineup) t.lineup = teams[tid].lineup;
+    });
+  });
+  save(s);
+  if(location.hash.startsWith("#roster")) renderRoster();
 });
 </script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js">
@@ -157,6 +179,21 @@ document.addEventListener("click", e => {
   save(s);
   dataRef("drafts/"+pod+"/teams/"+teamId+"/lineup").set(team.lineup).catch(()=>{});
   renderRoster();
+});
+
+dataRef("drafts").on("value", snap => {
+  const s = load();
+  const all = snap.val() || {};
+  Object.keys(all).forEach(pod => {
+    const d = ensureDraft(s, pod);
+    const teams = all[pod].teams || {};
+    Object.keys(teams).forEach(tid => {
+      const t = d.teams.find(x => x.id === Number(tid));
+      if(t && teams[tid].lineup) t.lineup = teams[tid].lineup;
+    });
+  });
+  save(s);
+  if(location.hash.startsWith("#roster")) renderRoster();
 });
 </script>
 </head>
@@ -1199,6 +1236,21 @@ document.addEventListener("click", e => {
   save(s);
   dataRef("drafts/"+pod+"/teams/"+teamId+"/lineup").set(team.lineup).catch(()=>{});
   renderRoster();
+});
+
+dataRef("drafts").on("value", snap => {
+  const s = load();
+  const all = snap.val() || {};
+  Object.keys(all).forEach(pod => {
+    const d = ensureDraft(s, pod);
+    const teams = all[pod].teams || {};
+    Object.keys(teams).forEach(tid => {
+      const t = d.teams.find(x => x.id === Number(tid));
+      if(t && teams[tid].lineup) t.lineup = teams[tid].lineup;
+    });
+  });
+  save(s);
+  if(location.hash.startsWith("#roster")) renderRoster();
 });
 </script>
 </body>
