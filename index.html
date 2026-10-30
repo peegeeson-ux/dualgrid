@@ -159,10 +159,10 @@ dataRef("drafts").on("value", snap => {
       const t = d.teams.find(x => x.id === Number(tid));
       if(t && teams[tid].lineup) t.lineup = teams[tid].lineup;
     });
-    if(remote.countdown != null && !document.getElementById("draft-countdown")){
+    if(remote.countdown != null){
       d.countdown = remote.countdown;
       d.countdownStart = remote.countdownStart || Date.now();
-      if(typeof showCountdownOverlay === "function") showCountdownOverlay(pod);
+      if(!document.getElementById("draft-countdown")) showCountdownOverlay(pod);
     }
   });
   save(s);
@@ -209,10 +209,10 @@ dataRef("drafts").on("value", snap => {
       const t = d.teams.find(x => x.id === Number(tid));
       if(t && teams[tid].lineup) t.lineup = teams[tid].lineup;
     });
-    if(remote.countdown != null && !document.getElementById("draft-countdown")){
+    if(remote.countdown != null){
       d.countdown = remote.countdown;
       d.countdownStart = remote.countdownStart || Date.now();
-      if(typeof showCountdownOverlay === "function") showCountdownOverlay(pod);
+      if(!document.getElementById("draft-countdown")) showCountdownOverlay(pod);
     }
   });
   save(s);
@@ -575,15 +575,6 @@ const wipe=document.getElementById("wipe-pick"); if(wipe) wipe.onclick=()=>{if(!
 const pause=document.getElementById("pause-clock"); if(pause) pause.onclick=()=>{if(!load().owner)return; const st=load(); const d=ensureDraft(st,pod); const left=d.paused?(d.secondsLeft||0):Math.max(0,clockLeft(d)); d.paused=!d.paused; d.secondsLeft=left; if(!d.paused)d.clockEnds=Date.now()+left*1000; else d.clockEnds=0; save(st); publish(pod); paint();};
 const saveSecs=document.getElementById("save-seconds"); if(saveSecs) saveSecs.onclick=()=>{if(!load().owner)return; const n=Number(document.getElementById("pick-seconds").value); if(!n||n<10){alert("Use at least 10 seconds."); return;} const st=load(); const d=ensureDraft(st,pod); d.pickSeconds=n; d.secondsLeft=n; d.clockEnds=Date.now()+n*1000; save(st); publish(pod); paint();};
 const startBtn=document.getElementById("start-draft"); if(startBtn) startBtn.onclick=()=>{if(!load().owner)return; startDraftCountdown(pod);};
-function startDraftCountdown(pod){
-  const st=load();
-  const d=ensureDraft(st,pod);
-  d.countdown=10;
-  d.countdownStart=Date.now();
-  save(st);
-  publish(pod);
-  showCountdownOverlay(pod);
-}
 function showCountdownOverlay(pod){
   let overlay=document.getElementById("draft-countdown");
   if(!overlay){
@@ -595,7 +586,7 @@ function showCountdownOverlay(pod){
   const tick=()=>{
     const st=load();
     const d=ensureDraft(st,pod);
-    if(!d.countdown && d.countdown!==0){ if(overlay)overlay.remove(); return; }
+    if(d.countdown==null){ if(overlay)overlay.remove(); return; }
     const elapsed=Math.floor((Date.now()-(d.countdownStart||Date.now()))/1000);
     const left=Math.max(0, (d.countdown||10)-elapsed);
     if(left>0){
@@ -611,11 +602,21 @@ function showCountdownOverlay(pod){
         d2.countdown=null;
         d2.clockEnds=Date.now()+(d2.pickSeconds||PICK_SECONDS)*1000;
         d2.secondsLeft=d2.pickSeconds||PICK_SECONDS;
-        save(st2); publish(pod); paint();
+        save(st2); publish(pod);
+        if(window._paint) window._paint();
       },1200);
     }
   };
   tick();
+}
+function startDraftCountdown(pod){
+  const st=load();
+  const d=ensureDraft(st,pod);
+  d.countdown=10;
+  d.countdownStart=Date.now();
+  save(st);
+  publish(pod);
+  showCountdownOverlay(pod);
 }
 root.querySelectorAll(".pick-btn").forEach(btn=>btn.onclick=()=>{makePick(load(),pod,Number(btn.dataset.id));paint();});
 const actor=document.getElementById("actor");if(actor)actor.onchange=()=>{const st=load();st.actingAs[pod]=Number(actor.value);save(st);paint();};
@@ -1342,10 +1343,10 @@ dataRef("drafts").on("value", snap => {
       const t = d.teams.find(x => x.id === Number(tid));
       if(t && teams[tid].lineup) t.lineup = teams[tid].lineup;
     });
-    if(remote.countdown != null && !document.getElementById("draft-countdown")){
+    if(remote.countdown != null){
       d.countdown = remote.countdown;
       d.countdownStart = remote.countdownStart || Date.now();
-      if(typeof showCountdownOverlay === "function") showCountdownOverlay(pod);
+      if(!document.getElementById("draft-countdown")) showCountdownOverlay(pod);
     }
   });
   save(s);
