@@ -136,7 +136,7 @@ document.addEventListener("click", e => {
     else if(pl.pos === "K" && (counts.K||0) < 1) can = true;
     else if(pl.pos === "DEF" && (counts.DEF||0) < 1) can = true;
     else if(["RB","WR","TE"].includes(pl.pos) && !flexUsed) can = true;
-    if(!can){ alert(pl.name+" does not fit any open starter slot"); return; }
+    if(!can){ alert(pl.name+" does not fit any open starter slot. QB, RB, WR, TE, K, and DEF slots are limited."); return; }
     team.lineup.starters.push(pl);
   } else if(to==="ir") team.lineup.ir.push(pl);
   else team.lineup.bench.push(pl);
