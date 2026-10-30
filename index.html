@@ -993,9 +993,15 @@ if(!team.lineup || (!(team.lineup.starters||[]).length && !(team.lineup.bench||[
       const bench = Array.isArray(lineup.bench) ? lineup.bench : [];
       const ir = Array.isArray(lineup.ir) ? lineup.ir : [];
       const slots = [{pos:"QB",label:"QB"},{pos:"RB",label:"RB"},{pos:"RB",label:"RB"},{pos:"WR",label:"WR"},{pos:"WR",label:"WR"},{pos:"TE",label:"TE"},{pos:"FLEX",label:"FLEX"},{pos:"K",label:"K"},{pos:"DEF",label:"DEF"}];
+      const assigned = [];
+      const used = new Set();
+      slots.forEach(slot => {
+        const pl = starters.find(p => !used.has(p.id) && (p.pos===slot.pos || (slot.pos==="FLEX" && ["RB","WR","TE"].includes(p.pos))));
+        if(pl) used.add(pl.id);
+        assigned.push(pl || null);
+      });
       html+='<div class="card"><h3>Starters</h3>'+slots.map((slot,i)=>{
-        const pl = starters[i] || null;
-        const ok = !pl || pl.pos===slot.pos || (slot.pos==="FLEX" && ["RB","WR","TE"].includes(pl.pos));
+        const pl = assigned[i];
         return '<div class="log-item" style="border-left:6px solid '+(pl?colors[pl.pos]||"#999":"#444")+'"><b>'+slot.label+'</b> · '+(pl?pl.name:"empty")+(pl && ((mineHere && !s.owner) || override)?' <button class="btn" data-move="bench" data-pod="'+pod+'" data-team="'+team.id+'" data-id="'+pl.id+'">Bench</button>':'')+'</div>';
       }).join("")+'</div>';
       html+='<div class="card"><h3>Bench</h3>'+bench.map(pl=>'<div class="log-item"><b>'+(pl.pos||"?")+'</b> · '+(pl.name||"Player")+(((mineHere && !s.owner) || override)?' <button class="btn" data-move="starter" data-pod="'+pod+'" data-team="'+team.id+'" data-id="'+pl.id+'">Start</button> <button class="btn" data-move="ir" data-pod="'+pod+'" data-team="'+team.id+'" data-id="'+pl.id+'">IR</button>':'')+'</div>').join("")+'</div>';
