@@ -101,8 +101,64 @@ details.card{margin-bottom:12px}
 }
 
 </style>
-  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js">
+document.addEventListener("click", e => {
+  const btn = e.target.closest && e.target.closest("[data-move]");
+  if(!btn) return;
+  const pod = btn.dataset.pod;
+  const teamId = Number(btn.dataset.team);
+  const id = btn.dataset.id;
+  const to = btn.dataset.move;
+  const s = load();
+  const d = ensureDraft(s, pod);
+  const team = d.teams.find(t => t.id === teamId);
+  if(!team || !team.lineup) return;
+  team.lineup.starters = team.lineup.starters || [];
+  team.lineup.bench = team.lineup.bench || [];
+  team.lineup.ir = team.lineup.ir || [];
+  let pl = team.lineup.starters.find(p=>p.id==id) || team.lineup.bench.find(p=>p.id==id) || team.lineup.ir.find(p=>p.id==id);
+  if(!pl) return;
+  // remove from current
+  team.lineup.starters = team.lineup.starters.filter(p=>p.id!=id);
+  team.lineup.bench = team.lineup.bench.filter(p=>p.id!=id);
+  team.lineup.ir = team.lineup.ir.filter(p=>p.id!=id);
+  if(to==="starter") team.lineup.starters.push(pl);
+  else if(to==="ir") team.lineup.ir.push(pl);
+  else team.lineup.bench.push(pl);
+  save(s);
+  dataRef("drafts/"+pod+"/teams/"+teamId+"/lineup").set(team.lineup).catch(()=>{});
+  renderRoster();
+});
+</script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js">
+document.addEventListener("click", e => {
+  const btn = e.target.closest && e.target.closest("[data-move]");
+  if(!btn) return;
+  const pod = btn.dataset.pod;
+  const teamId = Number(btn.dataset.team);
+  const id = btn.dataset.id;
+  const to = btn.dataset.move;
+  const s = load();
+  const d = ensureDraft(s, pod);
+  const team = d.teams.find(t => t.id === teamId);
+  if(!team || !team.lineup) return;
+  team.lineup.starters = team.lineup.starters || [];
+  team.lineup.bench = team.lineup.bench || [];
+  team.lineup.ir = team.lineup.ir || [];
+  let pl = team.lineup.starters.find(p=>p.id==id) || team.lineup.bench.find(p=>p.id==id) || team.lineup.ir.find(p=>p.id==id);
+  if(!pl) return;
+  // remove from current
+  team.lineup.starters = team.lineup.starters.filter(p=>p.id!=id);
+  team.lineup.bench = team.lineup.bench.filter(p=>p.id!=id);
+  team.lineup.ir = team.lineup.ir.filter(p=>p.id!=id);
+  if(to==="starter") team.lineup.starters.push(pl);
+  else if(to==="ir") team.lineup.ir.push(pl);
+  else team.lineup.bench.push(pl);
+  save(s);
+  dataRef("drafts/"+pod+"/teams/"+teamId+"/lineup").set(team.lineup).catch(()=>{});
+  renderRoster();
+});
+</script>
 </head>
 <body>
 <div id="app"></div>
@@ -894,7 +950,12 @@ if(!team.lineup || (!(team.lineup.starters||[]).length && !(team.lineup.bench||[
       const starters = Array.isArray(lineup.starters) ? lineup.starters : [];
       const bench = Array.isArray(lineup.bench) ? lineup.bench : [];
       const ir = Array.isArray(lineup.ir) ? lineup.ir : [];
-      html+='<div class="card"><h3>Starters</h3>'+starters.map(pl=>'<div class="log-item" style="border-left:6px solid '+(colors[pl.pos]||"#999")+'"><b>'+(pl.pos||"?")+'</b> · '+(pl.name||"Player")+(((mineHere && !s.owner) || override)?' <button class="btn" data-move="bench" data-pod="'+pod+'" data-team="'+team.id+'" data-id="'+pl.id+'">Bench</button>':'')+'</div>').join("")+'</div>';
+      const slots = [{pos:"QB",label:"QB"},{pos:"RB",label:"RB"},{pos:"RB",label:"RB"},{pos:"WR",label:"WR"},{pos:"WR",label:"WR"},{pos:"TE",label:"TE"},{pos:"FLEX",label:"FLEX"},{pos:"K",label:"K"},{pos:"DEF",label:"DEF"}];
+      html+='<div class="card"><h3>Starters</h3>'+slots.map((slot,i)=>{
+        const pl = starters[i] || null;
+        const ok = !pl || pl.pos===slot.pos || (slot.pos==="FLEX" && ["RB","WR","TE"].includes(pl.pos));
+        return '<div class="log-item" style="border-left:6px solid '+(pl?colors[pl.pos]||"#999":"#444")+'"><b>'+slot.label+'</b> · '+(pl?pl.name:"empty")+(pl && ((mineHere && !s.owner) || override)?' <button class="btn" data-move="bench" data-pod="'+pod+'" data-team="'+team.id+'" data-id="'+pl.id+'">Bench</button>':'')+'</div>';
+      }).join("")+'</div>';
       html+='<div class="card"><h3>Bench</h3>'+bench.map(pl=>'<div class="log-item"><b>'+(pl.pos||"?")+'</b> · '+(pl.name||"Player")+(((mineHere && !s.owner) || override)?' <button class="btn" data-move="starter" data-pod="'+pod+'" data-team="'+team.id+'" data-id="'+pl.id+'">Start</button> <button class="btn" data-move="ir" data-pod="'+pod+'" data-team="'+team.id+'" data-id="'+pl.id+'">IR</button>':'')+'</div>').join("")+'</div>';
       html+='<div class="card"><h3>IR</h3>'+ir.map(pl=>'<div class="log-item"><b>'+(pl.pos||"?")+'</b> · '+(pl.name||"Player")+(((mineHere && !s.owner) || override)?' <button class="btn" data-move="bench" data-pod="'+pod+'" data-team="'+team.id+'" data-id="'+pl.id+'">Bench</button>':'')+'</div>').join("")+'</div>';
     });
@@ -1111,6 +1172,34 @@ document.addEventListener("click",e=>{if(e.target&&e.target.id==="menu-btn"){con
 document.addEventListener("click",e=>{if(e.target&&e.target.id==="logout-btn"){e.preventDefault(); const st=load(); st.email=""; delete st.email; save(st); localStorage.removeItem("dualgrid-email"); location.href=location.pathname+"?out="+Date.now();}});
 document.addEventListener("click",e=>{const btn=e.target.closest&&e.target.closest("#logout-btn"); if(!btn)return; e.preventDefault(); const st=load(); delete st.email; st.email=""; save(st); location.replace(location.pathname+"#lobby");});
 window.addEventListener("hashchange",route);route();
+
+document.addEventListener("click", e => {
+  const btn = e.target.closest && e.target.closest("[data-move]");
+  if(!btn) return;
+  const pod = btn.dataset.pod;
+  const teamId = Number(btn.dataset.team);
+  const id = btn.dataset.id;
+  const to = btn.dataset.move;
+  const s = load();
+  const d = ensureDraft(s, pod);
+  const team = d.teams.find(t => t.id === teamId);
+  if(!team || !team.lineup) return;
+  team.lineup.starters = team.lineup.starters || [];
+  team.lineup.bench = team.lineup.bench || [];
+  team.lineup.ir = team.lineup.ir || [];
+  let pl = team.lineup.starters.find(p=>p.id==id) || team.lineup.bench.find(p=>p.id==id) || team.lineup.ir.find(p=>p.id==id);
+  if(!pl) return;
+  // remove from current
+  team.lineup.starters = team.lineup.starters.filter(p=>p.id!=id);
+  team.lineup.bench = team.lineup.bench.filter(p=>p.id!=id);
+  team.lineup.ir = team.lineup.ir.filter(p=>p.id!=id);
+  if(to==="starter") team.lineup.starters.push(pl);
+  else if(to==="ir") team.lineup.ir.push(pl);
+  else team.lineup.bench.push(pl);
+  save(s);
+  dataRef("drafts/"+pod+"/teams/"+teamId+"/lineup").set(team.lineup).catch(()=>{});
+  renderRoster();
+});
 </script>
 </body>
 </html>
