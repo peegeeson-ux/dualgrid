@@ -1076,7 +1076,10 @@ if(added) save(s);
           // still allow the move so they can fix it, but warn
         }
       }
-      save(st); publish(pod); renderRoster();
+      save(st);
+      try{ dataRef("drafts/"+pod+"/teams/"+tid+"/lineup").set(team.lineup); }catch(e){}
+      publish(pod);
+      renderRoster();
     };
   });
   document.querySelectorAll("[data-override]").forEach(cb=>{
