@@ -124,17 +124,20 @@ document.addEventListener("click", e => {
   team.lineup.ir = team.lineup.ir.filter(p=>p.id!=id);
   if(to==="starter"){
     const slots = ["QB","RB","RB","WR","WR","TE","FLEX","K","DEF"];
-    const filled = team.lineup.starters.map(p => p.pos);
-    let placed = false;
-    for(let i=0; i<slots.length; i++){
-      const slot = slots[i];
-      const already = filled.filter(p => p===slot || (slot==="FLEX" && ["RB","WR","TE"].includes(p))).length;
-      const allowed = (slot==="RB"||slot==="WR") ? 2 : 1;
-      if(already >= allowed) continue;
-      const ok = pl.pos === slot || (slot==="FLEX" && ["RB","WR","TE"].includes(pl.pos));
-      if(ok){ team.lineup.starters.push(pl); placed=true; break; }
-    }
-    if(!placed){ alert(pl.name+" does not fit any open starter slot"); return; }
+    const counts = {};
+    team.lineup.starters.forEach(p => { counts[p.pos] = (counts[p.pos]||0)+1; });
+    const need = {QB:1,RB:2,WR:2,TE:1,K:1,DEF:1};
+    const flexUsed = team.lineup.starters.filter(p => ["RB","WR","TE"].includes(p.pos)).length > (need.RB + need.WR + need.TE);
+    let can = false;
+    if(pl.pos === "QB" && (counts.QB||0) < 1) can = true;
+    else if(pl.pos === "RB" && (counts.RB||0) < 2) can = true;
+    else if(pl.pos === "WR" && (counts.WR||0) < 2) can = true;
+    else if(pl.pos === "TE" && (counts.TE||0) < 1) can = true;
+    else if(pl.pos === "K" && (counts.K||0) < 1) can = true;
+    else if(pl.pos === "DEF" && (counts.DEF||0) < 1) can = true;
+    else if(["RB","WR","TE"].includes(pl.pos) && !flexUsed) can = true;
+    if(!can){ alert(pl.name+" does not fit any open starter slot"); return; }
+    team.lineup.starters.push(pl);
   } else if(to==="ir") team.lineup.ir.push(pl);
   else team.lineup.bench.push(pl);
   save(s);
