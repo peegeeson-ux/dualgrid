@@ -153,11 +153,17 @@ dataRef("drafts").on("value", snap => {
   const all = snap.val() || {};
   Object.keys(all).forEach(pod => {
     const d = ensureDraft(s, pod);
-    const teams = all[pod].teams || {};
+    const remote = all[pod] || {};
+    const teams = remote.teams || {};
     Object.keys(teams).forEach(tid => {
       const t = d.teams.find(x => x.id === Number(tid));
       if(t && teams[tid].lineup) t.lineup = teams[tid].lineup;
     });
+    if(remote.countdown != null && !document.getElementById("draft-countdown")){
+      d.countdown = remote.countdown;
+      d.countdownStart = remote.countdownStart || Date.now();
+      if(typeof showCountdownOverlay === "function") showCountdownOverlay(pod);
+    }
   });
   save(s);
   if(location.hash.startsWith("#roster")) renderRoster();
@@ -197,11 +203,17 @@ dataRef("drafts").on("value", snap => {
   const all = snap.val() || {};
   Object.keys(all).forEach(pod => {
     const d = ensureDraft(s, pod);
-    const teams = all[pod].teams || {};
+    const remote = all[pod] || {};
+    const teams = remote.teams || {};
     Object.keys(teams).forEach(tid => {
       const t = d.teams.find(x => x.id === Number(tid));
       if(t && teams[tid].lineup) t.lineup = teams[tid].lineup;
     });
+    if(remote.countdown != null && !document.getElementById("draft-countdown")){
+      d.countdown = remote.countdown;
+      d.countdownStart = remote.countdownStart || Date.now();
+      if(typeof showCountdownOverlay === "function") showCountdownOverlay(pod);
+    }
   });
   save(s);
   if(location.hash.startsWith("#roster")) renderRoster();
@@ -564,26 +576,42 @@ const pause=document.getElementById("pause-clock"); if(pause) pause.onclick=()=>
 const saveSecs=document.getElementById("save-seconds"); if(saveSecs) saveSecs.onclick=()=>{if(!load().owner)return; const n=Number(document.getElementById("pick-seconds").value); if(!n||n<10){alert("Use at least 10 seconds."); return;} const st=load(); const d=ensureDraft(st,pod); d.pickSeconds=n; d.secondsLeft=n; d.clockEnds=Date.now()+n*1000; save(st); publish(pod); paint();};
 const startBtn=document.getElementById("start-draft"); if(startBtn) startBtn.onclick=()=>{if(!load().owner)return; startDraftCountdown(pod);};
 function startDraftCountdown(pod){
-  let n=10;
-  const overlay=document.createElement("div");
-  overlay.id="draft-countdown";
-  overlay.style.cssText="position:fixed;inset:0;background:#000c;display:flex;align-items:center;justify-content:center;z-index:9999;color:#c6f25a;font-size:140px;font-weight:900;letter-spacing:.05em;text-shadow:0 0 40px #c6f25a";
-  document.body.appendChild(overlay);
+  const st=load();
+  const d=ensureDraft(st,pod);
+  d.countdown=10;
+  d.countdownStart=Date.now();
+  save(st);
+  publish(pod);
+  showCountdownOverlay(pod);
+}
+function showCountdownOverlay(pod){
+  let overlay=document.getElementById("draft-countdown");
+  if(!overlay){
+    overlay=document.createElement("div");
+    overlay.id="draft-countdown";
+    overlay.style.cssText="position:fixed;inset:0;background:#000c;display:flex;align-items:center;justify-content:center;z-index:9999;color:#c6f25a;font-size:140px;font-weight:900;letter-spacing:.05em;text-shadow:0 0 40px #c6f25a";
+    document.body.appendChild(overlay);
+  }
   const tick=()=>{
-    if(n>0){
-      overlay.textContent=n;
-      n--;
-      setTimeout(tick,1000);
+    const st=load();
+    const d=ensureDraft(st,pod);
+    if(!d.countdown && d.countdown!==0){ if(overlay)overlay.remove(); return; }
+    const elapsed=Math.floor((Date.now()-(d.countdownStart||Date.now()))/1000);
+    const left=Math.max(0, (d.countdown||10)-elapsed);
+    if(left>0){
+      overlay.textContent=left;
+      setTimeout(tick,250);
     } else {
       overlay.textContent="DRAFT STARTED";
       setTimeout(()=>{
-        overlay.remove();
-        const st=load();
-        const d=ensureDraft(st,pod);
-        d.started=true;
-        d.clockEnds=Date.now()+(d.pickSeconds||PICK_SECONDS)*1000;
-        d.secondsLeft=d.pickSeconds||PICK_SECONDS;
-        save(st); publish(pod); paint();
+        if(overlay)overlay.remove();
+        const st2=load();
+        const d2=ensureDraft(st2,pod);
+        d2.started=true;
+        d2.countdown=null;
+        d2.clockEnds=Date.now()+(d2.pickSeconds||PICK_SECONDS)*1000;
+        d2.secondsLeft=d2.pickSeconds||PICK_SECONDS;
+        save(st2); publish(pod); paint();
       },1200);
     }
   };
@@ -1302,11 +1330,17 @@ dataRef("drafts").on("value", snap => {
   const all = snap.val() || {};
   Object.keys(all).forEach(pod => {
     const d = ensureDraft(s, pod);
-    const teams = all[pod].teams || {};
+    const remote = all[pod] || {};
+    const teams = remote.teams || {};
     Object.keys(teams).forEach(tid => {
       const t = d.teams.find(x => x.id === Number(tid));
       if(t && teams[tid].lineup) t.lineup = teams[tid].lineup;
     });
+    if(remote.countdown != null && !document.getElementById("draft-countdown")){
+      d.countdown = remote.countdown;
+      d.countdownStart = remote.countdownStart || Date.now();
+      if(typeof showCountdownOverlay === "function") showCountdownOverlay(pod);
+    }
   });
   save(s);
   if(location.hash.startsWith("#roster")) renderRoster();
