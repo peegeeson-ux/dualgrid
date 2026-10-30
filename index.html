@@ -123,29 +123,21 @@ document.addEventListener("click", e => {
   team.lineup.bench = team.lineup.bench.filter(p=>p.id!=id);
   team.lineup.ir = team.lineup.ir.filter(p=>p.id!=id);
   if(to==="starter"){
-    const slots = ["QB","RB","RB","WR","WR","TE","FLEX","K","DEF"];
     const counts = {};
     team.lineup.starters.forEach(p => { counts[p.pos] = (counts[p.pos]||0)+1; });
-    const need = {QB:1,RB:2,WR:2,TE:1,K:1,DEF:1};
-    const flexUsed = team.lineup.starters.filter(p => ["RB","WR","TE"].includes(p.pos)).length > (need.RB + need.WR + need.TE);
-    let can = false;
-    if(pl.pos === "QB" && (counts.QB||0) < 1) can = true;
-    else if(pl.pos === "RB" && (counts.RB||0) < 2) can = true;
-    else if(pl.pos === "WR" && (counts.WR||0) < 2) can = true;
-    else if(pl.pos === "TE" && (counts.TE||0) < 1) can = true;
-    else if(pl.pos === "K" && (counts.K||0) < 1) can = true;
-    else if(pl.pos === "DEF" && (counts.DEF||0) < 1) can = true;
-    else if(["RB","WR","TE"].includes(pl.pos) && !flexUsed) can = true;
-    if(!can){ 
-    const msg = pl.name+" does not fit any open starter slot. QB, RB, WR, TE, K, and DEF slots are limited.";
-    alert(msg);
-    const box = document.createElement("div");
-    box.textContent = msg;
-    box.style.cssText = "position:fixed;top:20px;left:50%;transform:translateX(-50%);background:#c00;color:#fff;padding:12px 20px;border-radius:8px;z-index:9999;font-weight:bold;";
-    document.body.appendChild(box);
-    setTimeout(()=>box.remove(), 3000);
-    return; 
-  }
+    const limits = {QB:1, RB:2, WR:2, TE:1, K:1, DEF:1};
+    const current = counts[pl.pos] || 0;
+    const limit = limits[pl.pos] || 0;
+    if(current >= limit){
+      const msg = pl.name+" ("+pl.pos+") does not fit — the "+pl.pos+" slots are full.";
+      alert(msg);
+      const box = document.createElement("div");
+      box.textContent = msg;
+      box.style.cssText = "position:fixed;top:20px;left:50%;transform:translateX(-50%);background:#c00;color:#fff;padding:12px 20px;border-radius:8px;z-index:9999;font-weight:bold;";
+      document.body.appendChild(box);
+      setTimeout(()=>box.remove(), 4000);
+      return;
+    }
     team.lineup.starters.push(pl);
   } else if(to==="ir") team.lineup.ir.push(pl);
   else team.lineup.bench.push(pl);
