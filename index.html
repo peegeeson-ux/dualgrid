@@ -124,12 +124,17 @@ document.addEventListener("click", e => {
   team.lineup.ir = team.lineup.ir.filter(p=>p.id!=id);
   if(to==="starter"){
     const slots = ["QB","RB","RB","WR","WR","TE","FLEX","K","DEF"];
-    const used = team.lineup.starters.length;
-    if(used >= slots.length){ alert("All starter slots filled"); return; }
-    const slot = slots[used];
-    const ok = pl.pos === slot || (slot==="FLEX" && ["RB","WR","TE"].includes(pl.pos));
-    if(!ok){ alert(pl.name+" cannot go in the "+slot+" slot"); return; }
-    team.lineup.starters.push(pl);
+    const filled = team.lineup.starters.map(p => p.pos);
+    let placed = false;
+    for(let i=0; i<slots.length; i++){
+      const slot = slots[i];
+      const already = filled.filter(p => p===slot || (slot==="FLEX" && ["RB","WR","TE"].includes(p))).length;
+      const allowed = (slot==="RB"||slot==="WR") ? 2 : 1;
+      if(already >= allowed) continue;
+      const ok = pl.pos === slot || (slot==="FLEX" && ["RB","WR","TE"].includes(pl.pos));
+      if(ok){ team.lineup.starters.push(pl); placed=true; break; }
+    }
+    if(!placed){ alert(pl.name+" does not fit any open starter slot"); return; }
   } else if(to==="ir") team.lineup.ir.push(pl);
   else team.lineup.bench.push(pl);
   save(s);
