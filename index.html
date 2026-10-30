@@ -105,6 +105,8 @@ details.card{margin-bottom:12px}
 document.addEventListener("click", e => {
   const btn = e.target.closest && e.target.closest("[data-move]");
   if(!btn) return;
+  console.log("move click", btn.dataset.move, btn.dataset.id);
+  alert("Move clicked: " + btn.dataset.move);
   const pod = btn.dataset.pod;
   const teamId = Number(btn.dataset.team);
   const id = btn.dataset.id;
