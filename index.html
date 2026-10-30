@@ -980,16 +980,24 @@ function renderRoster(){
       const picks=team.picks||[];
       if(!picks.length) return;
       // auto-fill lineup from picks if lineup is empty
-if(!team.lineup || (!(team.lineup.starters||[]).length && !(team.lineup.bench||[]).length)){
-  team.lineup = team.lineup || {starters:[], bench:[], ir:[]};
-  team.lineup.bench = team.lineup.bench || [];
-  picks.forEach(p=>{
-    if(!team.lineup.bench.some(x=>x.id===p.id) && !team.lineup.starters.some(x=>x.id===p.id)){
-      team.lineup.bench.push(p);
-    }
-  });
-  save(s);
-}
+team.lineup = team.lineup || {starters:[], bench:[], ir:[]};
+team.lineup.starters = team.lineup.starters || [];
+team.lineup.bench = team.lineup.bench || [];
+team.lineup.ir = team.lineup.ir || [];
+const already = new Set([
+  ...team.lineup.starters.map(p=>p.id),
+  ...team.lineup.bench.map(p=>p.id),
+  ...team.lineup.ir.map(p=>p.id)
+]);
+let added = false;
+picks.forEach(p=>{
+  if(!already.has(p.id)){
+    team.lineup.bench.push(p);
+    already.add(p.id);
+    added = true;
+  }
+});
+if(added) save(s);
       const row=(s.records&&s.records.rows||{})[pod+"-"+team.id]||{w:0,l:0,pf:0};
       const mineHere = canEditTeam(s, pod, team.id);
       const lineup = team.lineup || {starters:[], bench:[], ir:[]}; lineup.starters = lineup.starters || []; lineup.bench = lineup.bench || []; lineup.ir = lineup.ir || [];
