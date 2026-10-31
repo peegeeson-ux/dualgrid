@@ -280,65 +280,16 @@ const FANTASYPROS_KEY = "JYVWx9pdAQ1tdIimRT0wPaIaHpi3t9jJ75oKlj3h";
 let PLAYERS = [];
 
 async function loadFantasyProsPlayers() {
-  if (!FANTASYPROS_KEY) {
-    console.log("FantasyPros key missing");
-    return;
-  }
   try {
-    const year = new Date().getFullYear();
-    const headers = { "x-api-key": FANTASYPROS_KEY };
-
-    const proxy = "https://corsproxy.io/?";
-    const rankRes = await fetch(
-      proxy + encodeURIComponent(`https://api.fantasypros.com/v2/json/nfl/${year}/consensus-rankings?position=ALL&scoring=PPR`),
-      { headers }
-    );
-    if (!rankRes.ok) {
-      console.log("FantasyPros unavailable, using built-in player list");
-      return;
+    const res = await fetch("https://dualgrid-players.peegeeson.workers.dev");
+    if (!res.ok) throw new Error("worker failed");
+    const data = await res.json();
+    if (data.players && data.players.length) {
+      PLAYERS = data.players;
+      console.log("Loaded", PLAYERS.length, "players from FantasyPros");
+      if (window._paint) window._paint();
+      if (typeof route === "function") route();
     }
-    const rankData = await rankRes.json();
-
-    const adpRes = await fetch(
-      proxy + encodeURIComponent(`https://api.fantasypros.com/v2/json/nfl/${year}/consensus-rankings?position=ALL&scoring=PPR&type=ADP`),
-      { headers }
-    );
-    const adpData = adpRes.ok ? await adpRes.json() : { players: [] };
-    const adpMap = {};
-    (adpData.players || []).forEach(p => { adpMap[p.player_id] = p.rank_ecr; });
-
-    const projRes = await fetch(
-      proxy + encodeURIComponent(`https://api.fantasypros.com/v2/json/nfl/${year}/projections?scoring=PPR`),
-      { headers }
-    );
-    const projData = projRes.ok ? await projRes.json() : { players: [] };
-    const projMap = {};
-    (projData.players || []).forEach(p => { projMap[p.player_id] = p.stats; });
-
-    const injRes = await fetch(
-      proxy + encodeURIComponent(`https://api.fantasypros.com/v2/json/nfl/injuries`),
-      { headers }
-    );
-    const injData = injRes.ok ? await injRes.json() : {};
-    const injMap = {};
-    (injData.players || injData || []).forEach(p => {
-      if (p.player_id) injMap[p.player_id] = p.injury_status || p.status || "";
-    });
-
-    PLAYERS = (rankData.players || []).map((p, i) => ({
-      id: p.player_id || i + 1,
-      name: p.player_name,
-      pos: p.player_position_id || p.player_positions,
-      team: p.player_team_id || "",
-      rank: p.rank_ecr || i + 1,
-      adp: adpMap[p.player_id] || null,
-      proj: projMap[p.player_id] || null,
-      injury: injMap[p.player_id] || ""
-    }));
-
-    console.log("Loaded", PLAYERS.length, "players from FantasyPros");
-    if (window._paint) window._paint();
-    if (typeof route === "function") route();
   } catch (e) {
     console.log("FantasyPros unavailable, using built-in player list");
   }
