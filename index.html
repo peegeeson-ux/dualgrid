@@ -283,7 +283,7 @@ let PLAYERS = [];
 
 async function loadFantasyProsPlayers() {
   try {
-    const res = await fetch("https://dualgrid-players.peegeeson.workers.dev");
+    const res = await fetch("https://dualgrid-players.peegeeson.workers.dev?v="+Date.now());
     if (!res.ok) throw new Error("worker failed");
     const data = await res.json();
     if (data.players && data.players.length) {
@@ -1212,7 +1212,7 @@ games.forEach(g=>{
   for(let i=0;i<max;i++){
     const a=homePicks[i]||{name:"—",pos:""};
     const b=awayPicks[i]||{name:"—",pos:""};
-    rows+='<div style="display:grid;grid-template-columns:1fr auto 1fr;gap:8px;align-items:center;padding:4px 0;border-bottom:1px solid #222"><div><div class="name">'+a.name+'</div><div class="sub">'+a.pos+'</div></div><div class="pos '+(a.pos||"")+'" style="min-width:36px;text-align:center">'+(a.pos||"")+'</div><div style="text-align:right"><div class="name">'+b.name+'</div><div class="sub">'+b.pos+'</div></div></div>';
+    rows+='<div style="display:grid;grid-template-columns:1fr auto 1fr;gap:8px;align-items:center;padding:4px 0;border-bottom:1px solid #222"><div><div class="name">'+a.name+'</div><div class="sub">'+a.pos+(a.projWeek?' · '+a.projWeek:'')+'</div></div><div class="pos '+(a.pos||"")+'" style="min-width:36px;text-align:center">'+(a.pos||"")+'</div><div style="text-align:right"><div class="name">'+b.name+'</div><div class="sub">'+b.pos+(b.projWeek?' · '+b.projWeek:'')+'</div></div></div>';
   }
   list+='<details class="card" style="margin:10px 0;'+highlight+'"><summary style="font-weight:800;cursor:pointer;padding:4px 0">'+g.home.name+' vs '+g.away.name+(isMine?' <span style="color:#c6f25a">· YOU</span>':'')+'</summary><div style="margin-top:8px"><div style="display:flex;justify-content:space-between;margin-bottom:8px"><strong>'+g.home.name+'</strong><span>vs</span><strong>'+g.away.name+'</strong></div>'+rows+'</div></details>';
 });
