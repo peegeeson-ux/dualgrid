@@ -288,7 +288,7 @@ async function loadFantasyProsPlayers() {
     const year = new Date().getFullYear();
     const headers = { "x-api-key": FANTASYPROS_KEY };
 
-    const proxy = "https://api.allorigins.win/raw?url=";
+    const proxy = "https://corsproxy.io/?";
     const rankRes = await fetch(
       proxy + encodeURIComponent(`https://api.fantasypros.com/v2/json/nfl/${year}/consensus-rankings?position=ALL&scoring=PPR`),
       { headers }
