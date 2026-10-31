@@ -162,7 +162,7 @@ dataRef("drafts").on("value", snap => {
     if(remote.countdown != null){
       d.countdown = remote.countdown;
       d.countdownStart = remote.countdownStart || Date.now();
-      if(!document.getElementById("draft-countdown")) showCountdownOverlay(pod);
+      save(s);
     }
   });
   save(s);
@@ -212,7 +212,7 @@ dataRef("drafts").on("value", snap => {
     if(remote.countdown != null){
       d.countdown = remote.countdown;
       d.countdownStart = remote.countdownStart || Date.now();
-      if(!document.getElementById("draft-countdown")) showCountdownOverlay(pod);
+      save(s);
     }
   });
   save(s);
@@ -615,6 +615,7 @@ function startDraftCountdown(pod){
   d.countdown=10;
   d.countdownStart=Date.now();
   save(st);
+  try{ dataRef("drafts/"+pod).update({countdown:10, countdownStart:d.countdownStart}); }catch(e){}
   publish(pod);
   showCountdownOverlay(pod);
 }
@@ -633,7 +634,9 @@ window._paint=paint;paint();
 }
 function renderBoard(){
 const pod=podFromHash();
-const paint=()=>{const state=load();const draft=ensureDraft(state,pod);const info=snakeSlot(draft.pickIndex,draft);const onClock=draft.teams[info.teamId];
+const paint=()=>{const state=load();const draft=ensureDraft(state,pod);
+if(draft.countdown!=null && !document.getElementById("draft-countdown")) showCountdownOverlay(pod);
+const info=snakeSlot(draft.pickIndex,draft);const onClock=draft.teams[info.teamId];
 if(window._seenPicks==null)window._seenPicks={};
 if(window._seenPicks[pod]==null)window._seenPicks[pod]=draft.pickIndex;
 const hold=draft.pickIndex>(window._seenPicks[pod]||0);
@@ -1346,7 +1349,7 @@ dataRef("drafts").on("value", snap => {
     if(remote.countdown != null){
       d.countdown = remote.countdown;
       d.countdownStart = remote.countdownStart || Date.now();
-      if(!document.getElementById("draft-countdown")) showCountdownOverlay(pod);
+      save(s);
     }
   });
   save(s);
