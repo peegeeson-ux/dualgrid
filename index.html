@@ -281,6 +281,14 @@ cloud.ref(".info/connected").on("value",s=>{cloudOn=!!s.val(); const el=document
 const FANTASYPROS_KEY = "JYVWx9pdAQ1tdIimRT0wPaIaHpi3t9jJ75oKlj3h";
 let PLAYERS = [];
 
+function enrich(p){
+  if(!p || !p.id) return p;
+  const full = PLAYERS.find(x => Number(x.id) === Number(p.id));
+  if(!full) return p;
+  return Object.assign({}, p, { proj: full.proj || 0, projWeek: full.projWeek || 0 });
+}
+
+
 async function loadFantasyProsPlayers() {
   try {
     const res = await fetch("https://dualgrid-players.peegeeson.workers.dev?v="+Date.now());
@@ -1101,10 +1109,10 @@ if(added) save(s);
       team.lineup.starters = assigned.filter(Boolean);
       html+='<div class="card"><h3>Starters</h3>'+slots.map((slot,i)=>{
         const pl = assigned[i];
-        return '<div class="log-item" style="border-left:6px solid '+(pl?colors[pl.pos]||"#999":"#444")+'"><b>'+slot.label+'</b> · '+(pl?pl.name+(pl.projWeek?' · '+pl.projWeek:''):"empty")+(pl && ((mineHere && !s.owner) || override)?' <button class="btn" data-move="bench" data-pod="'+pod+'" data-team="'+team.id+'" data-id="'+pl.id+'">Bench</button>':'')+'</div>';
+        return '<div class="log-item" style="border-left:6px solid '+(pl?colors[pl.pos]||"#999":"#444")+'"><b>'+slot.label+'</b> · '+(function(){const e=enrich(pl); return e?e.name+(e.projWeek?' · '+e.projWeek:''):"empty"})()+(pl && ((mineHere && !s.owner) || override)?' <button class="btn" data-move="bench" data-pod="'+pod+'" data-team="'+team.id+'" data-id="'+pl.id+'">Bench</button>':'')+'</div>';
       }).join("")+'</div>';
-      html+='<div class="card"><h3>Bench</h3>'+bench.map(pl=>'<div class="log-item"><b>'+(pl.pos||"?")+'</b> · '+(pl.name||"Player")+(pl.projWeek?' · '+pl.projWeek:'')+(((mineHere && !s.owner) || override)?' <button class="btn" data-move="starter" data-pod="'+pod+'" data-team="'+team.id+'" data-id="'+pl.id+'">Start</button> <button class="btn" data-move="ir" data-pod="'+pod+'" data-team="'+team.id+'" data-id="'+pl.id+'">IR</button>':'')+'</div>').join("")+'</div>';
-      html+='<div class="card"><h3>IR</h3>'+ir.map(pl=>'<div class="log-item"><b>'+(pl.pos||"?")+'</b> · '+(pl.name||"Player")+(pl.projWeek?' · '+pl.projWeek:'')+(((mineHere && !s.owner) || override)?' <button class="btn" data-move="bench" data-pod="'+pod+'" data-team="'+team.id+'" data-id="'+pl.id+'">Bench</button>':'')+'</div>').join("")+'</div>';
+      html+='<div class="card"><h3>Bench</h3>'+bench.map(pl=>'<div class="log-item"><b>'+(pl.pos||"?")+'</b> · '+(function(){const e=enrich(pl); return (e.name||"Player")+(e.projWeek?' · '+e.projWeek:'')})()+(((mineHere && !s.owner) || override)?' <button class="btn" data-move="starter" data-pod="'+pod+'" data-team="'+team.id+'" data-id="'+pl.id+'">Start</button> <button class="btn" data-move="ir" data-pod="'+pod+'" data-team="'+team.id+'" data-id="'+pl.id+'">IR</button>':'')+'</div>').join("")+'</div>';
+      html+='<div class="card"><h3>IR</h3>'+ir.map(pl=>'<div class="log-item"><b>'+(pl.pos||"?")+'</b> · '+(function(){const e=enrich(pl); return (e.name||"Player")+(e.projWeek?' · '+e.projWeek:'')})()+(((mineHere && !s.owner) || override)?' <button class="btn" data-move="bench" data-pod="'+pod+'" data-team="'+team.id+'" data-id="'+pl.id+'">Bench</button>':'')+'</div>').join("")+'</div>';
     });
   });
   const settings = s.owner ? '<div class="card no-print"><h3>Must-start positions</h3><p style="opacity:.8;margin-bottom:10px">Set the minimum number of each position that must be started. Owners cannot lock a lineup until these are filled.</p><div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:10px"><div><label>QB</label><input id="rs-qb" type="number" min="0" value="'+(rs.qb||1)+'"></div><div><label>RB</label><input id="rs-rb" type="number" min="0" value="'+(rs.rb||2)+'"></div><div><label>WR</label><input id="rs-wr" type="number" min="0" value="'+(rs.wr||2)+'"></div><div><label>TE</label><input id="rs-te" type="number" min="0" value="'+(rs.te||1)+'"></div><div><label>Team DEF</label><input id="rs-teamDef" type="number" min="0" value="'+(rs.teamDef||0)+'"></div><div><label>Def players</label><input id="rs-defPlayers" type="number" min="0" value="'+(rs.defPlayers||0)+'"></div><div><label>K</label><input id="rs-k" type="number" min="0" value="'+(rs.k||1)+'"></div><div><label>FLEX</label><input id="rs-flex" type="number" min="0" value="'+(rs.flex||1)+'"></div><div><label>Bench</label><input id="rs-bench" type="number" min="0" value="'+(rs.bench||6)+'"></div><div><label>IR</label><input id="rs-ir" type="number" min="0" value="'+(rs.ir||1)+'"></div></div><label style="margin-top:10px;display:block"><input type="checkbox" id="rs-matchRounds" checked> Make draft rounds equal the total roster slots (starters + bench)</label><button class="btn btn-lime" id="save-roster" style="margin-top:12px">Save must-start settings</button></div>' : '<div class="card"><p>Required starters: QB '+(rs.qb||1)+' · RB '+(rs.rb||2)+' · WR '+(rs.wr||2)+' · TE '+(rs.te||1)+' · Team DEF '+(rs.teamDef||0)+' · Def players '+(rs.defPlayers||0)+' · K '+(rs.k||1)+' · FLEX '+(rs.flex||1)+'</p></div>';
@@ -1210,8 +1218,8 @@ games.forEach(g=>{
   const max=Math.max(homePicks.length, awayPicks.length, 1);
   let rows="";
   for(let i=0;i<max;i++){
-    const a=homePicks[i]||{name:"—",pos:""};
-    const b=awayPicks[i]||{name:"—",pos:""};
+    const a=enrich(homePicks[i]||{name:"—",pos:""});
+    const b=enrich(awayPicks[i]||{name:"—",pos:""});
     rows+='<div style="display:grid;grid-template-columns:1fr auto 1fr;gap:8px;align-items:center;padding:4px 0;border-bottom:1px solid #222"><div><div class="name">'+a.name+'</div><div class="sub">'+a.pos+(a.projWeek?' · '+a.projWeek:'')+'</div></div><div class="pos '+(a.pos||"")+'" style="min-width:36px;text-align:center">'+(a.pos||"")+'</div><div style="text-align:right"><div class="name">'+b.name+'</div><div class="sub">'+b.pos+(b.projWeek?' · '+b.projWeek:'')+'</div></div></div>';
   }
   list+='<details class="card" style="margin:10px 0;'+highlight+'"><summary style="font-weight:800;cursor:pointer;padding:4px 0">'+g.home.name+' vs '+g.away.name+(isMine?' <span style="color:#c6f25a">· YOU</span>':'')+'</summary><div style="margin-top:8px"><div style="display:flex;justify-content:space-between;margin-bottom:8px"><strong>'+g.home.name+'</strong><span>vs</span><strong>'+g.away.name+'</strong></div>'+rows+'</div></details>';
