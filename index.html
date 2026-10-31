@@ -226,6 +226,50 @@ dataRef("drafts").on("value", snap => {
 const firebaseConfig={apiKey:"AIzaSyCPoc8RiH0GtWnyPe9azxQ8lFCLrOBoMts",authDomain:"dualgrid-427ca.firebaseapp.com",databaseURL:"https://dualgrid-427ca-default-rtdb.firebaseio.com",projectId:"dualgrid-427ca",storageBucket:"dualgrid-427ca.firebasestorage.app",messagingSenderId:"52737569543",appId:"1:52737569543:web:cf80fe25c42eb4891a0ba2"};
 firebase.initializeApp(firebaseConfig);
 const cloud=firebase.database();
+function showCountdownOverlay(pod){
+  let overlay=document.getElementById("draft-countdown");
+  if(!overlay){
+    overlay=document.createElement("div");
+    overlay.id="draft-countdown";
+    overlay.style.cssText="position:fixed;inset:0;background:#000c;display:flex;align-items:center;justify-content:center;z-index:9999;color:#c6f25a;font-size:140px;font-weight:900;letter-spacing:.05em;text-shadow:0 0 40px #c6f25a";
+    document.body.appendChild(overlay);
+  }
+  const tick=()=>{
+    const st=load();
+    const d=ensureDraft(st,pod);
+    if(d.countdown==null){ if(overlay)overlay.remove(); return; }
+    const elapsed=Math.floor((Date.now()-(d.countdownStart||Date.now()))/1000);
+    const left=Math.max(0, (d.countdown||10)-elapsed);
+    if(left>0){
+      overlay.textContent=left;
+      setTimeout(tick,250);
+    } else {
+      overlay.textContent="DRAFT STARTED";
+      setTimeout(()=>{
+        if(overlay)overlay.remove();
+        const st2=load();
+        const d2=ensureDraft(st2,pod);
+        d2.started=true;
+        d2.countdown=null;
+        d2.clockEnds=Date.now()+(d2.pickSeconds||PICK_SECONDS)*1000;
+        d2.secondsLeft=d2.pickSeconds||PICK_SECONDS;
+        save(st2); publish(pod);
+        if(window._paint) window._paint();
+      },1200);
+    }
+  };
+  tick();
+}
+function startDraftCountdown(pod){
+  const st=load();
+  const d=ensureDraft(st,pod);
+  d.countdown=10;
+  d.countdownStart=Date.now();
+  save(st);
+  try{ dataRef("drafts/"+pod).update({countdown:10, countdownStart:d.countdownStart}); }catch(e){}
+  publish(pod);
+  showCountdownOverlay(pod);
+}
 function rememberLeague(st,name,code){st.leagues=st.leagues||[]; if(!st.leagues.some(l=>l.code===code))st.leagues.push({name,code}); st.league={name,code};}
 function leagueCode(){try{const raw=localStorage.getItem(STORE);const s=raw?JSON.parse(raw):{};return s.league&&s.league.code||"";}catch(e){return "";}}
 function dataRef(path){const code=leagueCode();return cloud.ref(code?("leagues/"+code+"/"+path):path);}
@@ -575,50 +619,6 @@ const wipe=document.getElementById("wipe-pick"); if(wipe) wipe.onclick=()=>{if(!
 const pause=document.getElementById("pause-clock"); if(pause) pause.onclick=()=>{if(!load().owner)return; const st=load(); const d=ensureDraft(st,pod); const left=d.paused?(d.secondsLeft||0):Math.max(0,clockLeft(d)); d.paused=!d.paused; d.secondsLeft=left; if(!d.paused)d.clockEnds=Date.now()+left*1000; else d.clockEnds=0; save(st); publish(pod); paint();};
 const saveSecs=document.getElementById("save-seconds"); if(saveSecs) saveSecs.onclick=()=>{if(!load().owner)return; const n=Number(document.getElementById("pick-seconds").value); if(!n||n<10){alert("Use at least 10 seconds."); return;} const st=load(); const d=ensureDraft(st,pod); d.pickSeconds=n; d.secondsLeft=n; d.clockEnds=Date.now()+n*1000; save(st); publish(pod); paint();};
 const startBtn=document.getElementById("start-draft"); if(startBtn) startBtn.onclick=()=>{if(!load().owner)return; startDraftCountdown(pod);};
-function showCountdownOverlay(pod){
-  let overlay=document.getElementById("draft-countdown");
-  if(!overlay){
-    overlay=document.createElement("div");
-    overlay.id="draft-countdown";
-    overlay.style.cssText="position:fixed;inset:0;background:#000c;display:flex;align-items:center;justify-content:center;z-index:9999;color:#c6f25a;font-size:140px;font-weight:900;letter-spacing:.05em;text-shadow:0 0 40px #c6f25a";
-    document.body.appendChild(overlay);
-  }
-  const tick=()=>{
-    const st=load();
-    const d=ensureDraft(st,pod);
-    if(d.countdown==null){ if(overlay)overlay.remove(); return; }
-    const elapsed=Math.floor((Date.now()-(d.countdownStart||Date.now()))/1000);
-    const left=Math.max(0, (d.countdown||10)-elapsed);
-    if(left>0){
-      overlay.textContent=left;
-      setTimeout(tick,250);
-    } else {
-      overlay.textContent="DRAFT STARTED";
-      setTimeout(()=>{
-        if(overlay)overlay.remove();
-        const st2=load();
-        const d2=ensureDraft(st2,pod);
-        d2.started=true;
-        d2.countdown=null;
-        d2.clockEnds=Date.now()+(d2.pickSeconds||PICK_SECONDS)*1000;
-        d2.secondsLeft=d2.pickSeconds||PICK_SECONDS;
-        save(st2); publish(pod);
-        if(window._paint) window._paint();
-      },1200);
-    }
-  };
-  tick();
-}
-function startDraftCountdown(pod){
-  const st=load();
-  const d=ensureDraft(st,pod);
-  d.countdown=10;
-  d.countdownStart=Date.now();
-  save(st);
-  try{ dataRef("drafts/"+pod).update({countdown:10, countdownStart:d.countdownStart}); }catch(e){}
-  publish(pod);
-  showCountdownOverlay(pod);
-}
 root.querySelectorAll(".pick-btn").forEach(btn=>btn.onclick=()=>{makePick(load(),pod,Number(btn.dataset.id));paint();});
 const actor=document.getElementById("actor");if(actor)actor.onchange=()=>{const st=load();st.actingAs[pod]=Number(actor.value);save(st);paint();};
 const bidBtn=document.getElementById("bid");if(bidBtn)bidBtn.onclick=()=>{bid(load(),pod,acting);paint();};
