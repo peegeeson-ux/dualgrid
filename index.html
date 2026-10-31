@@ -293,7 +293,10 @@ async function loadFantasyProsPlayers() {
       proxy + encodeURIComponent(`https://api.fantasypros.com/v2/json/nfl/${year}/consensus-rankings?position=ALL&scoring=PPR`),
       { headers }
     );
-    if (!rankRes.ok) throw new Error("rankings failed");
+    if (!rankRes.ok) {
+      console.log("FantasyPros unavailable, using built-in player list");
+      return;
+    }
     const rankData = await rankRes.json();
 
     const adpRes = await fetch(
@@ -337,7 +340,7 @@ async function loadFantasyProsPlayers() {
     if (window._paint) window._paint();
     if (typeof route === "function") route();
   } catch (e) {
-    console.error("FantasyPros load failed", e);
+    console.log("FantasyPros unavailable, using built-in player list");
   }
 }
 loadFantasyProsPlayers();
