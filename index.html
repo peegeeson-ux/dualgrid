@@ -1347,11 +1347,10 @@ function checkScheduledDrafts(){
       const scheduled=new Date(y, m-1, d, hh||0, mm||0, 0, 0);
       const st=load();
       const draft=ensureDraft(st,pod);
-      if(draft.started===false && draft.countdown==null) draft.autoStarted=false;
-      if(window._autoStartedPods && window._autoStartedPods[pod]) return;
-      if(now >= scheduled && draft.countdown==null && (!draft.picks || draft.picks.length===0)){
-        window._autoStartedPods = window._autoStartedPods || {};
-        window._autoStartedPods[pod] = true;
+      if(now >= scheduled && !draft.autoStarted && draft.countdown==null && (!draft.picks || draft.picks.length===0)){
+        draft.autoStarted=true;
+        save(st);
+        try{ dataRef("drafts/"+pod).update({autoStarted:true}); }catch(e){}
         startDraftCountdown(pod);
       }
     });
