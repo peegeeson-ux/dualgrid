@@ -1347,6 +1347,7 @@ function checkScheduledDrafts(){
       const scheduled=new Date(y, m-1, d, hh||0, mm||0, 0, 0);
       const st=load();
       const draft=ensureDraft(st,pod);
+      console.log(pod, "check:", "now>=", now>=scheduled, "auto:", draft.autoStarted, "countdown:", draft.countdown, "picks:", (draft.picks||[]).length);
       if(now >= scheduled && !draft.autoStarted && draft.countdown==null && (!draft.picks || draft.picks.length===0)){
         draft.autoStarted=true;
         save(st);
