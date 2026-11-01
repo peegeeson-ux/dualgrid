@@ -229,6 +229,7 @@ const firebaseConfig={apiKey:"AIzaSyCPoc8RiH0GtWnyPe9azxQ8lFCLrOBoMts",authDomai
 firebase.initializeApp(firebaseConfig);
 const cloud=firebase.database();
 function showCountdownOverlay(pod){
+  if(podFromHash()!==pod) return;
   let overlay=document.getElementById("draft-countdown");
   if(!overlay){
     overlay=document.createElement("div");
