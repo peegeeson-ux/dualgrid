@@ -1351,6 +1351,7 @@ function checkScheduledDrafts(){
       // debug removed
       if(now >= scheduled && draft.countdown==null && !draft.autoStarted && (!draft.picks || draft.picks.length===0)){
         draft.autoStarted=true;
+        draft.countdown=10;
         save(st);
         startDraftCountdown(pod);
       }
