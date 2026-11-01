@@ -1336,6 +1336,7 @@ if(!window._countdownWatch){window._countdownWatch=setInterval(()=>{
 function checkScheduledDrafts(){
   dataRef("config/draftTimes").once("value").then(snap=>{
     const times=snap.val()||{};
+    console.log("Draft times:", times);
     const now=new Date();
     Object.keys(times).forEach(pod=>{
       const t=times[pod];
