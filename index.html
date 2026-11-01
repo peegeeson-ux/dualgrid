@@ -1348,10 +1348,8 @@ function checkScheduledDrafts(){
       const st=load();
       const draft=ensureDraft(st,pod);
       console.log(pod, "check:", "now>=", now>=scheduled, "auto:", draft.autoStarted, "countdown:", draft.countdown, "picks:", (draft.picks||[]).length);
-      if(now >= scheduled && !draft.autoStarted && (!draft.picks || draft.picks.length===0)){
-        draft.autoStarted=true;
-        save(st);
-        try{ dataRef("drafts/"+pod).update({autoStarted:true}); }catch(e){}
+      if(now >= scheduled && !window["_started_"+pod] && (!draft.picks || draft.picks.length===0)){
+        window["_started_"+pod]=true;
         startDraftCountdown(pod);
       }
     });
