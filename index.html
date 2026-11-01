@@ -1331,6 +1331,30 @@ if(!window._countdownWatch){window._countdownWatch=setInterval(()=>{
   const d=ensureDraft(load(),pod);
   if(d.countdown!=null && !document.getElementById("draft-countdown")) showCountdownOverlay(pod);
 },500);}
+
+// Auto-start countdown when scheduled draft time is reached
+if(!window._scheduleWatch){
+  window._scheduleWatch=setInterval(()=>{
+    dataRef("config/draftTimes").once("value").then(snap=>{
+      const times=snap.val()||{};
+      const now=Date.now();
+      podsOf(load()).forEach(pod=>{
+        const t=times[pod];
+        if(!t || !t.date || !t.time) return;
+        const scheduled=new Date(t.date+"T"+t.time).getTime();
+        if(isNaN(scheduled)) return;
+        const st=load();
+        const d=ensureDraft(st,pod);
+        // Fire once when we reach the scheduled time and draft hasn't started
+        if(now >= scheduled && !d.started && d.countdown==null && !d.autoStarted){
+          d.autoStarted=true;
+          save(st);
+          startDraftCountdown(pod);
+        }
+      });
+    }).catch(()=>{});
+  },15000);
+}
 document.addEventListener("click",e=>{const a=e.target.closest&&e.target.closest("#go-home"); if(!a)return; e.preventDefault(); location.hash="#home"; renderHome();});
 document.addEventListener("click",e=>{if(e.target&&e.target.id==="menu-btn"){const n=document.querySelector(".nav-links"); if(n)n.classList.toggle("open");}});
 document.addEventListener("click",e=>{if(e.target&&e.target.id==="logout-btn"){e.preventDefault(); const st=load(); st.email=""; delete st.email; save(st); localStorage.removeItem("dualgrid-email"); location.href=location.pathname+"?out="+Date.now();}});
