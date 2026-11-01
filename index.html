@@ -1348,6 +1348,7 @@ function checkScheduledDrafts(){
       const st=load();
       const draft=ensureDraft(st,pod);
       if(draft.started===false && draft.countdown==null) draft.autoStarted=false;
+      console.log(pod, "now:", now.toLocaleString(), "scheduled:", scheduled.toLocaleString(), "started:", draft.started, "countdown:", draft.countdown, "auto:", draft.autoStarted);
       if(now >= scheduled && !draft.started && draft.countdown==null && !draft.autoStarted){
         draft.autoStarted=true;
         save(st);
