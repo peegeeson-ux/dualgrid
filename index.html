@@ -246,7 +246,7 @@ function showCountdownOverlay(pod){
       overlay.textContent=left;
       setTimeout(tick,250);
     } else {
-      overlay.textContent="DRAFT STARTED";
+      overlay.style.fontSize="64px"; overlay.style.lineHeight="1.15"; overlay.style.textAlign="center"; overlay.style.padding="20px"; overlay.style.whiteSpace="pre-line"; overlay.textContent=(leagueName||"DUALGRID")+"\n"+(podName(pod)||pod)+" DIVISION\nDRAFT STARTING";
       setTimeout(()=>{
         if(overlay)overlay.remove();
         const st2=load();
