@@ -1353,6 +1353,7 @@ function checkScheduledDrafts(){
         draft.autoStarted=true;
         draft.countdown=10;
         save(st);
+        if(window._scheduleWatch){ clearInterval(window._scheduleWatch); window._scheduleWatch=null; }
         startDraftCountdown(pod);
       }
     });
