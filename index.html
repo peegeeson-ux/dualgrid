@@ -1336,7 +1336,7 @@ if(!window._countdownWatch){window._countdownWatch=setInterval(()=>{
 function checkScheduledDrafts(){
   dataRef("config/draftTimes").once("value").then(snap=>{
     const times=snap.val()||{};
-    console.log("Draft times raw:", JSON.stringify(times));
+    // raw log removed
     const now=new Date();
     Object.keys(times).forEach(pod=>{
       const t=times[pod];
@@ -1348,8 +1348,8 @@ function checkScheduledDrafts(){
       const st=load();
       const draft=ensureDraft(st,pod);
       if(draft.started===false && draft.countdown==null) draft.autoStarted=false;
-      if(!window._shownDebug){ window._shownDebug=true; alert(pod + "\nNow: " + now.toLocaleString() + "\nScheduled: " + scheduled.toLocaleString() + "\nStarted: " + draft.started + "\nCountdown: " + draft.countdown + "\nAuto: " + draft.autoStarted); }
-      if(now >= scheduled && !draft.started && draft.countdown==null && !draft.autoStarted){
+      // debug removed
+      if(now >= scheduled && draft.countdown==null && !draft.autoStarted && (!draft.picks || draft.picks.length===0)){
         draft.autoStarted=true;
         save(st);
         alert("Starting draft for " + pod + " (scheduled " + scheduled.toLocaleString() + ")");
