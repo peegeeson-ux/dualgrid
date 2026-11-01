@@ -1352,7 +1352,6 @@ function checkScheduledDrafts(){
       if(now >= scheduled && draft.countdown==null && !draft.autoStarted && (!draft.picks || draft.picks.length===0)){
         draft.autoStarted=true;
         save(st);
-        alert("Starting draft for " + pod + " (scheduled " + scheduled.toLocaleString() + ")");
         startDraftCountdown(pod);
       }
     });
