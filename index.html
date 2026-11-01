@@ -1333,30 +1333,31 @@ if(!window._countdownWatch){window._countdownWatch=setInterval(()=>{
 },500);}
 
 // Auto-start countdown when scheduled draft time is reached
+function checkScheduledDrafts(){
+  dataRef("config/draftTimes").once("value").then(snap=>{
+    const times=snap.val()||{};
+    const now=new Date();
+    Object.keys(times).forEach(pod=>{
+      const t=times[pod];
+      if(!t || !t.date || !t.time) return;
+      const [y,m,d]= (t.date||"").split("-").map(Number);
+      const [hh,mm]= (t.time||"").split(":").map(Number);
+      if(!y || !m || !d) return;
+      const scheduled=new Date(y, m-1, d, hh||0, mm||0, 0, 0);
+      const st=load();
+      const draft=ensureDraft(st,pod);
+      if(draft.started===false && draft.countdown==null) draft.autoStarted=false;
+      if(now >= scheduled && !draft.started && draft.countdown==null && !draft.autoStarted){
+        draft.autoStarted=true;
+        save(st);
+        startDraftCountdown(pod);
+      }
+    });
+  }).catch(()=>{});
+}
 if(!window._scheduleWatch){
-  window._scheduleWatch=setInterval(()=>{
-    dataRef("config/draftTimes").once("value").then(snap=>{
-      const times=snap.val()||{};
-      const now=new Date();
-      Object.keys(times).forEach(pod=>{
-        const t=times[pod];
-        if(!t || !t.date || !t.time) return;
-        const [y,m,d]= (t.date||"").split("-").map(Number);
-        const [hh,mm]= (t.time||"").split(":").map(Number);
-        if(!y || !m || !d) return;
-        const scheduled=new Date(y, m-1, d, hh||0, mm||0, 0, 0);
-        const st=load();
-        const draft=ensureDraft(st,pod);
-        // Reset stuck flag if draft was reset
-        if(draft.started===false && draft.countdown==null) draft.autoStarted=false;
-        if(now >= scheduled && !draft.started && draft.countdown==null && !draft.autoStarted){
-          draft.autoStarted=true;
-          save(st);
-          startDraftCountdown(pod);
-        }
-      });
-    }).catch(()=>{});
-  },5000);
+  window._scheduleWatch=setInterval(checkScheduledDrafts, 4000);
+  setTimeout(checkScheduledDrafts, 1500);
 }
 document.addEventListener("click",e=>{const a=e.target.closest&&e.target.closest("#go-home"); if(!a)return; e.preventDefault(); location.hash="#home"; renderHome();});
 document.addEventListener("click",e=>{if(e.target&&e.target.id==="menu-btn"){const n=document.querySelector(".nav-links"); if(n)n.classList.toggle("open");}});
