@@ -1350,6 +1350,7 @@ function checkScheduledDrafts(){
       if(now >= scheduled && !draft.started && draft.countdown==null && !draft.autoStarted){
         draft.autoStarted=true;
         save(st);
+        alert("Starting draft for " + pod + " (scheduled " + scheduled.toLocaleString() + ")");
         startDraftCountdown(pod);
       }
     });
