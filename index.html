@@ -171,13 +171,7 @@ dataRef("drafts").on("value", snap => {
   if(location.hash.startsWith("#roster")) renderRoster();
 });
 
-document.addEventListener("click", function(ev){
-  const el = ev.target.closest("[data-player-id]");
-  if(!el) return;
-  const id = el.getAttribute("data-player-id");
-  const p = (PLAYERS||[]).find(x=>String(x.id)===String(id));
-  if(p) showPlayerModal(p);
-});
+
 
 </script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js">
@@ -229,6 +223,16 @@ dataRef("drafts").on("value", snap => {
   save(s);
   if(location.hash.startsWith("#roster")) renderRoster();
 });
+
+document.addEventListener("click", function(ev){
+  const el = ev.target.closest("[data-player-id]");
+  if(!el) return;
+  if(ev.target.closest("button")) return;
+  const id = el.getAttribute("data-player-id");
+  const p = (PLAYERS||[]).find(x=>String(x.id)===String(id));
+  if(p && typeof showPlayerModal === "function") showPlayerModal(p);
+});
+
 </script>
 </head>
 <body>
@@ -1445,6 +1449,16 @@ dataRef("drafts").on("value", snap => {
   save(s);
   if(location.hash.startsWith("#roster")) renderRoster();
 });
+
+document.addEventListener("click", function(ev){
+  const el = ev.target.closest("[data-player-id]");
+  if(!el) return;
+  if(ev.target.closest("button")) return;
+  const id = el.getAttribute("data-player-id");
+  const p = (PLAYERS||[]).find(x=>String(x.id)===String(id));
+  if(p && typeof showPlayerModal === "function") showPlayerModal(p);
+});
+
 </script>
 </body>
 </html>
