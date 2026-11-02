@@ -577,7 +577,7 @@ const claimedHere = mine && mine.pod === pod;
 const acting = claimedHere ? Number(mine.teamId) : ((onClock&&onClock.id)||0);
 const seatStatus = claimedHere ? "You are locked to " + ((draft.teams.find(t=>Number(t.id)===Number(mine.teamId))||{}).name||"your team") : "No team claimed on this phone";
 root.innerHTML=header('<a class="btn" href="#home">Circuit</a><a class="btn" href="#payout">Payouts</a><a class="btn btn-lime" href="#board/'+pod+'">Cast Big Board</a><button class="btn" id="reset">Reset</button><button class="btn" id="force-clear" style="background:#c0392b">Force clear all</button>')+
-'<div class="draft-shell"><aside class="panel"><h3>'+(auction?"AUCTION":"ON THE CLOCK")+' · '+podName(pod)+' · '+CODES[pod]+'</h3><div class="clock-box"><div style="font-size:13px;color:#c6f25a;margin-bottom:4px">'+seatStatus+'</div><div class="who">'+(done?"Complete":onClock.name)+'</div><div class="meta">'+(done?"Board locked":(auction?(draft.nomination?"High bid $"+draft.nomination.bid:"Nominate"):"Pick "+info.label))+'</div><div class="timer">'+fmtTime(auction&&draft.nomination?draft.nomination.seconds:clockLeft(draft))+'</div>'+(onClock&&onClock.ownerName?'<div style="font-size:12px;color:var(--mute);margin-top:4px">Owner: '+onClock.ownerName+'</div>':'')+'</div><div class="you-pick" style="font-size:20px;font-weight:900;color:#c6f25a;margin:8px 0 12px;text-align:center">'+(()=>{
+'<div class="draft-shell"><aside class="panel"><h3>'+(function(){const mine=(()=>{try{return (JSON.parse(localStorage.getItem("dualgrid-my-seats")||"{}")[leagueCode()]||null)}catch(e){return null}})(); const t=mine&&mine.pod===pod?draft.teams.find(x=>Number(x.id)===Number(mine.teamId)):null; return (t&&t.name?t.name+" War Room":(auction?"AUCTION":"WAR ROOM")+" · "+podName(pod));})()+'</h3><div class="clock-box"><div style="font-size:13px;color:#c6f25a;margin-bottom:4px">'+seatStatus+'</div><div class="who">'+(done?"Complete":onClock.name)+'</div><div class="meta">'+(done?"Board locked":(auction?(draft.nomination?"High bid $"+draft.nomination.bid:"Nominate"):"Pick "+info.label))+'</div><div class="timer">'+fmtTime(auction&&draft.nomination?draft.nomination.seconds:clockLeft(draft))+'</div>'+(onClock&&onClock.ownerName?'<div style="font-size:12px;color:var(--mute);margin-top:4px">Owner: '+onClock.ownerName+'</div>':'')+'</div><div class="you-pick" style="font-size:20px;font-weight:900;color:#c6f25a;margin:8px 0 12px;text-align:center">'+(()=>{
   let myId = acting;
   if (myId === undefined || myId === null || myId === 0 && !mine) {
     const claimed = draft.teams.find(t => t.ownerName && t.ownerName.toLowerCase().includes((JSON.parse(localStorage.getItem("dualgrid-my-seats")||"{}")[leagueCode()]||{}).name||""));
@@ -1007,6 +1007,7 @@ if(b) b.onclick=()=>{if(!load().owner)return; const out={}; fields.forEach(f=>ou
 function applyPreset(val){
   const el=document.getElementById("sc-rec");
   if(el) el.value=val;
+  // also refresh the current display
   const show=document.getElementById("sc-show");
   if(show){
     const recLine=show.innerHTML.split("<div>").find(x=>x.includes("Reception"));
