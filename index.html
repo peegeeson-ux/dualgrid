@@ -99,7 +99,8 @@ details.card{margin-bottom:12px}
   .panel{padding:8px 6px}
   #queue-list{max-height:120px;overflow:auto}
 #available-players{max-height:70vh;overflow-y:auto;padding-right:4px}
-#available-players .player{min-height:40px}
+#available-players .player{min-height:48px;padding:8px 6px}
+#available-players .player .btn{min-height:32px;padding:6px 12px}
 }
 
 </style>
@@ -243,22 +244,27 @@ document.addEventListener("touchend", openPlayerFromEvent, {passive:false});
 <body>
 <div id="app"></div>
 <script>
-// Ignore accidental taps while scrolling (especially on phones)
+// Stronger scroll-vs-tap guard for the war room
 (function(){
-  let startY = 0;
-  let moved = false;
-  document.addEventListener("touchstart", function(e){
-    startY = e.touches[0].clientY;
-    moved = false;
+  let lastScroll = 0;
+  let scrolling = false;
+  const suppressMs = 350;
+  document.addEventListener("touchmove", function(){
+    lastScroll = Date.now();
+    scrolling = true;
   }, {passive:true});
-  document.addEventListener("touchmove", function(e){
-    if(Math.abs(e.touches[0].clientY - startY) > 8) moved = true;
+  document.addEventListener("scroll", function(){
+    lastScroll = Date.now();
+    scrolling = true;
+  }, true);
+  document.addEventListener("touchend", function(){
+    setTimeout(function(){ scrolling = false; }, suppressMs);
   }, {passive:true});
   document.addEventListener("click", function(e){
-    if(moved){
+    if(scrolling || (Date.now() - lastScroll) < suppressMs){
       e.preventDefault();
-      e.stopPropagation();
-      moved = false;
+      e.stopImmediatePropagation();
+      return false;
     }
   }, true);
 })();
