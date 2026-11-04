@@ -130,10 +130,11 @@ document.addEventListener("click", e => {
   if(to==="starter"){
     const counts = {};
     team.lineup.starters.forEach(p => { const pos = (p.pos==="DST"?"DEF":p.pos); counts[pos] = (counts[pos]||0)+1; });
-    const limits = {QB:1, RB:2, WR:2, TE:1, K:1, DEF:1};
+    const rs = window.rosterSettings || {};
+    const limits = {QB:Number(rs.qb)||1, RB:Number(rs.rb)||2, WR:Number(rs.wr)||2, TE:Number(rs.te)||1, K:Number(rs.k)||1, DEF:Number(rs.teamDef)||1};
     const pos = (pl.pos==="DST"?"DEF":pl.pos);
     const current = counts[pos] || 0;
-    const limit = limits[pos] || 0;
+    const limit = limits[pos] || 1;
     if(current >= limit){
       const msg = pl.name+" ("+pl.pos+") does not fit — the "+pl.pos+" slots are full.";
       alert(msg);
@@ -594,7 +595,7 @@ function restrictedPositions(team, rs, roundsLeft){
 function renderDraft(){document.body.classList.add('draft-page');
 /* players can draft */
 const pod=podFromHash();const root=document.getElementById("app");let filter="";
-const paint=()=>{ if(window._paintBusy) return; window._paintBusy=true; setTimeout(()=>{window._paintBusy=false;}, 400);
+const paint=()=>{
 const state=load();const draft=ensureDraft(state,pod);save(state);
 const auction=draft.format==="auction";const info=snakeSlot(draft.pickIndex,draft);
 const onClock=auction?draft.teams[draft.nomination?draft.nomination.teamId:draft.nomIndex%teamCount()]:draft.teams[info.teamId];
@@ -1438,7 +1439,7 @@ function rejectTrade(i){
 
 
 function route(){const page=(location.hash.replace("#","").split("/")[0]||"lobby"); const st=load(); if(!st.email && page!=="login"){ location.hash="#login"; return renderLogin(); } if(page==="login"){ return renderLogin(); } if(page!=="lobby"&&!leagueCode()&&page!=="draft"&&page!=="board"&&page!=="trade"){location.hash="#lobby"; return renderLobby();}if(page==="pay")renderPay();else if(page==="draft")renderDraft();else if(page==="board")renderBoard();else if(page==="wall")renderWall();else if(page==="payout"){ if(!unlocked(load())){ alert("Commissioner code required."); location.hash="#home"; return;} renderPayout(); }else if(page==="scores")renderScores();else if(page==="scoreboard")renderScoreboard();else if(page==="bracket")renderBracket();else if(page==="talk")renderTalk();else if(page==="waiver")renderWaiver();else if(page==="roster")renderRoster();else if(page==="history")renderHistory();else if(page==="scoring")renderScoring();else if(page==="matchup")renderMatchup();else if(page==="trade")renderTrade();else if(page==="dash")renderDash();else if(page==="lobby"||page==="")renderLobby();else renderHome();}
-["east","west","north","south"].forEach(pod=>{dataRef("drafts/"+pod).on("value",snap=>{const remote=snap.val();if(!remote||!remote.teams)return;applyingRemote=true;const s=load();s.drafts[pod]=normalizeDraft(remote);save(s);applyingRemote=false;const page=(location.hash.replace("#","").split("/")[0]||"");const onPod=(location.hash.split("/")[1]||"")===(pod);if((page==="draft"||page==="board"||page==="dash")&&onPod&&window._paint){ clearTimeout(window._paintDebounce); window._paintDebounce=setTimeout(()=>{ if(Date.now()-(window._lastPaint||0)>1200){ window._lastPaint=Date.now(); window._paint&&window._paint(); } }, 900); }});});
+["east","west","north","south"].forEach(pod=>{dataRef("drafts/"+pod).on("value",snap=>{const remote=snap.val();if(!remote||!remote.teams)return;applyingRemote=true;const s=load();s.drafts[pod]=normalizeDraft(remote);save(s);applyingRemote=false;const page=(location.hash.replace("#","").split("/")[0]||"");const onPod=(location.hash.split("/")[1]||"")===(pod);if((page==="draft"||page==="board"||page==="dash")&&onPod&&window._paint){ clearTimeout(window._paintDebounce); window._paintDebounce=setTimeout(()=>{ if(Date.now()-(window._lastPaint||0)>2000){ window._lastPaint=Date.now(); window._paint&&window._paint(); } }, 1500); }});});
 dataRef("records").on("value",snap=>{const remote=snap.val();if(!remote)return;applyingRemote=true;const s=load();s.records=remote;save(s);applyingRemote=false;if((location.hash||"").startsWith("#scores"))renderScores(); if((location.hash||"").startsWith("#bracket"))renderBracket();});
 if(!window._countdownWatch){window._countdownWatch=setInterval(()=>{
   const h=location.hash||"";
