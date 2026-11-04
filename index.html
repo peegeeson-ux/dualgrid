@@ -665,7 +665,7 @@ setTimeout(()=>{
   });
   rosterEl.innerHTML = body || "<p>No picks yet.</p>";
 }, 0);
-const q=document.getElementById("q");if(q)q.oninput=e=>{filter=e.target.value;paint();};
+const q=document.getElementById("q");if(q)q.oninput=e=>{filter=e.target.value;const start=q.selectionStart;const end=q.selectionEnd;paint();const again=document.getElementById("q");if(again){again.focus();try{again.setSelectionRange(start,end);}catch(err){}}};
 function currentSeat(){try{return (JSON.parse(localStorage.getItem("dualgrid-my-seats")||"{}")[leagueCode()]||JSON.parse(localStorage.getItem("dualgrid-my-seat")||"null"))}catch(e){return null}}
 const here=currentSeat(); const seat=here&&here.pod===pod?here.teamId:null;
 const myTeam=seat!=null?draft.teams.find(team=>Number(team.id)===Number(seat)):null;
