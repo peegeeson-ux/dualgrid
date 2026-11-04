@@ -105,53 +105,6 @@ details.card{margin-bottom:12px}
 
 </style>
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js">
-document.addEventListener("click", e => {
-  const btn = e.target.closest && e.target.closest("[data-move]");
-  if(!btn) return;
-  console.log("move click", btn.dataset.move, btn.dataset.id);
-  const pod = btn.dataset.pod;
-  const teamId = Number(btn.dataset.team);
-  const id = btn.dataset.id;
-  const to = btn.dataset.move;
-  const s = load();
-  const d = ensureDraft(s, pod);
-  const team = (Array.isArray(d.teams)?d.teams.find(t => Number(t.id)===teamId):d.teams[teamId]);
-  if(!team || !team.lineup) return;
-  team.lineup.starters = team.lineup.starters || [];
-  team.lineup.bench = team.lineup.bench || [];
-  team.lineup.ir = team.lineup.ir || [];
-  let pl = team.lineup.starters.find(p=>p.id==id) || team.lineup.bench.find(p=>p.id==id) || team.lineup.ir.find(p=>p.id==id);
-  if(!pl) return;
-  // remove from current
-  team.lineup.starters = team.lineup.starters.filter(p=>p.id!=id);
-  team.lineup.bench = team.lineup.bench.filter(p=>p.id!=id);
-  team.lineup.ir = team.lineup.ir.filter(p=>p.id!=id);
-  if(to==="starter"){
-    const counts = {};
-    team.lineup.starters.forEach(p => { const pos = (p.pos==="DST"?"DEF":p.pos); counts[pos] = (counts[pos]||0)+1; });
-    const rs = window.rosterSettings || {};
-    const limits = {QB:Number(rs.qb)||1, RB:Number(rs.rb)||2, WR:Number(rs.wr)||2, TE:Number(rs.te)||1, K:Number(rs.k)||1, DEF:Number(rs.teamDef)||1};
-    const pos = (pl.pos==="DST"?"DEF":pl.pos);
-    const current = counts[pos] || 0;
-    const limit = limits[pos] || 1;
-    if(current >= limit){
-      const msg = pl.name+" ("+pl.pos+") does not fit — the "+pl.pos+" slots are full.";
-      alert(msg);
-      const box = document.createElement("div");
-      box.textContent = msg;
-      box.style.cssText = "position:fixed;top:20px;left:50%;transform:translateX(-50%);background:#c00;color:#fff;padding:12px 20px;border-radius:8px;z-index:9999;font-weight:bold;";
-      document.body.appendChild(box);
-      setTimeout(()=>box.remove(), 4000);
-      return;
-    }
-    team.lineup.starters.push(pl);
-  } else if(to==="ir") team.lineup.ir.push(pl);
-  else team.lineup.bench.push(pl);
-  save(s);
-  dataRef("drafts/"+pod+"/teams/"+teamId+"/lineup").set(team.lineup).catch(()=>{});
-  renderRoster();
-});
-
 dataRef("drafts").on("value", snap => {
   const s = load();
   const all = snap.val() || {};
@@ -177,34 +130,6 @@ dataRef("drafts").on("value", snap => {
 
 </script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js">
-document.addEventListener("click", e => {
-  const btn = e.target.closest && e.target.closest("[data-move]");
-  if(!btn) return;
-  const pod = btn.dataset.pod;
-  const teamId = Number(btn.dataset.team);
-  const id = btn.dataset.id;
-  const to = btn.dataset.move;
-  const s = load();
-  const d = ensureDraft(s, pod);
-  const team = (Array.isArray(d.teams)?d.teams.find(t => Number(t.id)===teamId):d.teams[teamId]);
-  if(!team || !team.lineup) return;
-  team.lineup.starters = team.lineup.starters || [];
-  team.lineup.bench = team.lineup.bench || [];
-  team.lineup.ir = team.lineup.ir || [];
-  let pl = team.lineup.starters.find(p=>p.id==id) || team.lineup.bench.find(p=>p.id==id) || team.lineup.ir.find(p=>p.id==id);
-  if(!pl) return;
-  // remove from current
-  team.lineup.starters = team.lineup.starters.filter(p=>p.id!=id);
-  team.lineup.bench = team.lineup.bench.filter(p=>p.id!=id);
-  team.lineup.ir = team.lineup.ir.filter(p=>p.id!=id);
-  if(to==="starter") team.lineup.starters.push(pl);
-  else if(to==="ir") team.lineup.ir.push(pl);
-  else team.lineup.bench.push(pl);
-  save(s);
-  dataRef("drafts/"+pod+"/teams/"+teamId+"/lineup").set(team.lineup).catch(()=>{});
-  renderRoster();
-});
-
 dataRef("drafts").on("value", snap => {
   const s = load();
   const all = snap.val() || {};
@@ -1482,34 +1407,6 @@ document.addEventListener("click",e=>{if(e.target&&e.target.id==="menu-btn"){con
 document.addEventListener("click",e=>{if(e.target&&e.target.id==="logout-btn"){e.preventDefault(); const st=load(); st.email=""; delete st.email; save(st); localStorage.removeItem("dualgrid-email"); location.href=location.pathname+"?out="+Date.now();}});
 document.addEventListener("click",e=>{const btn=e.target.closest&&e.target.closest("#logout-btn"); if(!btn)return; e.preventDefault(); const st=load(); delete st.email; st.email=""; save(st); location.replace(location.pathname+"#lobby");});
 window.addEventListener("hashchange",route);route();
-
-document.addEventListener("click", e => {
-  const btn = e.target.closest && e.target.closest("[data-move]");
-  if(!btn) return;
-  const pod = btn.dataset.pod;
-  const teamId = Number(btn.dataset.team);
-  const id = btn.dataset.id;
-  const to = btn.dataset.move;
-  const s = load();
-  const d = ensureDraft(s, pod);
-  const team = (Array.isArray(d.teams)?d.teams.find(t => Number(t.id)===teamId):d.teams[teamId]);
-  if(!team || !team.lineup) return;
-  team.lineup.starters = team.lineup.starters || [];
-  team.lineup.bench = team.lineup.bench || [];
-  team.lineup.ir = team.lineup.ir || [];
-  let pl = team.lineup.starters.find(p=>p.id==id) || team.lineup.bench.find(p=>p.id==id) || team.lineup.ir.find(p=>p.id==id);
-  if(!pl) return;
-  // remove from current
-  team.lineup.starters = team.lineup.starters.filter(p=>p.id!=id);
-  team.lineup.bench = team.lineup.bench.filter(p=>p.id!=id);
-  team.lineup.ir = team.lineup.ir.filter(p=>p.id!=id);
-  if(to==="starter") team.lineup.starters.push(pl);
-  else if(to==="ir") team.lineup.ir.push(pl);
-  else team.lineup.bench.push(pl);
-  save(s);
-  dataRef("drafts/"+pod+"/teams/"+teamId+"/lineup").set(team.lineup).catch(()=>{});
-  renderRoster();
-});
 
 dataRef("drafts").on("value", snap => {
   const s = load();
