@@ -129,10 +129,11 @@ document.addEventListener("click", e => {
   team.lineup.ir = team.lineup.ir.filter(p=>p.id!=id);
   if(to==="starter"){
     const counts = {};
-    team.lineup.starters.forEach(p => { counts[p.pos] = (counts[p.pos]||0)+1; });
+    team.lineup.starters.forEach(p => { const pos = (p.pos==="DST"?"DEF":p.pos); counts[pos] = (counts[pos]||0)+1; });
     const limits = {QB:1, RB:2, WR:2, TE:1, K:1, DEF:1};
-    const current = counts[pl.pos] || 0;
-    const limit = limits[pl.pos] || 0;
+    const pos = (pl.pos==="DST"?"DEF":pl.pos);
+    const current = counts[pos] || 0;
+    const limit = limits[pos] || 0;
     if(current >= limit){
       const msg = pl.name+" ("+pl.pos+") does not fit — the "+pl.pos+" slots are full.";
       alert(msg);
