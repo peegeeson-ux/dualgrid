@@ -598,7 +598,7 @@ const state=load();const draft=ensureDraft(state,pod);save(state);
 const auction=draft.format==="auction";const info=snakeSlot(draft.pickIndex,draft);
 const onClock=auction?draft.teams[draft.nomination?draft.nomination.teamId:draft.nomIndex%teamCount()]:draft.teams[info.teamId];
 const done=draft.pickIndex>=draftRounds()*teamCount();
-let avail=available(draft).filter(p=>{const q=filter.toLowerCase();return !q||p.name.toLowerCase().includes(q)||p.pos.toLowerCase()===q;}); avail.sort((a,b)=>(a.rank||999)-(b.rank||999));
+let avail=available(draft).filter(p=>{const q=filter.toLowerCase();return !q||p.name.toLowerCase().includes(q)||p.pos.toLowerCase()===q;}); avail.sort((a,b)=>(a.rank||999)-(b.rank||999)); avail = avail.slice(0, 40);
 const roundsLeft = Math.max(0, draftRounds() - Math.floor((draft.pickIndex||0)/teamCount()));
 const restrict = restrictedPositions(onClock, window.rosterSettings, roundsLeft);
 if(restrict) avail = avail.filter(p => restrict.includes(p.pos) || (restrict.includes("DEF") && (p.pos==="DEF"||p.pos==="DST")));
