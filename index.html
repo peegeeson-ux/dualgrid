@@ -1170,10 +1170,10 @@ if(added) save(s);
       const overrideOn = localStorage.getItem("dualgrid-override-"+pod+"-"+tid)==="1"; if(!canEditTeam(st, pod, tid) && !(st.owner && overrideOn)){ alert("You can only edit your own lineup."); return; }
       const d=ensureDraft(st,pod);
       const team=d.teams[tid];
-      if(!team) return;
-      const all=team.picks||[];
+      if(!team){ alert("Team not found"); return; }
+      const all=(team.picks||[]).concat(team.lineup&&team.lineup.starters||[]).concat(team.lineup&&team.lineup.bench||[]).concat(team.lineup&&team.lineup.ir||[]);
       const pl=all.find(p=>Number(p.id)===id);
-      if(!pl) return;
+      if(!pl){ alert("Player not found on this team"); return; }
       team.lineup=team.lineup||{starters:[],bench:[],ir:[]};
       team.lineup.starters=(team.lineup.starters||[]).filter(p=>Number(p.id)!==id);
       team.lineup.bench=(team.lineup.bench||[]).filter(p=>Number(p.id)!==id);
