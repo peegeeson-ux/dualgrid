@@ -243,6 +243,26 @@ document.addEventListener("touchend", openPlayerFromEvent, {passive:false});
 <body>
 <div id="app"></div>
 <script>
+// Ignore accidental taps while scrolling (especially on phones)
+(function(){
+  let startY = 0;
+  let moved = false;
+  document.addEventListener("touchstart", function(e){
+    startY = e.touches[0].clientY;
+    moved = false;
+  }, {passive:true});
+  document.addEventListener("touchmove", function(e){
+    if(Math.abs(e.touches[0].clientY - startY) > 8) moved = true;
+  }, {passive:true});
+  document.addEventListener("click", function(e){
+    if(moved){
+      e.preventDefault();
+      e.stopPropagation();
+      moved = false;
+    }
+  }, true);
+})();
+
 const firebaseConfig={apiKey:"AIzaSyCPoc8RiH0GtWnyPe9azxQ8lFCLrOBoMts",authDomain:"dualgrid-427ca.firebaseapp.com",databaseURL:"https://dualgrid-427ca-default-rtdb.firebaseio.com",projectId:"dualgrid-427ca",storageBucket:"dualgrid-427ca.firebasestorage.app",messagingSenderId:"52737569543",appId:"1:52737569543:web:cf80fe25c42eb4891a0ba2"};
 firebase.initializeApp(firebaseConfig);
 const cloud=firebase.database();
