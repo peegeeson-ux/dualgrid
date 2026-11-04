@@ -736,7 +736,7 @@ function fitBoard(){
     const available = Math.max(280, window.innerHeight - wrap.getBoundingClientRect().top - 20);
     const needed = board.scrollHeight || 1;
     if(needed > available){
-      const scale = Math.max(0.78, available / needed);
+      const scale = Math.max(0.85, available / needed);
       board.style.transform = "scale("+scale+")";
       board.style.transformOrigin = "top left";
       board.style.width = (100/scale)+"%";
