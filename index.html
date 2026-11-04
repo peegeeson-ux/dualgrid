@@ -1435,8 +1435,24 @@ function rejectTrade(i){
   renderTrade();
 }
 
+
+// Lightweight clock: only update the timer numbers, don't rebuild the page
+if(!window._clockTick){
+  window._clockTick = setInterval(()=>{
+    const h = location.hash || "";
+    if(!(h.startsWith("#draft") || h.startsWith("#board"))) return;
+    const pod = (h.split("/")[1]||"").toLowerCase();
+    if(!pod) return;
+    const d = (load().drafts||{})[pod];
+    if(!d) return;
+    const left = clockLeft(d);
+    const txt = fmtTime(left);
+    document.querySelectorAll(".timer").forEach(el=>{ el.textContent = txt; });
+  }, 1000);
+}
+
 function route(){const page=(location.hash.replace("#","").split("/")[0]||"lobby"); const st=load(); if(!st.email && page!=="login"){ location.hash="#login"; return renderLogin(); } if(page==="login"){ return renderLogin(); } if(page!=="lobby"&&!leagueCode()&&page!=="draft"&&page!=="board"&&page!=="trade"){location.hash="#lobby"; return renderLobby();}if(page==="pay")renderPay();else if(page==="draft")renderDraft();else if(page==="board")renderBoard();else if(page==="wall")renderWall();else if(page==="payout"){ if(!unlocked(load())){ alert("Commissioner code required."); location.hash="#home"; return;} renderPayout(); }else if(page==="scores")renderScores();else if(page==="scoreboard")renderScoreboard();else if(page==="bracket")renderBracket();else if(page==="talk")renderTalk();else if(page==="waiver")renderWaiver();else if(page==="roster")renderRoster();else if(page==="history")renderHistory();else if(page==="scoring")renderScoring();else if(page==="matchup")renderMatchup();else if(page==="trade")renderTrade();else if(page==="dash")renderDash();else if(page==="lobby"||page==="")renderLobby();else renderHome();}
-["east","west","north","south"].forEach(pod=>{dataRef("drafts/"+pod).on("value",snap=>{const remote=snap.val();if(!remote||!remote.teams)return;applyingRemote=true;const s=load();s.drafts[pod]=normalizeDraft(remote);save(s);applyingRemote=false;const page=(location.hash.replace("#","").split("/")[0]||"");const onPod=(location.hash.split("/")[1]||"")===(pod);if((page==="draft"||page==="board"||page==="dash")&&onPod&&window._paint)window._paint();});});
+["east","west","north","south"].forEach(pod=>{dataRef("drafts/"+pod).on("value",snap=>{const remote=snap.val();if(!remote||!remote.teams)return;applyingRemote=true;const s=load();s.drafts[pod]=normalizeDraft(remote);save(s);applyingRemote=false;const page=(location.hash.replace("#","").split("/")[0]||"");const onPod=(location.hash.split("/")[1]||"")===(pod);if((page==="draft"||page==="board"||page==="dash")&&onPod&&window._paint){ clearTimeout(window._paintDebounce); window._paintDebounce=setTimeout(()=>window._paint&&window._paint(), 180); }});});
 dataRef("records").on("value",snap=>{const remote=snap.val();if(!remote)return;applyingRemote=true;const s=load();s.records=remote;save(s);applyingRemote=false;if((location.hash||"").startsWith("#scores"))renderScores(); if((location.hash||"").startsWith("#bracket"))renderBracket();});
 if(!window._countdownWatch){window._countdownWatch=setInterval(()=>{
   const h=location.hash||"";
