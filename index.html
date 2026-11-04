@@ -665,7 +665,17 @@ setTimeout(()=>{
   });
   rosterEl.innerHTML = body || "<p>No picks yet.</p>";
 }, 0);
-const q=document.getElementById("q");if(q)q.oninput=e=>{filter=e.target.value;const start=q.selectionStart;const end=q.selectionEnd;paint();const again=document.getElementById("q");if(again){again.focus();try{again.setSelectionRange(start,end);}catch(err){}}};
+const q=document.getElementById("q");if(q)q.oninput=e=>{
+  const val = (e.target.value||"").toLowerCase();
+  filter = e.target.value;
+  const rows = document.querySelectorAll("#available-players .player");
+  rows.forEach(row=>{
+    const name = (row.querySelector(".name")||{}).textContent||"";
+    const pos = (row.querySelector(".pos")||{}).textContent||"";
+    const hit = !val || name.toLowerCase().includes(val) || pos.toLowerCase()===val;
+    row.style.display = hit ? "" : "none";
+  });
+};
 function currentSeat(){try{return (JSON.parse(localStorage.getItem("dualgrid-my-seats")||"{}")[leagueCode()]||JSON.parse(localStorage.getItem("dualgrid-my-seat")||"null"))}catch(e){return null}}
 const here=currentSeat(); const seat=here&&here.pod===pod?here.teamId:null;
 const myTeam=seat!=null?draft.teams.find(team=>Number(team.id)===Number(seat)):null;
