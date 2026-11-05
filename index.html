@@ -8,7 +8,7 @@
 :root{--bg:#002244;--panel:#0a1a33;--ink:#e8eef4;--mute:#a5acaf;--lime:#69be28;--line:#1a3a5c;--east:#7cffb2;--west:#7cc8ff;--north:#ffd27c;--south:#ff8ad4;--gold:#f5c518;--red:#e74c3c}
 *{box-sizing:border-box}html,body{margin:0;background:var(--bg);color:var(--ink);font-family:Oswald,Teko,Impact,sans-serif}
 a{color:inherit;text-decoration:none}
-.app-header{display:flex;justify-content:space-between;align-items:center;padding:14px 16px;border-bottom:1px solid var(--line);position:sticky;top:0;background:#002244cc;backdrop-filter:blur(10px);z-index:5}
+.app-header{display:flex;justify-content:space-between;align-items:center;padding:14px 16px;border-bottom:1px solid var(--line);position:sticky;top:0;background:#002244cc;backdrop-filter:blur(10px);z-index:5;margin-top:36px}
 @media(max-width:700px){body.draft-room .app-header{position:static}}body.board-page .app-header{position:static}
 .brand{display:flex;align-items:center;gap:10px;font-weight:800;letter-spacing:.08em}
 .mark{width:28px;height:28px;border-radius:8px;background:var(--lime);color:#111;display:grid;place-items:center;font-weight:900}
@@ -44,6 +44,7 @@ h1{font-size:clamp(28px,6vw,52px);line-height:1.05;margin:8px 0 12px;color:#fff}
 label{display:block;margin:8px 0 4px}
 .bulb{display:inline-block;min-width:.72em;text-align:center;color:#3a2a10;text-shadow:0 0 2px #000}.bulb.on{color:#ffe08a;text-shadow:0 0 6px #ffb000,0 0 2px #fff4c2}.bulbs{background:#16110c;background-image:radial-gradient(circle,#4a3418 1.1px,transparent 1.5px);background-size:7px 7px;border:5px solid #5c3d16;border-radius:8px;padding:12px;font-family:ui-monospace,monospace}
 .ticker{position:fixed;left:0;right:0;bottom:0;background:#051428;border-top:1px solid #2a3228;color:#69be28;font-weight:800;font-size:13px;padding:8px 0;overflow:hidden;z-index:8}.ticker span{display:inline-block;padding-left:100%;animation:tick 110s linear infinite;white-space:nowrap}@keyframes tick{0%{transform:translateX(0)}100%{transform:translateX(-100%)}}
+#nfl-ticker{top:0;bottom:auto;background:#001122;color:#7cc8ff;border-bottom:1px solid #1a3a5c;z-index:9}
 @media print{body{background:#fff;color:#111;-webkit-print-color-adjust:exact;print-color-adjust:exact}.app-header,.ticker,.btn,.no-print{display:none!important}.page{max-width:none;padding:12px}.card{break-inside:avoid;background:#fff!important;color:#111;border:1px solid #ccc}h1,h2,.eyebrow{color:#111}.lede{color:#333}img{opacity:1!important}}
 .brand{letter-spacing:.14em}
 .flag{font-size:18px;margin:0 6px}
@@ -168,6 +169,7 @@ document.addEventListener("touchend", openPlayerFromEvent, {passive:false});
 </script>
 </head>
 <body>
+<div id="nfl-ticker" class="ticker" style="display:none;cursor:pointer"></div>
 <div id="app"></div>
 <div id="week-ticker" class="ticker" style="display:none;cursor:pointer"></div>
 <script>
