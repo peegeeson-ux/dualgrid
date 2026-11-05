@@ -1115,7 +1115,12 @@ function movePlayer(pod, teamId, playerId, to){
     lineup.starters = (existing.starters||[]).filter(p=>Number(p.id)!==Number(playerId));
     lineup.bench = (existing.bench||[]).filter(p=>Number(p.id)!==Number(playerId));
     lineup.ir = (existing.ir||[]).filter(p=>Number(p.id)!==Number(playerId));
-    if(to==="starter") lineup.starters.push(pl);
+    if(to==="starter"){
+      const isFlex = ["RB","WR","TE"].includes(pl.pos);
+      const alreadyFlex = lineup.starters.filter(p=>["RB","WR","TE"].includes(p.pos)).length > ((window.rosterSettings||{}).rb||0)+((window.rosterSettings||{}).wr||0)+((window.rosterSettings||{}).te||0);
+      if(!isFlex && alreadyFlex){ alert("Flex is RB/WR/TE only."); return; }
+      lineup.starters.push(pl);
+    }
     else if(to==="ir") lineup.ir.push(pl);
     else lineup.bench.push(pl);
     team.lineup = lineup;
@@ -1314,17 +1319,18 @@ const slotLabel = (p,i) => {
 games.forEach(g=>{
   const isMine = seat && g.pod===seat.pod && (Number(g.home.id)===Number(seat.teamId) || Number(g.away.id)===Number(seat.teamId));
   const highlight = isMine ? "border:2px solid #69be28;background:rgba(105,190,40,.08)" : "";
-  const homeLine = (g.home.lineup && g.home.lineup.starters) || [];
-  const awayLine = (g.away.lineup && g.away.lineup.starters) || [];
-  // Order by position
-  const orderPos = p => {
-    const pos = slotLabel(p);
-    const idx = posOrder.indexOf(pos);
-    return idx >= 0 ? idx : 99;
+  const slots = [{pos:"QB"},{pos:"RB"},{pos:"RB"},{pos:"WR"},{pos:"WR"},{pos:"TE"},{pos:"FLEX"},{pos:"K"},{pos:"DEF"}];
+  const assign = (list) => {
+    const used = new Set();
+    return slots.map(slot => {
+      const pl = (list||[]).find(p => !used.has(p.id) && ((p.pos===slot.pos) || (slot.pos==="DEF" && (p.pos==="DST"||p.pos==="DEF")) || (slot.pos==="FLEX" && ["RB","WR","TE"].includes(p.pos))));
+      if(pl) used.add(pl.id);
+      return pl || null;
+    });
   };
-  homeLine.sort((a,b)=>orderPos(a)-orderPos(b));
-  awayLine.sort((a,b)=>orderPos(a)-orderPos(b));
-  const max=Math.max(homeLine.length, awayLine.length, 1);
+  const homeLine = assign(g.home.lineup && g.home.lineup.starters);
+  const awayLine = assign(g.away.lineup && g.away.lineup.starters);
+  const max = slots.length;
   let rows="";
   for(let i=0;i<max;i++){
     const a=enrich(homeLine[i]||{name:"—",pos:""});
