@@ -265,6 +265,32 @@ function fetchPlayerStats(playerId, week){
     return stats;
   }).catch(()=>null);
 }
+function fantasyPoints(stats){
+  if(!stats || !stats.statistics) return null;
+  const s = stats.statistics;
+  let pts = 0;
+  pts += (s.passing && s.passing.touchdowns) ? Number(s.passing.touchdowns) * 4 : 0;
+  pts += (s.passing && s.passing.yards) ? Number(s.passing.yards) * 0.04 : 0;
+  pts += (s.rushing && s.rushing.touchdowns) ? Number(s.rushing.touchdowns) * 6 : 0;
+  pts += (s.rushing && s.rushing.yards) ? Number(s.rushing.yards) * 0.1 : 0;
+  pts += (s.receiving && s.receiving.touchdowns) ? Number(s.receiving.touchdowns) * 6 : 0;
+  pts += (s.receiving && s.receiving.yards) ? Number(s.receiving.yards) * 0.1 : 0;
+  pts += (s.receiving && s.receiving.receptions) ? Number(s.receiving.receptions) * 1 : 0;
+  return Math.round(pts * 10) / 10;
+}
+function liveLine(stats){
+  if(!stats || !stats.statistics) return "";
+  const s = stats.statistics;
+  const parts = [];
+  if(s.passing && s.passing.yards) parts.push(s.passing.yards+" pass yds");
+  if(s.passing && s.passing.touchdowns) parts.push(s.passing.touchdowns+" pass TD");
+  if(s.rushing && s.rushing.yards) parts.push(s.rushing.yards+" rush yds");
+  if(s.rushing && s.rushing.touchdowns) parts.push(s.rushing.touchdowns+" rush TD");
+  if(s.receiving && s.receiving.receptions) parts.push(s.receiving.receptions+" rec");
+  if(s.receiving && s.receiving.yards) parts.push(s.receiving.yards+" rec yds");
+  if(s.receiving && s.receiving.touchdowns) parts.push(s.receiving.touchdowns+" rec TD");
+  return parts.length ? parts.join(" · ") : "";
+}
 function fillLiveStats(){
   document.querySelectorAll(".live-pts").forEach(el => {
     const id = el.getAttribute("data-id");
@@ -1311,7 +1337,7 @@ if(added) save(s);
       html+='<div class="card"><h3>Starters</h3>'+slots.map((slot,i)=>{
         const pl = assigned[i];
         return '<div class="log-item" data-player-id="'+(pl?pl.id:'')+'" style="border-left:6px solid '+(pl?colors[pl.pos]||"#999":"#444")+'"><b>'+slot.label+'</b> · '+(function(){const e=enrich(pl); return e?'<span class="name" data-player-id="'+pl.id+'">'+e.name+'</span>'+(e.proj?' · Szn '+e.proj:'')+(e.projWeek?' · Wk '+currentNflWeek()+' '+e.projWeek:'')+' <span style="float:right;color:#69be28" class="live-pts" data-id="'+pl.id+'">—</span><div class="sub live-line" data-id="'+pl.id+'" style="font-size:11px;color:#7cc8ff;margin-top:2px"></div>':"empty"})()+(pl && ((mineHere && !s.owner) || override)?' <button class="btn" data-move="bench" data-pod="'+pod+'" data-team="'+team.id+'" data-id="'+pl.id+'">Bench</button>':'')+'</div>';
-      }).join("")+'<div style="margin-top:8px;font-size:13px;color:#7cc8ff"><strong>Starters</strong> Proj <span class="proj-sum">'+assigned.reduce((s,p)=>s+(enrich(p).projWeek||0),0).toFixed(1)+'</span> · Live <span class="live-sum">—</span></div></div>';
+      }).join("")+'<div style="margin-top:8px;font-size:13px;color:#7cc8ff"><strong>Starters</strong> Proj <span class="proj-sum">'+(assigned.reduce((s,p)=>s+((enrich(p)||{}).projWeek||0),0).toFixed(1))+'</span> · Live <span class="live-sum">—</span></div></div>';
       html+='<div class="card"><h3>Bench</h3>'+bench.map(pl=>'<div class="log-item" data-player-id="'+pl.id+'"><b>'+(pl.pos||"?")+'</b> · '+(function(){const e=enrich(pl); return '<span class="name" data-player-id="'+pl.id+'">'+(e.name||"Player")+'</span>'+(e.proj?' · Szn '+e.proj:'')+(e.projWeek?' · Wk '+currentNflWeek()+' '+e.projWeek:'')+' <span style="float:right;color:#69be28">—</span>'})()+(((mineHere && !s.owner) || override)?' <button class="btn" data-move="starter" data-pod="'+pod+'" data-team="'+team.id+'" data-id="'+pl.id+'">Start</button> <button class="btn" data-move="ir" data-pod="'+pod+'" data-team="'+team.id+'" data-id="'+pl.id+'">IR</button>':'')+'</div>').join("")+'</div>';
       html+='<div class="card"><h3>IR</h3>'+ir.map(pl=>'<div class="log-item" data-player-id="'+pl.id+'"><b>'+(pl.pos||"?")+'</b> · '+(function(){const e=enrich(pl); return (e.name||"Player")+(e.proj?' · Szn '+e.proj:'')+(e.projWeek?' · Wk '+currentNflWeek()+' '+e.projWeek:'')+' <span style="float:right;color:#69be28">—</span>'})()+(((mineHere && !s.owner) || override)?' <button class="btn" data-move="bench" data-pod="'+pod+'" data-team="'+team.id+'" data-id="'+pl.id+'">Bench</button>':'')+'</div>').join("")+'</div>';
     });
@@ -1460,7 +1486,7 @@ games.forEach(g=>{
     const bLabel = (slots[i] && slots[i].pos === "FLEX") ? "FLEX" : (slotLabel(b) || b.pos || "");
     rows+='<div style="display:grid;grid-template-columns:1fr auto 1fr;gap:8px;align-items:center;padding:4px 0;border-bottom:1px solid #1a3a5c"><div><div class="name" data-player-id="'+(a.id||'')+'">'+a.name+'</div><div class="sub">'+aLabel+(a.projWeek?' · '+a.projWeek:'')+'</div><div class="sub live-line" data-id="'+(a.id||'')+'" style="font-size:11px;color:#7cc8ff"></div></div><div class="pos '+(a.pos||"")+'" style="min-width:36px;text-align:center">'+(aLabel||"")+'</div><div style="text-align:right"><div class="name" data-player-id="'+(b.id||'')+'">'+b.name+'</div><div class="sub">'+bLabel+(b.projWeek?' · '+b.projWeek:'')+'</div><div class="sub live-line" data-id="'+(b.id||'')+'" style="font-size:11px;color:#7cc8ff"></div></div></div>';
   }
-  list+='<details class="card" style="margin:10px 0;'+highlight+'"><summary style="font-weight:800;cursor:pointer;padding:4px 0">'+g.home.name+' vs '+g.away.name+(isMine?' <span style="color:#69be28">· YOU</span>':'')+'</summary><div style="margin-top:8px"><div style="display:flex;justify-content:space-between;margin-bottom:8px"><strong>'+g.home.name+'</strong><span>vs</span><strong>'+g.away.name+'</strong></div>'+rows+'<div style="margin-top:8px;font-size:13px;color:#7cc8ff"><strong>'+g.home.name+'</strong> Proj <span class="proj-sum" data-side="home">'+homeLine.reduce((s,p)=>s+(enrich(p).projWeek||0),0).toFixed(1)+'</span> · Live <span class="live-sum" data-side="home">—</span><br><strong>'+g.away.name+'</strong> Proj <span class="proj-sum" data-side="away">'+awayLine.reduce((s,p)=>s+(enrich(p).projWeek||0),0).toFixed(1)+'</span> · Live <span class="live-sum" data-side="away">—</span></div></div></details>';
+  list+='<details class="card" style="margin:10px 0;'+highlight+'"><summary style="font-weight:800;cursor:pointer;padding:4px 0">'+g.home.name+' vs '+g.away.name+(isMine?' <span style="color:#69be28">· YOU</span>':'')+'</summary><div style="margin-top:8px"><div style="display:flex;justify-content:space-between;margin-bottom:8px"><strong>'+g.home.name+'</strong><span>vs</span><strong>'+g.away.name+'</strong></div>'+rows+'<div style="margin-top:8px;font-size:13px;color:#7cc8ff"><strong>'+g.home.name+'</strong> Proj <span class="proj-sum" data-side="home">'+(homeLine.reduce((s,p)=>s+((enrich(p)||{}).projWeek||0),0).toFixed(1))+'</span> · Live <span class="live-sum" data-side="home">—</span><br><strong>'+g.away.name+'</strong> Proj <span class="proj-sum" data-side="away">'+(awayLine.reduce((s,p)=>s+((enrich(p)||{}).projWeek||0),0).toFixed(1))+'</span> · Live <span class="live-sum" data-side="away">—</span></div></div></details>';
 });
 document.getElementById("app").innerHTML=header('<a class="btn" href="#home">Home</a><a class="btn" href="#scoreboard">Scoreboard</a>')+
 '<div class="page"><div class="eyebrow">WEEK '+week+' MATCHUPS</div><h1>All games</h1><p class="lede">Your team is highlighted. Tap a game to see the lineup.</p>'+list+'</div>';
