@@ -362,8 +362,10 @@ function showBoxScore(id, games){
   const as = (g.scores && g.scores.away && g.scores.away.total != null) ? g.scores.away.total : "—";
   const status = (g.game && g.game.status && g.game.status.short) || "";
   const root = document.getElementById("app");
-  root.innerHTML = header('<a class="btn" href="#nfl">Back to scores</a>') +
+  root.innerHTML = header('<a class="btn" href="#nfl" id="back-scores">Back to scores</a>') +
     '<div class="page"><div class="eyebrow">BOX SCORE</div><h1>'+away+' '+as+' @ '+home+' '+hs+'</h1><p class="lede">'+status+'</p><div class="card"><p>Full player stats will appear here once the game has stats. (API-Sports box score data is available after the game.)</p></div></div>';
+  const back = document.getElementById("back-scores");
+  if(back) back.onclick = (e)=>{ e.preventDefault(); location.hash = "#nfl"; renderNflScoreboard(); };
 }
 function loadNflTicker(){
   try {
