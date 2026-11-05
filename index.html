@@ -944,11 +944,11 @@ const take=pod=>{
 const left=take(pods[0]||"east");
 const right=take(pods[1]||"west");
 const started=!!(s.records&&s.records.playoffs&&s.records.playoffs.started);
-const chip=team=>'<div class="team-row" style="background:#111;border:1px solid #333;border-radius:8px;margin:4px 0;padding:6px 8px;display:flex;align-items:center;gap:6px">'+(team.photo?'<img src="'+team.photo+'" alt="" style="width:28px;height:28px;border-radius:4px;object-fit:cover">':'')+'<span style="color:#e6f25a;font-weight:800">'+(team.seed||"")+'</span><strong style="flex:1">'+(team.name||"TBD")+'</strong><span style="color:#e6f25a">'+(started?0:(team.proj||"—"))+'</span></div>';
+const chip=team=>'<div class="team-row" style="background:#051428;border:1px solid #1a3a5c;border-radius:8px;margin:4px 0;padding:6px 8px;display:flex;align-items:center;gap:6px">'+(team.photo?'<img src="'+team.photo+'" alt="" style="width:28px;height:28px;border-radius:4px;object-fit:cover">':'')+'<span style="color:#69be28;font-weight:800">'+(team.seed||"")+'</span><strong style="flex:1">'+(team.name||"TBD")+'</strong><span style="color:#69be28">'+(started?0:(team.proj||"—"))+'</span></div>';
 const pairs=list=>{const out=[]; for(let i=0;i<list.length;i+=2)out.push([list[i]||{name:"TBD"},list[i+1]||{name:"TBD"}]); return out;};
-const slot=label=>'<div class="team-row" style="background:#111;border:1px solid #333;border-radius:8px;margin:4px 0;padding:6px 8px;min-height:28px">'+label+'</div>';
-const u=flip=>'<div style="width:18px;align-self:stretch;margin:8px 0;border-top:2px solid #8d8d8d;border-bottom:2px solid #8d8d8d;border-'+(flip?"left":"right")+':2px solid #8d8d8d"></div>';
-const line='<div style="width:24px;border-top:2px solid #8d8d8d"></div>';
+const slot=label=>'<div class="team-row" style="background:#051428;border:1px solid #1a3a5c;border-radius:8px;margin:4px 0;padding:6px 8px;min-height:28px">'+label+'</div>';
+const u=flip=>'<div style="width:18px;align-self:stretch;margin:8px 0;border-top:2px solid #69be28;border-bottom:2px solid #69be28;border-'+(flip?"left":"right")+':2px solid #8d8d8d"></div>';
+const line='<div style="width:24px;border-top:2px solid #69be28"></div>';
 const match=(pair,flip)=>'<div style="display:flex;align-items:center;margin:18px 0">'+(flip?line+u(true):'')+'<div style="flex:1;min-width:140px">'+chip(pair[0])+chip(pair[1])+'</div>'+(flip?'':u(false)+line)+'</div>';
 const group=(list,flip)=>{
 const games=pairs(list); let html="";
