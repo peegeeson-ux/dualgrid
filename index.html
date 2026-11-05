@@ -1482,12 +1482,13 @@ function rejectTrade(i){
 }
 
 
-// Fantasy league week ticker — hide on matchup, draft, and board pages
+// Fantasy league week ticker — only inside a specific league
 function loadWeekTicker(){
   const ticker = document.getElementById("week-ticker");
   if(!ticker) return;
   const page = (location.hash.replace("#","").split("/")[0]||"");
-  if(page === "matchup" || page === "draft" || page === "board"){ 
+  // Hide on login, lobby, home, matchup, draft, board
+  if(!page || page === "login" || page === "lobby" || page === "home" || page === "matchup" || page === "draft" || page === "board"){ 
     ticker.style.display = "none"; 
     return; 
   }
