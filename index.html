@@ -1482,15 +1482,15 @@ function rejectTrade(i){
 }
 
 
-// Fantasy league week ticker — only inside a specific league (not the main leagues list)
+// Fantasy league week ticker — show inside a specific league (including home)
 function loadWeekTicker(){
   const ticker = document.getElementById("week-ticker");
   if(!ticker) return;
   const hash = location.hash.replace("#","") || "";
   const page = hash.split("/")[0] || "";
   const inLeague = !!leagueCode();
-  // Hide on login, main leagues list (lobby/home with no deep route), matchup, draft, board
-  if(!inLeague || page === "login" || page === "lobby" || (page === "home" && !hash.includes("/")) || page === "matchup" || page === "draft" || page === "board"){ 
+  // Hide only on login, main leagues list, matchup, draft, board
+  if(!inLeague || page === "login" || page === "lobby" || page === "matchup" || page === "draft" || page === "board"){ 
     ticker.style.display = "none"; 
     return; 
   }
