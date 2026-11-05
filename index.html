@@ -170,24 +170,19 @@ document.addEventListener("touchend", openPlayerFromEvent, {passive:false});
 <body>
 <div id="app"></div>
 <script>
-// Stronger scroll-vs-tap guard for the war room
+// Lighter scroll-vs-tap guard — only suppress if the finger actually moved
 (function(){
-  let lastScroll = 0;
-  let scrolling = false;
-  const suppressMs = 350;
-  document.addEventListener("touchmove", function(){
-    lastScroll = Date.now();
-    scrolling = true;
+  let lastMove = 0;
+  let moved = false;
+  document.addEventListener("touchstart", function(){
+    moved = false;
   }, {passive:true});
-  document.addEventListener("scroll", function(){
-    lastScroll = Date.now();
-    scrolling = true;
-  }, true);
-  document.addEventListener("touchend", function(){
-    setTimeout(function(){ scrolling = false; }, suppressMs);
+  document.addEventListener("touchmove", function(){
+    moved = true;
+    lastMove = Date.now();
   }, {passive:true});
   document.addEventListener("click", function(e){
-    if(scrolling || (Date.now() - lastScroll) < suppressMs){
+    if(moved && (Date.now() - lastMove) < 250){
       e.preventDefault();
       e.stopImmediatePropagation();
       return false;
