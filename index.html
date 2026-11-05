@@ -533,11 +533,15 @@ const done=draft.pickIndex>=draftRounds()*teamCount();
 let avail=available(draft).filter(p=>{
   const q=filter.toLowerCase();
   const nameMatch = !q || p.name.toLowerCase().includes(q) || p.pos.toLowerCase()===q;
-  const posMatch = !window.posFilter || p.pos===window.posFilter || (window.posFilter==="DEF" && (p.pos==="DEF"||p.pos==="DST")) || (window.posFilter==="IDP" && ["LB","DB","DL","DE","DT","CB","S","IDP"].includes(p.pos));
+  const isIdp = ["LB","DB","DL","DE","DT","CB","S","EDGE","IDP"].includes(p.pos);
+const posMatch = !window.posFilter || p.pos===window.posFilter || (window.posFilter==="DEF" && (p.pos==="DEF"||p.pos==="DST")) || (window.posFilter==="IDP" && isIdp && ((p.rank && p.rank < 9999) || (p.proj && p.proj > 0)));
   return nameMatch && posMatch;
 }); avail.sort((a,b)=>{
   // IDP: sort by projection (overall ranks bury them)
   if(window.posFilter==="IDP"){
+    const ar = (a.rank && a.rank < 9999) ? a.rank : 9999;
+    const br = (b.rank && b.rank < 9999) ? b.rank : 9999;
+    if(ar !== br) return ar - br;
     return (b.proj||0) - (a.proj||0);
   }
   return (a.rank||999)-(b.rank||999);
