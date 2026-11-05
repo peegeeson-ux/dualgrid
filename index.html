@@ -246,7 +246,38 @@ let cloudOn=false, applyingRemote=false;
 cloud.ref(".info/connected").on("value",s=>{cloudOn=!!s.val(); const el=document.getElementById("live"); if(el) el.textContent=cloudOn?"LIVE BOARD":"OFFLINE";});
 
 
-function currentNflWeek(){
+// NFL scores ticker (API-Sports)
+const API_SPORTS_KEY = "72aa8795b08068b343ffce67c6dc19b8";
+let nflGamesCache = null;
+function loadNflTicker(){
+  const ticker = document.getElementById("nfl-ticker");
+  if(!ticker) return;
+  const page = (location.hash.replace("#","").split("/")[0]||"");
+  if(page === "matchup"){ ticker.style.display = "none"; return; }
+  ticker.style.display = "block";
+  if(nflGamesCache){ renderNflTicker(nflGamesCache); return; }
+  fetch("https://v1.american-football.api-sports.io/games?league=1&season=2026", {
+    headers: { "x-apisports-key": API_SPORTS_KEY }
+  }).then(r => r.json()).then(d => {
+    const games = d.response || [];
+    const week = currentNflWeek();
+    nflGamesCache = games.filter(g => g.game && String(g.game.week||"").includes(String(week)));
+    renderNflTicker(nflGamesCache);
+  }).catch(()=>{ ticker.innerHTML = '<span>NFL scores loading…</span>'; });
+}
+function renderNflTicker(games){
+  const ticker = document.getElementById("nfl-ticker");
+  if(!ticker || !games.length){ if(ticker) ticker.innerHTML = '<span>NFL scores loading…</span>'; return; }
+  const text = games.map(g => {
+    const home = (g.teams && g.teams.home && g.teams.home.name) || "Home";
+    const away = (g.teams && g.teams.away && g.teams.away.name) || "Away";
+    const hs = (g.scores && g.scores.home && g.scores.home.total != null) ? g.scores.home.total : "";
+    const as = (g.scores && g.scores.away && g.scores.away.total != null) ? g.scores.away.total : "";
+    const status = (g.game && g.game.status && g.game.status.short) || "";
+    return away + " " + (as!==""?as:"") + " @ " + home + " " + (hs!==""?hs:"") + " (" + status + ")";
+  }).join("   ·   ");
+  ticker.innerHTML = '<span>' + text + '</span>';
+}
   const start = new Date("2026-09-10"); // approximate 2026 kickoff
   const now = new Date();
   const diff = Math.floor((now - start) / (7*24*60*60*1000));
@@ -1471,6 +1502,7 @@ function loadWeekTicker(){
 
 function route(){const page=(location.hash.replace("#","").split("/")[0]||"lobby"); const st=load(); if(!st.email && page!=="login"){ location.hash="#login"; return renderLogin(); } if(page==="login"){ return renderLogin(); } if(page!=="lobby"&&!leagueCode()&&page!=="draft"&&page!=="board"&&page!=="trade"){location.hash="#lobby"; return renderLobby();}if(page==="pay")renderPay();else if(page==="draft")renderDraft();else if(page==="board")renderBoard();else if(page==="wall")renderWall();else if(page==="payout"){ if(!unlocked(load())){ alert("Commissioner code required."); location.hash="#home"; return;} renderPayout(); }else if(page==="scores")renderScores();else if(page==="scoreboard")renderScoreboard();else if(page==="bracket")renderBracket();else if(page==="talk")renderTalk();else if(page==="waiver")renderWaiver();else if(page==="roster")renderRoster();else if(page==="history")renderHistory();else if(page==="scoring")renderScoring();else if(page==="matchup")renderMatchup();else if(page==="trade")renderTrade();else if(page==="dash")renderDash();else if(page==="lobby"||page==="")renderLobby();else renderHome();
   setTimeout(loadWeekTicker, 50);
+  setTimeout(loadNflTicker, 80);
 }
 ["east","west","north","south"].forEach(pod=>{dataRef("drafts/"+pod).on("value",snap=>{const remote=snap.val();if(!remote||!remote.teams)return;applyingRemote=true;const s=load();s.drafts[pod]=normalizeDraft(remote);save(s);applyingRemote=false;const page=(location.hash.replace("#","").split("/")[0]||"");const onPod=(location.hash.split("/")[1]||"")===(pod);if((page==="draft"||page==="board"||page==="dash")&&onPod&&window._paint){ clearTimeout(window._paintDebounce); window._paintDebounce=setTimeout(()=>{ if(Date.now()-(window._lastPaint||0)>2000){ window._lastPaint=Date.now(); window._paint&&window._paint(); } }, 1500); }});});
 dataRef("records").on("value",snap=>{const remote=snap.val();if(!remote)return;applyingRemote=true;const s=load();s.records=remote;save(s);applyingRemote=false;if((location.hash||"").startsWith("#scores"))renderScores(); if((location.hash||"").startsWith("#bracket"))renderBracket();});
@@ -1517,6 +1549,7 @@ document.addEventListener("click",e=>{if(e.target&&e.target.id==="logout-btn"){e
 document.addEventListener("click",e=>{const btn=e.target.closest&&e.target.closest("#logout-btn"); if(!btn)return; e.preventDefault(); const st=load(); delete st.email; st.email=""; save(st); location.replace(location.pathname+"#lobby");});
 window.addEventListener("hashchange",route);route();
 setTimeout(loadWeekTicker, 300);
+setTimeout(loadNflTicker, 400);
 
 dataRef("drafts").on("value", snap => {
   const s = load();
