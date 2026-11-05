@@ -246,38 +246,47 @@ let cloudOn=false, applyingRemote=false;
 cloud.ref(".info/connected").on("value",s=>{cloudOn=!!s.val(); const el=document.getElementById("live"); if(el) el.textContent=cloudOn?"LIVE BOARD":"OFFLINE";});
 
 
-// NFL scores ticker (API-Sports)
+// NFL scores ticker (API-Sports) — fail-safe so it can't crash the page
 const API_SPORTS_KEY = "72aa8795b08068b343ffce67c6dc19b8";
 let nflGamesCache = null;
 function loadNflTicker(){
-  const ticker = document.getElementById("nfl-ticker");
-  if(!ticker) return;
-  const page = (location.hash.replace("#","").split("/")[0]||"");
-  if(page === "matchup"){ ticker.style.display = "none"; return; }
-  ticker.style.display = "block";
-  if(nflGamesCache){ renderNflTicker(nflGamesCache); return; }
-  fetch("https://v1.american-football.api-sports.io/games?league=1&season=2026", {
-    headers: { "x-apisports-key": API_SPORTS_KEY }
-  }).then(r => r.json()).then(d => {
-    const games = d.response || [];
-    const week = currentNflWeek();
-    nflGamesCache = games.filter(g => g.game && String(g.game.week||"").includes(String(week)));
-    renderNflTicker(nflGamesCache);
-  }).catch(()=>{ ticker.innerHTML = '<span>NFL scores loading…</span>'; });
+  try {
+    const ticker = document.getElementById("nfl-ticker");
+    if(!ticker) return;
+    const page = (location.hash.replace("#","").split("/")[0]||"");
+    if(page === "matchup"){ ticker.style.display = "none"; return; }
+    ticker.style.display = "block";
+    ticker.onclick = ()=>{ location.hash = "#scoreboard"; };
+    if(nflGamesCache){ renderNflTicker(nflGamesCache); return; }
+    fetch("https://v1.american-football.api-sports.io/games?league=1&season=2026", {
+      headers: { "x-apisports-key": API_SPORTS_KEY }
+    }).then(r => r.json()).then(d => {
+      try {
+        const games = d.response || [];
+        const week = currentNflWeek();
+        nflGamesCache = games.filter(g => g.game && String(g.game.week||"").includes(String(week)));
+        renderNflTicker(nflGamesCache);
+      } catch(e){ if(ticker) ticker.innerHTML = '<span>NFL scores unavailable</span>'; }
+    }).catch(()=>{ if(ticker) ticker.innerHTML = '<span>NFL scores loading…</span>'; });
+  } catch(e){ /* never crash the page */ }
 }
 function renderNflTicker(games){
-  const ticker = document.getElementById("nfl-ticker");
-  if(!ticker || !games.length){ if(ticker) ticker.innerHTML = '<span>NFL scores loading…</span>'; return; }
-  const text = games.map(g => {
-    const home = (g.teams && g.teams.home && g.teams.home.name) || "Home";
-    const away = (g.teams && g.teams.away && g.teams.away.name) || "Away";
-    const hs = (g.scores && g.scores.home && g.scores.home.total != null) ? g.scores.home.total : "";
-    const as = (g.scores && g.scores.away && g.scores.away.total != null) ? g.scores.away.total : "";
-    const status = (g.game && g.game.status && g.game.status.short) || "";
-    return away + " " + (as!==""?as:"") + " @ " + home + " " + (hs!==""?hs:"") + " (" + status + ")";
-  }).join("   ·   ");
-  ticker.innerHTML = '<span>' + text + '</span>';
+  try {
+    const ticker = document.getElementById("nfl-ticker");
+    if(!ticker) return;
+    if(!games || !games.length){ ticker.innerHTML = '<span>NFL scores loading…</span>'; return; }
+    const text = games.map(g => {
+      const home = (g.teams && g.teams.home && g.teams.home.name) || "Home";
+      const away = (g.teams && g.teams.away && g.teams.away.name) || "Away";
+      const hs = (g.scores && g.scores.home && g.scores.home.total != null) ? g.scores.home.total : "";
+      const as = (g.scores && g.scores.away && g.scores.away.total != null) ? g.scores.away.total : "";
+      const status = (g.game && g.game.status && g.game.status.short) || "";
+      return away + " " + (as!==""?as:"") + " @ " + home + " " + (hs!==""?hs:"") + " (" + status + ")";
+    }).join("   ·   ");
+    ticker.innerHTML = '<span>' + text + '</span>';
+  } catch(e){ /* silent */ }
 }
+function currentNflWeek(){
   const start = new Date("2026-09-10"); // approximate 2026 kickoff
   const now = new Date();
   const diff = Math.floor((now - start) / (7*24*60*60*1000));
