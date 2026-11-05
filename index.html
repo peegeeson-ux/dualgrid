@@ -337,6 +337,15 @@ let leagueName = "DUALGRID";
 let leagueLogo = "";
 dataRef("config/leagueName").on("value", snap => { if(snap.val()) leagueName=String(snap.val()); const h=location.hash||""; if(h.startsWith("#home"))renderHome(); if(h===""||h.startsWith("#lobby"))renderLobby(); if(h.startsWith("#board")&&window._paint)window._paint(); });
 dataRef("config/leagueLogo").on("value", snap => { leagueLogo=snap.val()||""; const h=location.hash||""; if(h.startsWith("#home"))renderHome(); if(h===""||h.startsWith("#lobby"))renderLobby(); if(h.startsWith("#board")&&window._paint)window._paint(); });
+dataRef("config/rings").on("value", function(snap){
+  const v = snap.val();
+  if(v){
+    const st = load();
+    st.rings = v;
+    save(st);
+    if((location.hash||"").startsWith("#roster")) renderRoster();
+  }
+});
 function publishLeague(){dataRef("config/leagueName").set(leagueName).catch(()=>{});}
 function publishLogo(){dataRef("config/leagueLogo").set(leagueLogo).catch(()=>{});}
 let playoffSpots = 4;
@@ -370,6 +379,7 @@ function publishGames(){dataRef("config/seasonGames").set(seasonGames).catch(()=
 let rivals = [];
 dataRef("config/rivals").on("value", snap => { rivals=snap.val()||[]; const h=location.hash||""; if(h.startsWith("#home"))renderHome(); if(h===""||h.startsWith("#lobby"))renderLobby(); if(h.startsWith("#scores"))renderScores(); });
 function publishRivals(){dataRef("config/rivals").set(rivals).catch(()=>{});}
+function publishRings(){const s=load(); dataRef("config/rings").set(s.rings||{}).catch(()=>{});}
 function isCommish(s){const code=leagueCode();return !!(s&&code&&s.commish&&s.commish[code]);}
 function syncOwner(s){if(s){ s.owner=isCommish(s); try{ if(localStorage.getItem("dualgrid_owner")==="1") s.owner=true; }catch(e){} } return s;}
 function unlocked(s){s=syncOwner(s);return !!(s&&(s.owner||(s.paid&&s.plan)));}
@@ -1210,6 +1220,7 @@ if(added) save(s);
       st.rings[key] = st.rings[key] || [];
       st.rings[key].push({ year: year.slice(0,4), title: title.slice(0,24) });
       save(st);
+      publishRings();
       renderRoster();
     };
   });
