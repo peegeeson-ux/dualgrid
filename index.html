@@ -348,7 +348,22 @@ function renderNflScoreboard(){
       const id = (g.game && g.game.id) || "";
       return '<div class="card" style="margin-bottom:10px;cursor:pointer" data-game="'+id+'"><div style="font-size:12px;opacity:.7">'+status+(time?" · "+time:"")+'</div><div class="team-row"><span>'+away+'</span><strong>'+as+'</strong></div><div class="team-row"><span>'+home+'</span><strong>'+hs+'</strong></div><div style="font-size:12px;color:#7cc8ff;margin-top:6px">Tap for box score</div></div>';
     }).join("");
+    document.querySelectorAll("[data-game]").forEach(card => {
+      card.onclick = () => showBoxScore(card.getAttribute("data-game"), games);
+    });
   });
+}
+function showBoxScore(id, games){
+  const g = (games||[]).find(x => String(x.game && x.game.id) === String(id));
+  if(!g) return;
+  const home = (g.teams && g.teams.home && g.teams.home.name) || "Home";
+  const away = (g.teams && g.teams.away && g.teams.away.name) || "Away";
+  const hs = (g.scores && g.scores.home && g.scores.home.total != null) ? g.scores.home.total : "—";
+  const as = (g.scores && g.scores.away && g.scores.away.total != null) ? g.scores.away.total : "—";
+  const status = (g.game && g.game.status && g.game.status.short) || "";
+  const root = document.getElementById("app");
+  root.innerHTML = header('<a class="btn" href="#nfl">Back to scores</a>') +
+    '<div class="page"><div class="eyebrow">BOX SCORE</div><h1>'+away+' '+as+' @ '+home+' '+hs+'</h1><p class="lede">'+status+'</p><div class="card"><p>Full player stats will appear here once the game has stats. (API-Sports box score data is available after the game.)</p></div></div>';
 }
 function loadNflTicker(){
   try {
@@ -1486,7 +1501,7 @@ games.forEach(g=>{
     const bLabel = (slots[i] && slots[i].pos === "FLEX") ? "FLEX" : (slotLabel(b) || b.pos || "");
     rows+='<div style="display:grid;grid-template-columns:1fr auto 1fr;gap:8px;align-items:center;padding:4px 0;border-bottom:1px solid #1a3a5c"><div><div class="name" data-player-id="'+(a.id||'')+'">'+a.name+'</div><div class="sub">'+aLabel+(a.projWeek?' · '+a.projWeek:'')+'</div><div class="sub live-line" data-id="'+(a.id||'')+'" style="font-size:11px;color:#7cc8ff"></div></div><div class="pos '+(a.pos||"")+'" style="min-width:36px;text-align:center">'+(aLabel||"")+'</div><div style="text-align:right"><div class="name" data-player-id="'+(b.id||'')+'">'+b.name+'</div><div class="sub">'+bLabel+(b.projWeek?' · '+b.projWeek:'')+'</div><div class="sub live-line" data-id="'+(b.id||'')+'" style="font-size:11px;color:#7cc8ff"></div></div></div>';
   }
-  list+='<details class="card" style="margin:10px 0;'+highlight+'"><summary style="font-weight:800;cursor:pointer;padding:4px 0">'+g.home.name+' vs '+g.away.name+(isMine?' <span style="color:#69be28">· YOU</span>':'')+'</summary><div style="margin-top:8px"><div style="display:flex;justify-content:space-between;margin-bottom:8px"><strong>'+g.home.name+'</strong><span>vs</span><strong>'+g.away.name+'</strong></div>'+rows+'<div style="margin-top:8px;font-size:13px;color:#7cc8ff"><strong>'+g.home.name+'</strong> Proj <span class="proj-sum" data-side="home">'+(homeLine.reduce((s,p)=>s+((enrich(p)||{}).projWeek||0),0).toFixed(1))+'</span> · Live <span class="live-sum" data-side="home">—</span><br><strong>'+g.away.name+'</strong> Proj <span class="proj-sum" data-side="away">'+(awayLine.reduce((s,p)=>s+((enrich(p)||{}).projWeek||0),0).toFixed(1))+'</span> · Live <span class="live-sum" data-side="away">—</span></div></div></details>';
+  list+='<details class="card" style="margin:10px 0;'+highlight+'"><summary style="font-weight:800;cursor:pointer;padding:4px 0">'+g.home.name+' vs '+g.away.name+(isMine?' <span style="color:#69be28">· YOU</span>':'')+'</summary><div style="margin-top:8px"><div style="display:flex;justify-content:space-between;margin-bottom:8px"><strong>'+g.home.name+'</strong><span>vs</span><strong>'+g.away.name+'</strong></div>'+rows+'<div style="margin-top:8px;font-size:13px;color:#7cc8ff"><strong>'+g.home.name+'</strong> Proj <span class="proj-sum" data-side="home">'+(homeLine.reduce((s,p)=>s+((enrich(p)||{}).projWeek||0),0).toFixed(1))+'</span> · Live <span class="live-sum" data-side="home">—</span><br><strong>'+g.away.name+'</strong> Proj <span class="proj-sum" data-side="away">'+(awayLine.reduce((s,p)=>s+((enrich(p)||{}).projWeek||0),0).toFixed(1))+'</span> · Live <span class="live-sum" data-side="away">—</span><div style="margin-top:6px;font-size:12px;opacity:.85">Odds · '+g.home.name+' '+(function(){const hp=homeLine.reduce((s,p)=>s+((enrich(p)||{}).projWeek||0),0); const ap=awayLine.reduce((s,p)=>s+((enrich(p)||{}).projWeek||0),0); const total=hp+ap||1; return Math.round(hp/total*100)+'%';})()+' · '+g.away.name+' '+(function(){const hp=homeLine.reduce((s,p)=>s+((enrich(p)||{}).projWeek||0),0); const ap=awayLine.reduce((s,p)=>s+((enrich(p)||{}).projWeek||0),0); const total=hp+ap||1; return Math.round(ap/total*100)+'%';})()+'</div></div></div></details>';
 });
 document.getElementById("app").innerHTML=header('<a class="btn" href="#home">Home</a><a class="btn" href="#scoreboard">Scoreboard</a>')+
 '<div class="page"><div class="eyebrow">WEEK '+week+' MATCHUPS</div><h1>All games</h1><p class="lede">Your team is highlighted. Tap a game to see the lineup.</p>'+list+'</div>';
