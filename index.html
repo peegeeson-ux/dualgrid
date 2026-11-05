@@ -153,12 +153,12 @@ dataRef("drafts").on("value", snap => {
 });
 
 function openPlayerFromEvent(ev){
-  const el = ev.target.closest(".name[data-player-id]");
+  const el = ev.target.closest("[data-player-id]");
   if(!el) return;
   if(ev.target.closest("button")) return;
   const id = el.getAttribute("data-player-id");
-  const p = (PLAYERS||[]).find(x=>String(x.id)===String(id));
-  if(p && typeof showPlayerModal === "function"){
+  const p = (PLAYERS||[]).find(x=>String(x.id)===String(id)) || {id:Number(id), name:"Player"};
+  if(typeof showPlayerModal === "function"){
     ev.preventDefault();
     showPlayerModal(p);
   }
@@ -1647,12 +1647,12 @@ dataRef("drafts").on("value", snap => {
 });
 
 function openPlayerFromEvent(ev){
-  const el = ev.target.closest(".name[data-player-id]");
+  const el = ev.target.closest("[data-player-id]");
   if(!el) return;
   if(ev.target.closest("button")) return;
   const id = el.getAttribute("data-player-id");
-  const p = (PLAYERS||[]).find(x=>String(x.id)===String(id));
-  if(p && typeof showPlayerModal === "function"){
+  const p = (PLAYERS||[]).find(x=>String(x.id)===String(id)) || {id:Number(id), name:"Player"};
+  if(typeof showPlayerModal === "function"){
     ev.preventDefault();
     showPlayerModal(p);
   }
