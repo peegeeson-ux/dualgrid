@@ -535,7 +535,16 @@ let avail=available(draft).filter(p=>{
   const nameMatch = !q || p.name.toLowerCase().includes(q) || p.pos.toLowerCase()===q;
   const posMatch = !window.posFilter || p.pos===window.posFilter || (window.posFilter==="DEF" && (p.pos==="DEF"||p.pos==="DST")) || (window.posFilter==="IDP" && ["LB","DB","DL","DE","DT","CB","S","IDP"].includes(p.pos));
   return nameMatch && posMatch;
-}); avail.sort((a,b)=>(a.rank||999)-(b.rank||999)); avail = avail.slice(0, 40);
+}); avail.sort((a,b)=>{
+  // For IDP filter, prefer rank then proj; otherwise overall rank
+  if(window.posFilter==="IDP"){
+    const ar = a.rank||9999, br = b.rank||9999;
+    if(ar !== br) return ar - br;
+    return (b.proj||0) - (a.proj||0);
+  }
+  return (a.rank||999)-(b.rank||999);
+});
+avail = avail.slice(0, 40);
 const roundsLeft = Math.max(0, draftRounds() - Math.floor((draft.pickIndex||0)/teamCount()));
 const restrict = restrictedPositions(onClock, window.rosterSettings, roundsLeft);
 if(restrict) avail = avail.filter(p => restrict.includes(p.pos) || (restrict.includes("DEF") && (p.pos==="DEF"||p.pos==="DST")));
