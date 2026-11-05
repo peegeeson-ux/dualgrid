@@ -153,8 +153,7 @@ dataRef("drafts").on("value", snap => {
 });
 
 function openPlayerFromEvent(ev){
-  let el = ev.target.closest(".name[data-player-id]");
-  if(!el) el = ev.target.closest("[data-player-id]");
+  const el = ev.target.closest(".name[data-player-id]");
   if(!el) return;
   if(ev.target.closest("button")) return;
   const id = el.getAttribute("data-player-id");
@@ -316,7 +315,7 @@ function loadNflTicker(){
     ticker.style.display = "block";
     ticker.onclick = ()=>{ location.hash = "#nfl"; };
     if(nflGamesCache){ renderNflTicker(nflGamesCache); return; }
-    fetchNflGames().then(games => { renderNflTicker(games); });
+    fetchNflGames().then(games => { renderNflTicker(games); }).catch(()=>{ ticker.innerHTML = '<span>NFL scores unavailable</span>'; });
   } catch(e){ /* never crash the page */ }
 }
 function renderNflTicker(games){
@@ -354,15 +353,15 @@ function showPlayerModal(p){
     const box = document.getElementById("live-stats");
     if(!box) return;
     const pts = fantasyPoints(stats);
-    if(pts != null){
-      box.innerHTML = '<strong>Live this week: '+pts+' pts</strong>';
-    } else {
-      box.innerHTML = 'No live stats yet';
-    }
+    box.innerHTML = pts != null ? '<strong>Live this week: '+pts+' pts</strong>' : 'No live stats yet';
   }).catch(()=>{
     const box = document.getElementById("live-stats");
     if(box) box.innerHTML = 'Stats unavailable';
   });
+  setTimeout(()=>{
+    const box = document.getElementById("live-stats");
+    if(box && box.innerHTML.includes("Loading")) box.innerHTML = "Stats unavailable";
+  }, 4000);
 }
 
 function enrich(p){
@@ -1650,8 +1649,7 @@ dataRef("drafts").on("value", snap => {
 });
 
 function openPlayerFromEvent(ev){
-  let el = ev.target.closest(".name[data-player-id]");
-  if(!el) el = ev.target.closest("[data-player-id]");
+  const el = ev.target.closest(".name[data-player-id]");
   if(!el) return;
   if(ev.target.closest("button")) return;
   const id = el.getAttribute("data-player-id");
