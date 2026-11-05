@@ -1482,13 +1482,14 @@ function rejectTrade(i){
 }
 
 
-// Fantasy league week ticker — only inside a specific league
+// Fantasy league week ticker — only inside a specific league (including its lobby)
 function loadWeekTicker(){
   const ticker = document.getElementById("week-ticker");
   if(!ticker) return;
   const page = (location.hash.replace("#","").split("/")[0]||"");
-  // Hide on login, lobby, home, matchup, draft, board
-  if(!page || page === "login" || page === "lobby" || page === "home" || page === "matchup" || page === "draft" || page === "board"){ 
+  const inLeague = !!leagueCode();
+  // Hide on login, main home, matchup, draft, board — show inside a league (including lobby)
+  if(!inLeague || page === "login" || page === "matchup" || page === "draft" || page === "board"){ 
     ticker.style.display = "none"; 
     return; 
   }
