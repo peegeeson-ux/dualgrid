@@ -1115,7 +1115,7 @@ if(added) save(s);
       const assigned = [];
       const used = new Set();
       slots.forEach(slot => {
-        const pl = starters.find(p => !used.has(p.id) && (p.pos===slot.pos || (slot.pos==="FLEX" && ["RB","WR","TE"].includes(p.pos))));
+        const pl = starters.find(p => !used.has(p.id) && ((p.pos===slot.pos) || (slot.pos==="DEF" && (p.pos==="DST"||p.pos==="DEF")) || (slot.pos==="FLEX" && ["RB","WR","TE"].includes(p.pos))));
         if(pl) used.add(pl.id);
         assigned.push(pl || null);
       });
