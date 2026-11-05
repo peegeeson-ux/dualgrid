@@ -248,9 +248,65 @@ let cloudOn=false, applyingRemote=false;
 cloud.ref(".info/connected").on("value",s=>{cloudOn=!!s.val(); const el=document.getElementById("live"); if(el) el.textContent=cloudOn?"LIVE BOARD":"OFFLINE";});
 
 
-// NFL scores ticker (API-Sports) — fail-safe so it can't crash the page
-const API_SPORTS_KEY = "72aa8795b08068b343ffce67c6dc19b8";
-let nflGamesCache = null;
+// Player stats from API-Sports
+let playerStatsCache = {};
+function fetchPlayerStats(playerId, week){
+  if(!playerId) return Promise.resolve(null);
+  const key = playerId + "-" + (week || currentNflWeek());
+  if(playerStatsCache[key]) return Promise.resolve(playerStatsCache[key]);
+  return fetch("https://v1.american-football.api-sports.io/players/statistics?season=2026&player="+playerId, {
+    headers: { "x-apisports-key": API_SPORTS_KEY }
+  }).then(r => r.json()).then(d => {
+    const stats = (d.response && d.response[0]) || null;
+    playerStatsCache[key] = stats;
+    return stats;
+  }).catch(()=>null);
+}
+function fantasyPoints(stats){
+  if(!stats || !stats.statistics) return null;
+  const s = stats.statistics;
+  let pts = 0;
+  // Basic PPR-ish scoring (adjustable later)
+  pts += (s.passing && s.passing.touchdowns) ? s.passing.touchdowns * 4 : 0;
+  pts += (s.passing && s.passing.yards) ? s.passing.yards * 0.04 : 0;
+  pts += (s.rushing && s.rushing.touchdowns) ? s.rushing.touchdowns * 6 : 0;
+  pts += (s.rushing && s.rushing.yards) ? s.rushing.yards * 0.1 : 0;
+  pts += (s.receiving && s.receiving.touchdowns) ? s.receiving.touchdowns * 6 : 0;
+  pts += (s.receiving && s.receiving.yards) ? s.receiving.yards * 0.1 : 0;
+  pts += (s.receiving && s.receiving.receptions) ? s.receiving.receptions * 1 : 0;
+  return Math.round(pts * 10) / 10;
+}
+function fetchNflGames(force){
+  if(!force && nflGamesCache && (Date.now() - nflCacheTime < 60000)) return Promise.resolve(nflGamesCache);
+  return fetch("https://v1.american-football.api-sports.io/games?league=1&season=2026", {
+    headers: { "x-apisports-key": API_SPORTS_KEY }
+  }).then(r => r.json()).then(d => {
+    const games = d.response || [];
+    const week = currentNflWeek();
+    nflGamesCache = games.filter(g => g.game && String(g.game.week||"").includes(String(week)));
+    nflCacheTime = Date.now();
+    return nflGamesCache;
+  }).catch(()=>[]);
+}
+function renderNflScoreboard(){
+  const root = document.getElementById("app");
+  root.innerHTML = header('<a class="btn" href="#home">Home</a>') +
+    '<div class="page"><div class="eyebrow">NFL</div><h1>Live scores</h1><p class="lede">Real NFL games this week. Tap the ticker anytime to come here.</p><div id="nfl-scores">Loading NFL scores…</div></div>';
+  fetchNflGames(true).then(games => {
+    const box = document.getElementById("nfl-scores");
+    if(!box) return;
+    if(!games || !games.length){ box.innerHTML = '<div class="card">No games found for this week.</div>'; return; }
+    box.innerHTML = games.map(g => {
+      const home = (g.teams && g.teams.home && g.teams.home.name) || "Home";
+      const away = (g.teams && g.teams.away && g.teams.away.name) || "Away";
+      const hs = (g.scores && g.scores.home && g.scores.home.total != null) ? g.scores.home.total : "—";
+      const as = (g.scores && g.scores.away && g.scores.away.total != null) ? g.scores.away.total : "—";
+      const status = (g.game && g.game.status && g.game.status.short) || "";
+      const time = (g.game && g.game.date && g.game.date.time) || "";
+      return '<div class="card" style="margin-bottom:10px"><div style="font-size:12px;opacity:.7">'+status+(time?" · "+time:"")+'</div><div class="team-row"><span>'+away+'</span><strong>'+as+'</strong></div><div class="team-row"><span>'+home+'</span><strong>'+hs+'</strong></div></div>';
+    }).join("");
+  });
+}
 function loadNflTicker(){
   try {
     const ticker = document.getElementById("nfl-ticker");
@@ -258,18 +314,9 @@ function loadNflTicker(){
     const page = (location.hash.replace("#","").split("/")[0]||"");
     if(page === "matchup"){ ticker.style.display = "none"; return; }
     ticker.style.display = "block";
-    ticker.onclick = ()=>{ location.hash = "#scoreboard"; };
+    ticker.onclick = ()=>{ location.hash = "#nfl"; };
     if(nflGamesCache){ renderNflTicker(nflGamesCache); return; }
-    fetch("https://v1.american-football.api-sports.io/games?league=1&season=2026", {
-      headers: { "x-apisports-key": API_SPORTS_KEY }
-    }).then(r => r.json()).then(d => {
-      try {
-        const games = d.response || [];
-        const week = currentNflWeek();
-        nflGamesCache = games.filter(g => g.game && String(g.game.week||"").includes(String(week)));
-        renderNflTicker(nflGamesCache);
-      } catch(e){ if(ticker) ticker.innerHTML = '<span>NFL scores unavailable</span>'; }
-    }).catch(()=>{ if(ticker) ticker.innerHTML = '<span>NFL scores loading…</span>'; });
+    fetchNflGames().then(games => { renderNflTicker(games); });
   } catch(e){ /* never crash the page */ }
 }
 function renderNflTicker(games){
@@ -301,8 +348,18 @@ let PLAYERS = [];
 function showPlayerModal(p){
   const e = enrich(p) || p;
   const weeks = e.weeks ? Object.entries(e.weeks).map(([w,pts])=>'<div>Wk '+w+': '+pts+'</div>').join("") : "<div>No weekly breakdown yet</div>";
-  const html = '<div style="position:fixed;inset:0;background:#000a;z-index:50;display:flex;align-items:center;justify-content:center" onclick="this.remove()"><div class="card" style="max-width:360px;width:90%;max-height:80vh;overflow:auto" onclick="event.stopPropagation()"><h2>'+(e.name||"Player")+'</h2><p>'+(e.pos||"")+' · '+(e.team||"")+'</p><p>Season proj: '+(e.proj||"—")+' · Week '+currentNflWeek()+' proj: '+(e.projWeek||"—")+'</p><h3>Fantasy points</h3>'+(e.points!=null?'<p>Season total: '+e.points+'</p>':'')+weeks+'<button class="btn" style="margin-top:12px" onclick="this.closest(\'div\').parentElement.remove()">Close</button></div></div>';
+  const html = '<div style="position:fixed;inset:0;background:#000a;z-index:50;display:flex;align-items:center;justify-content:center" onclick="this.remove()"><div class="card" style="max-width:360px;width:90%;max-height:80vh;overflow:auto" onclick="event.stopPropagation()"><h2>'+(e.name||"Player")+'</h2><p>'+(e.pos||"")+' · '+(e.team||"")+'</p><p>Season proj: '+(e.proj||"—")+' · Week '+currentNflWeek()+' proj: '+(e.projWeek||"—")+'</p><h3>Fantasy points</h3>'+(e.points!=null?'<p>Season total: '+e.points+'</p>':'')+weeks+'<div id="live-stats" style="margin-top:10px;font-size:13px;color:#7cc8ff">Loading live stats…</div><button class="btn" style="margin-top:12px" onclick="this.closest(\'div\').parentElement.remove()">Close</button></div></div>';
   document.body.insertAdjacentHTML("beforeend", html);
+  fetchPlayerStats(e.id).then(stats => {
+    const box = document.getElementById("live-stats");
+    if(!box) return;
+    const pts = fantasyPoints(stats);
+    if(pts != null){
+      box.innerHTML = '<strong>Live this week: '+pts+' pts</strong>';
+    } else {
+      box.innerHTML = 'No live stats yet';
+    }
+  });
 }
 
 function enrich(p){
@@ -1516,7 +1573,7 @@ function loadWeekTicker(){
   }
 }
 
-function route(){const page=(location.hash.replace("#","").split("/")[0]||"lobby"); const st=load(); if(!st.email && page!=="login"){ location.hash="#login"; return renderLogin(); } if(page==="login"){ return renderLogin(); } if(page!=="lobby"&&!leagueCode()&&page!=="draft"&&page!=="board"&&page!=="trade"){location.hash="#lobby"; return renderLobby();}if(page==="pay")renderPay();else if(page==="draft")renderDraft();else if(page==="board")renderBoard();else if(page==="wall")renderWall();else if(page==="payout"){ if(!unlocked(load())){ alert("Commissioner code required."); location.hash="#home"; return;} renderPayout(); }else if(page==="scores")renderScores();else if(page==="scoreboard")renderScoreboard();else if(page==="bracket")renderBracket();else if(page==="talk")renderTalk();else if(page==="waiver")renderWaiver();else if(page==="roster")renderRoster();else if(page==="history")renderHistory();else if(page==="scoring")renderScoring();else if(page==="matchup")renderMatchup();else if(page==="trade")renderTrade();else if(page==="dash")renderDash();else if(page==="lobby"||page==="")renderLobby();else renderHome();
+function route(){const page=(location.hash.replace("#","").split("/")[0]||"lobby"); const st=load(); if(!st.email && page!=="login"){ location.hash="#login"; return renderLogin(); } if(page==="login"){ return renderLogin(); } if(page!=="lobby"&&!leagueCode()&&page!=="draft"&&page!=="board"&&page!=="trade"){location.hash="#lobby"; return renderLobby();}if(page==="pay")renderPay();else if(page==="draft")renderDraft();else if(page==="board")renderBoard();else if(page==="wall")renderWall();else if(page==="payout"){ if(!unlocked(load())){ alert("Commissioner code required."); location.hash="#home"; return;} renderPayout(); }else if(page==="scores")renderScores();else if(page==="scoreboard")renderScoreboard();else if(page==="bracket")renderBracket();else if(page==="talk")renderTalk();else if(page==="waiver")renderWaiver();else if(page==="roster")renderRoster();else if(page==="history")renderHistory();else if(page==="scoring")renderScoring();else if(page==="matchup")renderMatchup();else if(page==="trade")renderTrade();else if(page==="dash")renderDash();else if(page==="nfl")renderNflScoreboard();else if(page==="lobby"||page==="")renderLobby();else renderHome();
   setTimeout(loadWeekTicker, 50);
   setTimeout(loadNflTicker, 80);
   setTimeout(loadWeekTicker, 400); // extra refresh after league switch
