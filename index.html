@@ -169,6 +169,7 @@ document.addEventListener("touchend", openPlayerFromEvent, {passive:false});
 </head>
 <body>
 <div id="app"></div>
+<div id="week-ticker" class="ticker" style="display:none;cursor:pointer"></div>
 <script>
 // Lighter scroll-vs-tap guard — only suppress if the finger actually moved
 (function(){
@@ -1439,7 +1440,38 @@ function rejectTrade(i){
 }
 
 
-function route(){const page=(location.hash.replace("#","").split("/")[0]||"lobby"); const st=load(); if(!st.email && page!=="login"){ location.hash="#login"; return renderLogin(); } if(page==="login"){ return renderLogin(); } if(page!=="lobby"&&!leagueCode()&&page!=="draft"&&page!=="board"&&page!=="trade"){location.hash="#lobby"; return renderLobby();}if(page==="pay")renderPay();else if(page==="draft")renderDraft();else if(page==="board")renderBoard();else if(page==="wall")renderWall();else if(page==="payout"){ if(!unlocked(load())){ alert("Commissioner code required."); location.hash="#home"; return;} renderPayout(); }else if(page==="scores")renderScores();else if(page==="scoreboard")renderScoreboard();else if(page==="bracket")renderBracket();else if(page==="talk")renderTalk();else if(page==="waiver")renderWaiver();else if(page==="roster")renderRoster();else if(page==="history")renderHistory();else if(page==="scoring")renderScoring();else if(page==="matchup")renderMatchup();else if(page==="trade")renderTrade();else if(page==="dash")renderDash();else if(page==="lobby"||page==="")renderLobby();else renderHome();}
+// Fantasy league week ticker — shows on all pages except matchup
+function loadWeekTicker(){
+  const ticker = document.getElementById("week-ticker");
+  if(!ticker) return;
+  const page = (location.hash.replace("#","").split("/")[0]||"");
+  if(page === "matchup"){ ticker.style.display = "none"; return; }
+  ticker.style.display = "block";
+  ticker.onclick = ()=>{ location.hash = "#matchup"; };
+
+  try {
+    const s = load();
+    const week = (s.records && s.records.week) || 1;
+    const schedule = (typeof seasonSchedule === "function") ? seasonSchedule(s) : [];
+    const games = schedule[week-1] || [];
+    if(!games.length){
+      ticker.innerHTML = '<span>No matchups this week</span>';
+      return;
+    }
+    const text = games.map(g => {
+      const h = (g.home && g.home.name) || "Home";
+      const a = (g.away && g.away.name) || "Away";
+      return a + " vs " + h;
+    }).join("   ·   ");
+    ticker.innerHTML = '<span>Week ' + week + ': ' + text + '</span>';
+  } catch(e){
+    ticker.innerHTML = '<span>Matchups loading…</span>';
+  }
+}
+
+function route(){const page=(location.hash.replace("#","").split("/")[0]||"lobby"); const st=load(); if(!st.email && page!=="login"){ location.hash="#login"; return renderLogin(); } if(page==="login"){ return renderLogin(); } if(page!=="lobby"&&!leagueCode()&&page!=="draft"&&page!=="board"&&page!=="trade"){location.hash="#lobby"; return renderLobby();}if(page==="pay")renderPay();else if(page==="draft")renderDraft();else if(page==="board")renderBoard();else if(page==="wall")renderWall();else if(page==="payout"){ if(!unlocked(load())){ alert("Commissioner code required."); location.hash="#home"; return;} renderPayout(); }else if(page==="scores")renderScores();else if(page==="scoreboard")renderScoreboard();else if(page==="bracket")renderBracket();else if(page==="talk")renderTalk();else if(page==="waiver")renderWaiver();else if(page==="roster")renderRoster();else if(page==="history")renderHistory();else if(page==="scoring")renderScoring();else if(page==="matchup")renderMatchup();else if(page==="trade")renderTrade();else if(page==="dash")renderDash();else if(page==="lobby"||page==="")renderLobby();else renderHome();
+  setTimeout(loadWeekTicker, 50);
+}
 ["east","west","north","south"].forEach(pod=>{dataRef("drafts/"+pod).on("value",snap=>{const remote=snap.val();if(!remote||!remote.teams)return;applyingRemote=true;const s=load();s.drafts[pod]=normalizeDraft(remote);save(s);applyingRemote=false;const page=(location.hash.replace("#","").split("/")[0]||"");const onPod=(location.hash.split("/")[1]||"")===(pod);if((page==="draft"||page==="board"||page==="dash")&&onPod&&window._paint){ clearTimeout(window._paintDebounce); window._paintDebounce=setTimeout(()=>{ if(Date.now()-(window._lastPaint||0)>2000){ window._lastPaint=Date.now(); window._paint&&window._paint(); } }, 1500); }});});
 dataRef("records").on("value",snap=>{const remote=snap.val();if(!remote)return;applyingRemote=true;const s=load();s.records=remote;save(s);applyingRemote=false;if((location.hash||"").startsWith("#scores"))renderScores(); if((location.hash||"").startsWith("#bracket"))renderBracket();});
 if(!window._countdownWatch){window._countdownWatch=setInterval(()=>{
@@ -1484,6 +1516,7 @@ document.addEventListener("click",e=>{if(e.target&&e.target.id==="menu-btn"){con
 document.addEventListener("click",e=>{if(e.target&&e.target.id==="logout-btn"){e.preventDefault(); const st=load(); st.email=""; delete st.email; save(st); localStorage.removeItem("dualgrid-email"); location.href=location.pathname+"?out="+Date.now();}});
 document.addEventListener("click",e=>{const btn=e.target.closest&&e.target.closest("#logout-btn"); if(!btn)return; e.preventDefault(); const st=load(); delete st.email; st.email=""; save(st); location.replace(location.pathname+"#lobby");});
 window.addEventListener("hashchange",route);route();
+setTimeout(loadWeekTicker, 300);
 
 dataRef("drafts").on("value", snap => {
   const s = load();
