@@ -368,8 +368,13 @@ function loadNflTicker(){
     if(page === "matchup"){ ticker.style.display = "none"; return; }
     ticker.style.display = "block";
     ticker.onclick = ()=>{ location.hash = "#nfl"; };
-    if(nflGamesCache){ renderNflTicker(nflGamesCache); return; }
-    fetchNflGames().then(games => { renderNflTicker(games); }).catch(()=>{ ticker.innerHTML = '<span>NFL scores unavailable</span>'; });
+    const go = (force)=>{
+      fetchNflGames(force).then(games => { renderNflTicker(games); }).catch(()=>{ ticker.innerHTML = '<span>NFL scores unavailable</span>'; });
+    };
+    go(true);
+    if(!window._nflTickerWatch){
+      window._nflTickerWatch = setInterval(()=>go(true), 30000);
+    }
   } catch(e){ /* never crash the page */ }
 }
 function renderNflTicker(games){
