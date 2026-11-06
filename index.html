@@ -490,6 +490,44 @@ const FANTASYPROS_KEY = "JYVWx9pdAQ1tdIimRT0wPaIaHpi3t9jJ75oKlj3h";
 let PLAYERS = [];
 
 
+function dropPlayer(id){
+  const s = load();
+  let found = false;
+  podsOf(s).forEach(pod => {
+    const d = ensureDraft(s, pod);
+    (d.teams||[]).forEach(team => {
+      const has = (team.picks||[]).some(p => Number(p.id) === Number(id)) ||
+        (team.lineup && team.lineup.starters && team.lineup.starters.some(p => Number(p.id) === Number(id))) ||
+        (team.lineup && team.lineup.bench && team.lineup.bench.some(p => Number(p.id) === Number(id))) ||
+        (team.lineup && team.lineup.ir && team.lineup.ir.some(p => Number(p.id) === Number(id)));
+      if(!has) return;
+      found = true;
+      team.picks = (team.picks||[]).filter(p => Number(p.id) !== Number(id));
+      if(team.lineup){
+        team.lineup.starters = (team.lineup.starters||[]).filter(p => Number(p.id) !== Number(id));
+        team.lineup.bench = (team.lineup.bench||[]).filter(p => Number(p.id) !== Number(id));
+        team.lineup.ir = (team.lineup.ir||[]).filter(p => Number(p.id) !== Number(id));
+      }
+      try{ dataRef("drafts/"+pod+"/teams/"+team.id+"/lineup").set(team.lineup||{starters:[],bench:[],ir:[]}); }catch(e){}
+      try{ dataRef("drafts/"+pod+"/teams/"+team.id+"/picks").set(team.picks||[]); }catch(e){}
+      publish(pod);
+    });
+  });
+  if(!found){ alert("Player not on a roster."); return; }
+  const player = PLAYERS.find(p => Number(p.id) === Number(id)) || {id:Number(id), name:"Player"};
+  const rec = s.records || (s.records = {});
+  rec.claims = rec.claims || [];
+  const closed = !!(rec.waiverDeadline && Date.now() > new Date(rec.waiverDeadline).getTime());
+  const pod = window.waiverPod || "east";
+  if(!rec.claims.some(c => c.id === player.id && c.pod === pod)){
+    rec.claims.unshift({id:player.id, player:player.name, kind:closed?"fa":"waiver", at:Date.now(), pod:pod});
+  }
+  saveWaiver(s);
+  document.querySelectorAll("div[style*='z-index:50']").forEach(m => m.remove());
+  if(location.hash.startsWith("#roster")) renderRoster();
+  alert(player.name + " dropped to " + (closed ? "free agents" : "waivers") + ".");
+}
+
 function showPlayerModal(p){
   const e = enrich(p) || p;
   const week = String(currentNflWeek());
@@ -503,7 +541,7 @@ function showPlayerModal(p){
   card.className = "card";
   card.style.cssText = "max-width:360px;width:90%;max-height:80vh;overflow:auto";
   card.onclick = ev=>ev.stopPropagation();
-  card.innerHTML = '<h2>'+name+'</h2><p>'+pos+' · '+team+'</p><p>Season proj: '+(e.proj||"—")+' · Week '+week+' proj: '+(e.projWeek||"—")+'</p><div id="live-card-stats" style="margin-top:10px;font-size:13px;color:#7cc8ff">Loading live stats…</div><button class="btn" style="margin-top:12px" onclick="this.closest(\'div\').parentElement.remove()">Close</button>';
+  card.innerHTML = '<h2>'+name+'</h2><p>'+pos+' · '+team+'</p><p>Season proj: '+(e.proj||"—")+' · Week '+week+' proj: '+(e.projWeek||"—")+'</p><div id="live-card-stats" style="margin-top:10px;font-size:13px;color:#7cc8ff">Loading live stats…</div><button class="btn btn-lime" style="margin-top:12px;margin-right:8px" onclick="dropPlayer('+p.id+')">Drop</button><button class="btn" style="margin-top:12px" onclick="this.closest(\'div\').parentElement.remove()">Close</button>';
   modal.appendChild(card);
   document.body.appendChild(modal);
   const box = card.querySelector("#live-card-stats");
