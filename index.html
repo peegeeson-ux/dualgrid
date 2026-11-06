@@ -1236,7 +1236,8 @@ function renderWaiver(){
   const rec=s.records;
   const deadline=rec.waiverDeadline||"";
   const closed=!!(deadline && Date.now()>new Date(deadline).getTime());
-  const seat = currentSeat();
+  let seat = null;
+  try{ seat = (JSON.parse(localStorage.getItem("dualgrid-my-seats")||"{}")[leagueCode()] || JSON.parse(localStorage.getItem("dualgrid-my-seat")||"null")); }catch(e){}
   const myPod = seat && seat.pod;
   const pod = (s.owner && window.waiverPod) || myPod || "east";
   window.waiverPod = pod;
