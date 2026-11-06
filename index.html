@@ -313,15 +313,18 @@ function fetchNflGames(force){
   if(!force && nflGamesCache && (Date.now() - nflCacheTime < 60000)) return Promise.resolve(nflGamesCache);
   return fetch("https://dualgrid-players.peegeeson.workers.dev/games", {cache:"no-store"})
     .then(r => r.json()).then(d => {
+      if(d.errors && (d.errors.rateLimit || d.errors.requests)) throw new Error("rate");
       const games = d.response || [];
       const week = currentNflWeek();
       const label = "Week " + week;
       let filtered = games.filter(g => g.game && String(g.game.week||"") === label);
       if(!filtered.length) filtered = games.filter(g => g.game && String(g.game.week||"").startsWith("Week "));
-      nflGamesCache = filtered.slice(0, 16);
-      nflCacheTime = Date.now();
-      return nflGamesCache;
-    }).catch(()=>[]);
+      if(filtered.length){
+        nflGamesCache = filtered.slice(0, 16);
+        nflCacheTime = Date.now();
+      }
+      return nflGamesCache || [];
+    }).catch(()=>nflGamesCache || []);
 }
 function renderNflScoreboard(){
   const root = document.getElementById("app");
@@ -373,7 +376,7 @@ function loadNflTicker(){
     };
     go(true);
     if(!window._nflTickerWatch){
-      window._nflTickerWatch = setInterval(()=>go(true), 30000);
+      window._nflTickerWatch = setInterval(()=>go(true), 60000);
     }
   } catch(e){ /* never crash the page */ }
 }
