@@ -265,29 +265,39 @@ function fetchPlayerStats(playerId, week){
     }).catch(()=>null);
 }
 function fantasyPoints(stats){
-  if(!stats || !stats.statistics) return null;
-  const s = stats.statistics;
+  if(!stats || !stats.teams) return null;
   let pts = 0;
-  pts += (s.passing && s.passing.touchdowns) ? Number(s.passing.touchdowns) * 4 : 0;
-  pts += (s.passing && s.passing.yards) ? Number(s.passing.yards) * 0.04 : 0;
-  pts += (s.rushing && s.rushing.touchdowns) ? Number(s.rushing.touchdowns) * 6 : 0;
-  pts += (s.rushing && s.rushing.yards) ? Number(s.rushing.yards) * 0.1 : 0;
-  pts += (s.receiving && s.receiving.touchdowns) ? Number(s.receiving.touchdowns) * 6 : 0;
-  pts += (s.receiving && s.receiving.yards) ? Number(s.receiving.yards) * 0.1 : 0;
-  pts += (s.receiving && s.receiving.receptions) ? Number(s.receiving.receptions) * 1 : 0;
+  const grab = (group, name) => {
+    const g = (stats.teams[0] && stats.teams[0].groups || []).find(x => x.name === group);
+    if(!g) return 0;
+    const s = (g.statistics || []).find(x => x.name === name);
+    return s ? Number(s.value) || 0 : 0;
+  };
+  pts += grab("Passing", "passing touchdowns") * 4;
+  pts += grab("Passing", "yards") * 0.04;
+  pts += grab("Rushing", "rushing touchdowns") * 6;
+  pts += grab("Rushing", "yards") * 0.1;
+  pts += grab("Receiving", "receiving touchdowns") * 6;
+  pts += grab("Receiving", "yards") * 0.1;
+  pts += grab("Receiving", "receptions") * 1;
   return Math.round(pts * 10) / 10;
 }
 function liveLine(stats){
-  if(!stats || !stats.statistics) return "";
-  const s = stats.statistics;
+  if(!stats || !stats.teams) return "";
+  const grab = (group, name) => {
+    const g = (stats.teams[0] && stats.teams[0].groups || []).find(x => x.name === group);
+    if(!g) return 0;
+    const s = (g.statistics || []).find(x => x.name === name);
+    return s ? Number(s.value) || 0 : 0;
+  };
   const parts = [];
-  if(s.passing && s.passing.yards) parts.push(s.passing.yards+" pass yds");
-  if(s.passing && s.passing.touchdowns) parts.push(s.passing.touchdowns+" pass TD");
-  if(s.rushing && s.rushing.yards) parts.push(s.rushing.yards+" rush yds");
-  if(s.rushing && s.rushing.touchdowns) parts.push(s.rushing.touchdowns+" rush TD");
-  if(s.receiving && s.receiving.receptions) parts.push(s.receiving.receptions+" rec");
-  if(s.receiving && s.receiving.yards) parts.push(s.receiving.yards+" rec yds");
-  if(s.receiving && s.receiving.touchdowns) parts.push(s.receiving.touchdowns+" rec TD");
+  const py = grab("Passing", "yards"); if(py) parts.push(py+" pass yds");
+  const pt = grab("Passing", "passing touchdowns"); if(pt) parts.push(pt+" pass TD");
+  const ry = grab("Rushing", "yards"); if(ry) parts.push(ry+" rush yds");
+  const rt = grab("Rushing", "rushing touchdowns"); if(rt) parts.push(rt+" rush TD");
+  const rc = grab("Receiving", "receptions"); if(rc) parts.push(rc+" rec");
+  const rcy = grab("Receiving", "yards"); if(rcy) parts.push(rcy+" rec yds");
+  const rct = grab("Receiving", "receiving touchdowns"); if(rct) parts.push(rct+" rec TD");
   return parts.length ? parts.join(" · ") : "";
 }
 let apiIdCache = {};
@@ -381,9 +391,26 @@ function showBoxScore(id, games){
   const status = (g.game && g.game.status && g.game.status.short) || "";
   const root = document.getElementById("app");
   root.innerHTML = header('<a class="btn" href="#nfl" id="back-scores">Back to scores</a>') +
-    '<div class="page"><div class="eyebrow">BOX SCORE</div><h1>'+away+' '+as+' @ '+home+' '+hs+'</h1><p class="lede">'+status+'</p><div class="card"><p>Player stats and full box score load live during the game. They appear here once the data is available.</p></div></div>';
+    '<div class="page"><div class="eyebrow">BOX SCORE</div><h1>'+away+' '+as+' @ '+home+' '+hs+'</h1><p class="lede">'+status+'</p><div id="box-body"><div class="card">Loading player stats…</div></div></div>';
   const back = document.getElementById("back-scores");
   if(back) back.onclick = (e)=>{ e.preventDefault(); location.hash = "#nfl"; renderNflScoreboard(); };
+  // Fetch the box score
+  fetch("https://dualgrid-players.peegeeson.workers.dev/box?game="+encodeURIComponent(id), {cache:"no-store"})
+    .then(r=>r.json()).then(d=>{
+      const box = document.getElementById("box-body");
+      if(!box) return;
+      const players = (d.response||[]).slice(0,40);
+      if(!players.length){ box.innerHTML = '<div class="card">No player stats yet.</div>'; return; }
+      box.innerHTML = '<div class="card">'+players.map(p=>{
+        const name = (p.player&&p.player.name)||"Player";
+        const pts = fantasyPoints(p);
+        const line = liveLine(p);
+        return '<div class="log-item"><b>'+name+'</b>'+(pts!=null?' · '+pts+' pts':'')+(line?'<div class="sub">'+line+'</div>':'')+'</div>';
+      }).join("")+'</div>';
+    }).catch(()=>{
+      const box = document.getElementById("box-body");
+      if(box) box.innerHTML = '<div class="card">Could not load box score.</div>';
+    });
 }
 function loadNflTicker(){
   try {
