@@ -299,14 +299,14 @@ function fillLiveStats(){
     const wk = (p && p.weeks && p.weeks[week] != null) ? p.weeks[week] : null;
     el.textContent = (wk != null) ? wk : (p && p.projWeek ? p.projWeek : "—");
     const line = document.querySelector('.live-line[data-id="'+id+'"]');
-    if(line) line.textContent = (wk != null) ? "Week "+week+" points" : (p && p.projWeek ? "Proj" : "");
+    if(line) line.textContent = (wk != null) ? "Wk "+week : (p && p.projWeek ? "Proj" : "");
   });
   document.querySelectorAll(".live-line").forEach(el => {
     const id = el.getAttribute("data-id");
     if(!id || el.textContent) return;
     const p = enrich({id:Number(id)});
     const wk = (p && p.weeks && p.weeks[week] != null) ? p.weeks[week] : null;
-    el.textContent = (wk != null) ? "Week "+week+" points" : "";
+    el.textContent = (wk != null) ? "Wk "+week : "";
   });
 }
 function fetchNflGames(force){
