@@ -763,7 +763,7 @@ const hp=document.getElementById("home-pod"); if(hp){}
 const cb=document.getElementById("commish-btn"); if(cb) cb.onclick=()=>{ if(grantCommish(document.getElementById("commish-code").value)) renderHome(); }; const easy=document.getElementById("easy-unlock"); if(easy) easy.onclick=()=>{ const s=load(); s.owner=true; s.commish=s.commish||{}; s.commish[leagueCode()||"default"]=true; save(s); try{localStorage.setItem("dualgrid_owner","1");}catch(e){} alert("Unlocked as commissioner."); renderHome(); };
 return;}
 root.innerHTML=header('<a class="btn btn-lime" href="#home">Home</a><a class="btn" href="#lobby">Leagues</a><a class="btn" href="#scores">Standings</a><a class="btn" href="#scoreboard">Scoreboard</a><a class="btn" href="#bracket">Bracket</a><a class="btn" href="#talk">Talk</a><a class="btn" href="#waiver">Waiver</a><a class="btn" href="#roster">Roster</a><a class="btn" href="#history">History</a><a class="btn" href="#matchup">Matchup</a><a class="btn" href="#payout">Payouts</a><a class="btn" href="#wall">Quad wall</a>')+
-'<div class="page" style="background:#0b0b0b;color:#fff">'+
+'<div class="page" style="background:#3d3d3d;color:#fff">'+
 '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">'+
 '<div><img class="hero-mark" src="mark.png" alt="Dualgrid" style="width:48px"><img src="wordmark.png" alt="DUALGRID" style="height:32px;margin-left:8px;vertical-align:middle"></div>'+
 '<div class="eyebrow">'+((s.league&&s.league.name)||'COMMISSIONER')+' <span class="flag">🇺🇸</span></div>'+
