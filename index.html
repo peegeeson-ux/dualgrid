@@ -257,14 +257,12 @@ function fetchPlayerStats(playerId, week){
   if(!playerId) return Promise.resolve(null);
   const key = playerId + "-" + (week || currentNflWeek());
   if(playerStatsCache[key]) return Promise.resolve(playerStatsCache[key]);
-  const url = "https://v1.american-football.api-sports.io/players/statistics?season=2026&player="+playerId;
-  return fetch("https://corsproxy.io/?" + encodeURIComponent(url), {
-    headers: { "x-apisports-key": API_SPORTS_KEY }
-  }).then(r => r.json()).then(d => {
-    const stats = (d.response && d.response[0]) || null;
-    playerStatsCache[key] = stats;
-    return stats;
-  }).catch(()=>null);
+  return fetch("https://dualgrid-players.peegeeson.workers.dev/stats?player="+playerId, {cache:"no-store"})
+    .then(r => r.json()).then(d => {
+      const stats = (d.response && d.response[0]) || null;
+      playerStatsCache[key] = stats;
+      return stats;
+    }).catch(()=>null);
 }
 function fantasyPoints(stats){
   if(!stats || !stats.statistics) return null;
@@ -293,33 +291,32 @@ function liveLine(stats){
   return parts.length ? parts.join(" · ") : "";
 }
 function fillLiveStats(){
-  // Live stats need a proxy in the existing Cloudflare Worker.
-  // For now show projections so the page is usable.
   document.querySelectorAll(".live-pts").forEach(el => {
     const id = el.getAttribute("data-id");
     if(!id) return;
-    const p = (PLAYERS||[]).find(x=>String(x.id)===String(id));
-    el.textContent = (p && p.projWeek) ? p.projWeek : "—";
+    fetchPlayerStats(id).then(stats => {
+      const pts = fantasyPoints(stats);
+      el.textContent = pts != null ? pts : "—";
+      const line = document.querySelector('.live-line[data-id="'+id+'"]');
+      if(line) line.textContent = liveLine(stats);
+    });
   });
   document.querySelectorAll(".live-line").forEach(el => {
     const id = el.getAttribute("data-id");
     if(!id) return;
-    const p = (PLAYERS||[]).find(x=>String(x.id)===String(id));
-    el.textContent = (p && p.proj) ? "Proj "+p.proj : "";
+    fetchPlayerStats(id).then(stats => { el.textContent = liveLine(stats); });
   });
 }
 function fetchNflGames(force){
   if(!force && nflGamesCache && (Date.now() - nflCacheTime < 60000)) return Promise.resolve(nflGamesCache);
-  const url = "https://v1.american-football.api-sports.io/games?league=1&season=2026";
-  return fetch("https://corsproxy.io/?" + encodeURIComponent(url), {
-    headers: { "x-apisports-key": API_SPORTS_KEY }
-  }).then(r => r.json()).then(d => {
-    const games = d.response || [];
-    const week = currentNflWeek();
-    nflGamesCache = games.filter(g => g.game && String(g.game.week||"").includes(String(week)));
-    nflCacheTime = Date.now();
-    return nflGamesCache;
-  }).catch(()=>[]);
+  return fetch("https://dualgrid-players.peegeeson.workers.dev/games", {cache:"no-store"})
+    .then(r => r.json()).then(d => {
+      const games = d.response || [];
+      const week = currentNflWeek();
+      nflGamesCache = games.filter(g => g.game && String(g.game.week||"").includes(String(week)));
+      nflCacheTime = Date.now();
+      return nflGamesCache;
+    }).catch(()=>[]);
 }
 function renderNflScoreboard(){
   const root = document.getElementById("app");
