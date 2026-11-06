@@ -473,7 +473,7 @@ function enrich(p){
   if(!p || !p.id) return p;
   const full = PLAYERS.find(x => Number(x.id) === Number(p.id));
   if(!full) return p;
-  return Object.assign({}, p, { proj: full.proj || 0, projWeek: full.projWeek || 0, points: full.points, weeks: full.weeks });
+  return Object.assign({}, p, { name: full.name, pos: full.pos, proj: full.proj || 0, projWeek: full.projWeek || 0, points: full.points, weeks: full.weeks });
 }
 
 
