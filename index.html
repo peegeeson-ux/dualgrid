@@ -290,23 +290,45 @@ function liveLine(stats){
   if(s.receiving && s.receiving.touchdowns) parts.push(s.receiving.touchdowns+" rec TD");
   return parts.length ? parts.join(" · ") : "";
 }
+let apiIdCache = {};
+function findApiId(name){
+  if(!name) return Promise.resolve(null);
+  if(apiIdCache[name]) return Promise.resolve(apiIdCache[name]);
+  return fetch("https://dualgrid-players.peegeeson.workers.dev/search?q="+encodeURIComponent(name), {cache:"no-store"})
+    .then(r => r.json()).then(d => {
+      const hit = (d.response && d.response[0]) || null;
+      const id = hit && hit.id;
+      if(id) apiIdCache[name] = id;
+      return id || null;
+    }).catch(()=>null);
+}
 function fillLiveStats(){
   const week = String(currentNflWeek());
   document.querySelectorAll(".live-pts").forEach(el => {
     const id = el.getAttribute("data-id");
     if(!id) return;
     const p = enrich({id:Number(id)});
-    const wk = (p && p.weeks && p.weeks[week] != null) ? p.weeks[week] : null;
-    el.textContent = (wk != null) ? wk : (p && p.projWeek ? p.projWeek : "—");
+    if(!p || !p.name) return;
     const line = document.querySelector('.live-line[data-id="'+id+'"]');
-    if(line) line.textContent = (wk != null) ? "Wk "+week : (p && p.projWeek ? "Proj" : "");
-  });
-  document.querySelectorAll(".live-line").forEach(el => {
-    const id = el.getAttribute("data-id");
-    if(!id || el.textContent) return;
-    const p = enrich({id:Number(id)});
-    const wk = (p && p.weeks && p.weeks[week] != null) ? p.weeks[week] : null;
-    el.textContent = (wk != null) ? "Wk "+week : "";
+    findApiId(p.name).then(apiId => {
+      if(!apiId){
+        const wk = (p.weeks && p.weeks[week] != null) ? p.weeks[week] : null;
+        el.textContent = (wk != null) ? wk : (p.projWeek || "—");
+        if(line) line.textContent = (wk != null) ? "Wk "+week : (p.projWeek ? "Proj" : "");
+        return;
+      }
+      fetchPlayerStats(apiId, week).then(stats => {
+        const pts = fantasyPoints(stats);
+        if(pts != null){
+          el.textContent = pts;
+          if(line) line.textContent = liveLine(stats) || "Live";
+        } else {
+          const wk = (p.weeks && p.weeks[week] != null) ? p.weeks[week] : null;
+          el.textContent = (wk != null) ? wk : (p.projWeek || "—");
+          if(line) line.textContent = (wk != null) ? "Wk "+week : (p.projWeek ? "Proj" : "");
+        }
+      });
+    });
   });
 }
 function fetchNflGames(force){
