@@ -292,31 +292,9 @@ function liveLine(stats){
   return parts.length ? parts.join(" · ") : "";
 }
 function fillLiveStats(){
-  document.querySelectorAll(".live-pts").forEach(el => {
-    const id = el.getAttribute("data-id");
-    if(!id) return;
-    fetchPlayerStats(id).then(stats => {
-      const pts = fantasyPoints(stats);
-      el.textContent = pts != null ? pts : "—";
-      const line = document.querySelector('.live-line[data-id="'+id+'"]');
-      if(line) line.textContent = liveLine(stats);
-    });
-  });
-  document.querySelectorAll(".live-line").forEach(el => {
-    const id = el.getAttribute("data-id");
-    if(!id) return;
-    fetchPlayerStats(id).then(stats => { el.textContent = liveLine(stats); });
-  });
-  document.querySelectorAll(".live-sum").forEach(el => {
-    const parent = el.closest("details, .card");
-    if(!parent) return;
-    let sum = 0, n = 0;
-    parent.querySelectorAll(".live-pts").forEach(p => {
-      const v = parseFloat(p.textContent);
-      if(!isNaN(v)){ sum += v; n++; }
-    });
-    if(n) el.textContent = Math.round(sum*10)/10;
-  });
+  // CORS blocks direct API-Sports calls from GitHub Pages.
+  // Skip until a proxy is in place so the page stays responsive.
+  return;
 }
 function fetchNflGames(force){
   if(!force && nflGamesCache && (Date.now() - nflCacheTime < 60000)) return Promise.resolve(nflGamesCache);
