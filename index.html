@@ -159,7 +159,7 @@ function openPlayerFromEvent(ev){
   const id = el.getAttribute("data-player-id");
   const p = (PLAYERS||[]).find(x=>String(x.id)===String(id)) || {id:Number(id), name: el.textContent || "Player"};
   if(typeof showPlayerModal === "function"){
-    ev.preventDefault();
+    if(ev.cancelable) ev.preventDefault();
     showPlayerModal(p);
   }
 }
@@ -314,7 +314,6 @@ function findApiId(name){
 }
 function fillLiveStats(){
   const week = String(currentNflWeek());
-  // Handle both .live-pts (roster) and .live-line (matchup)
   const seen = new Set();
   document.querySelectorAll(".live-pts, .live-line").forEach(el => {
     const id = el.getAttribute("data-id");
@@ -329,6 +328,7 @@ function fillLiveStats(){
         const wk = (p.weeks && p.weeks[week] != null) ? p.weeks[week] : null;
         if(ptsEl) ptsEl.textContent = (wk != null) ? wk : (p.projWeek || "—");
         if(lineEl) lineEl.textContent = (wk != null) ? "Wk "+week : (p.projWeek ? "Proj" : "");
+        updateMatchupTotals();
         return;
       }
       fetchPlayerStats(apiId, week).then(stats => {
@@ -341,8 +341,35 @@ function fillLiveStats(){
           if(ptsEl) ptsEl.textContent = (wk != null) ? wk : (p.projWeek || "—");
           if(lineEl) lineEl.textContent = (wk != null) ? "Wk "+week : (p.projWeek ? "Proj" : "");
         }
+        updateMatchupTotals();
       });
     });
+  });
+}
+function updateMatchupTotals(){
+  document.querySelectorAll("details.card").forEach(card => {
+    let home = 0, away = 0, homeN = 0, awayN = 0;
+    card.querySelectorAll(".live-pts").forEach(el => {
+      const v = parseFloat(el.textContent);
+      if(isNaN(v)) return;
+      const row = el.closest("div[style*='grid-template-columns']");
+      if(!row) return;
+      const isHome = row.children[0] && row.children[0].contains(el);
+      if(isHome){ home += v; homeN++; } else { away += v; awayN++; }
+    });
+    const homeSum = card.querySelector('.live-sum[data-side="home"]');
+    const awaySum = card.querySelector('.live-sum[data-side="away"]');
+    if(homeSum && homeN) homeSum.textContent = home.toFixed(1);
+    if(awaySum && awayN) awaySum.textContent = away.toFixed(1);
+    const odds = card.querySelector(".odds-line");
+    if(odds && (homeN || awayN)){
+      const total = home + away || 1;
+      const hp = Math.round(home / total * 100);
+      const ap = 100 - hp;
+      const hn = odds.getAttribute("data-home") || "Home";
+      const an = odds.getAttribute("data-away") || "Away";
+      odds.textContent = "Odds · "+hn+" "+hp+"% · "+an+" "+ap+"%";
+    }
   });
 }
 function fetchNflGames(force){
@@ -462,11 +489,32 @@ let PLAYERS = [];
 function showPlayerModal(p){
   const e = enrich(p) || p;
   const week = String(currentNflWeek());
-  const wk = (e.weeks && e.weeks[week] != null) ? e.weeks[week] : null;
-  const weeks = e.weeks ? Object.entries(e.weeks).map(([w,pts])=>'<div>Wk '+w+': '+pts+'</div>').join("") : "<div>No weekly breakdown yet</div>";
-  const live = wk != null ? '<strong>Week '+week+': '+wk+' pts</strong>' : 'No weekly points yet';
-  const html = '<div style="position:fixed;inset:0;background:#000a;z-index:50;display:flex;align-items:center;justify-content:center" onclick="this.remove()"><div class="card" style="max-width:360px;width:90%;max-height:80vh;overflow:auto" onclick="event.stopPropagation()"><h2>'+(e.name||"Player")+'</h2><p>'+(e.pos||"")+' · '+(e.team||"")+'</p><p>Season proj: '+(e.proj||"—")+' · Week '+week+' proj: '+(e.projWeek||"—")+'</p><h3>Fantasy points</h3>'+(e.points!=null?'<p>Season total: '+e.points+'</p>':'')+weeks+'<div style="margin-top:10px;font-size:13px;color:#7cc8ff">'+live+'</div><button class="btn" style="margin-top:12px" onclick="this.closest(\'div\').parentElement.remove()">Close</button></div></div>';
-  document.body.insertAdjacentHTML("beforeend", html);
+  const name = e.name || "Player";
+  const pos = e.pos || "";
+  const team = e.team || "";
+  const modal = document.createElement("div");
+  modal.style.cssText = "position:fixed;inset:0;background:#000a;z-index:50;display:flex;align-items:center;justify-content:center";
+  modal.onclick = ()=>modal.remove();
+  const card = document.createElement("div");
+  card.className = "card";
+  card.style.cssText = "max-width:360px;width:90%;max-height:80vh;overflow:auto";
+  card.onclick = ev=>ev.stopPropagation();
+  card.innerHTML = '<h2>'+name+'</h2><p>'+pos+' · '+team+'</p><p>Season proj: '+(e.proj||"—")+' · Week '+week+' proj: '+(e.projWeek||"—")+'</p><div id="live-card-stats" style="margin-top:10px;font-size:13px;color:#7cc8ff">Loading live stats…</div><button class="btn" style="margin-top:12px" onclick="this.closest(\'div\').parentElement.remove()">Close</button>';
+  modal.appendChild(card);
+  document.body.appendChild(modal);
+  const box = card.querySelector("#live-card-stats");
+  findApiId(name).then(apiId => {
+    if(!apiId){ box.textContent = "No live stats available"; return; }
+    fetchPlayerStats(apiId, week).then(stats => {
+      const pts = fantasyPoints(stats);
+      const line = liveLine(stats);
+      if(pts != null){
+        box.innerHTML = '<strong>Week '+week+': '+pts+' pts</strong>'+(line ? '<div style="margin-top:4px">'+line+'</div>' : '');
+      } else {
+        box.textContent = "No live stats this week";
+      }
+    }).catch(()=>{ box.textContent = "Could not load live stats"; });
+  }).catch(()=>{ box.textContent = "Could not look up player"; });
 }
 
 function enrich(p){
@@ -1559,7 +1607,12 @@ games.forEach(g=>{
     const bLabel = (slots[i] && slots[i].pos === "FLEX") ? "FLEX" : (slotLabel(b) || b.pos || "");
     rows+='<div style="display:grid;grid-template-columns:1fr auto 1fr;gap:8px;align-items:center;padding:4px 0;border-bottom:1px solid #1a3a5c"><div><div class="name" data-player-id="'+(a.id||'')+'">'+a.name+'</div><div class="sub">'+aLabel+(a.projWeek?' · '+a.projWeek:'')+'</div><div class="sub live-line" data-id="'+(a.id||'')+'" style="font-size:11px;color:#7cc8ff"></div><div class="live-pts" data-id="'+(a.id||'')+'" style="font-size:12px;color:#69be28;font-weight:700">—</div></div><div class="pos '+(a.pos||"")+'" style="min-width:36px;text-align:center">'+(aLabel||"")+'</div><div style="text-align:right"><div class="name" data-player-id="'+(b.id||'')+'">'+b.name+'</div><div class="sub">'+bLabel+(b.projWeek?' · '+b.projWeek:'')+'</div><div class="sub live-line" data-id="'+(b.id||'')+'" style="font-size:11px;color:#7cc8ff"></div><div class="live-pts" data-id="'+(b.id||'')+'" style="font-size:12px;color:#69be28;font-weight:700">—</div></div></div>';
   }
-  list+='<details class="card" style="margin:10px 0;'+highlight+'"><summary style="font-weight:800;cursor:pointer;padding:4px 0">'+g.home.name+' vs '+g.away.name+(isMine?' <span style="color:#69be28">· YOU</span>':'')+'</summary><div style="margin-top:8px"><div style="display:flex;justify-content:space-between;margin-bottom:8px"><strong>'+g.home.name+'</strong><span>vs</span><strong>'+g.away.name+'</strong></div>'+rows+'<div style="margin-top:8px;font-size:13px;color:#7cc8ff"><strong>'+g.home.name+'</strong> Proj <span class="proj-sum" data-side="home">'+(homeLine.reduce((s,p)=>s+((enrich(p)||{}).projWeek||0),0).toFixed(1))+'</span> · Live <span class="live-sum" data-side="home">—</span><br><strong>'+g.away.name+'</strong> Proj <span class="proj-sum" data-side="away">'+(awayLine.reduce((s,p)=>s+((enrich(p)||{}).projWeek||0),0).toFixed(1))+'</span> · Live <span class="live-sum" data-side="away">—</span><div style="margin-top:6px;font-size:12px;opacity:.85">Odds · '+g.home.name+' '+(function(){const hp=homeLine.reduce((s,p)=>s+((enrich(p)||{}).projWeek||0),0); const ap=awayLine.reduce((s,p)=>s+((enrich(p)||{}).projWeek||0),0); const total=hp+ap||1; return Math.round(hp/total*100)+'%';})()+' · '+g.away.name+' '+(function(){const hp=homeLine.reduce((s,p)=>s+((enrich(p)||{}).projWeek||0),0); const ap=awayLine.reduce((s,p)=>s+((enrich(p)||{}).projWeek||0),0); const total=hp+ap||1; return Math.round(ap/total*100)+'%';})()+'</div></div></div></details>';
+  const homeProj = homeLine.reduce((s,p)=>s+((enrich(p)||{}).projWeek||0),0);
+  const awayProj = awayLine.reduce((s,p)=>s+((enrich(p)||{}).projWeek||0),0);
+  const totalProj = homeProj + awayProj || 1;
+  const homeOdds = Math.round(homeProj / totalProj * 100);
+  const awayOdds = 100 - homeOdds;
+  list+='<details class="card" style="margin:10px 0;'+highlight+'"><summary style="font-weight:800;cursor:pointer;padding:4px 0">'+g.home.name+' vs '+g.away.name+(isMine?' <span style="color:#69be28">· YOU</span>':'')+'</summary><div style="margin-top:8px"><div style="display:flex;justify-content:space-between;margin-bottom:8px"><strong>'+g.home.name+'</strong><span>vs</span><strong>'+g.away.name+'</strong></div>'+rows+'<div style="margin-top:8px;font-size:13px;color:#7cc8ff"><strong>'+g.home.name+'</strong> Proj <span class="proj-sum" data-side="home">'+homeProj.toFixed(1)+'</span> · Live <span class="live-sum" data-side="home">—</span><br><strong>'+g.away.name+'</strong> Proj <span class="proj-sum" data-side="away">'+awayProj.toFixed(1)+'</span> · Live <span class="live-sum" data-side="away">—</span><div class="odds-line" style="margin-top:6px;font-size:12px;opacity:.85" data-home="'+g.home.name+'" data-away="'+g.away.name+'">Odds · '+g.home.name+' '+homeOdds+'% · '+g.away.name+' '+awayOdds+'%</div></div></div></details>';
 });
 document.getElementById("app").innerHTML=header('<a class="btn" href="#home">Home</a><a class="btn" href="#scoreboard">Scoreboard</a>')+
 '<div class="page"><div class="eyebrow">WEEK '+week+' MATCHUPS</div><h1>All games</h1><p class="lede">Your team is highlighted. Tap a game to see the lineup.</p>'+list+'</div>';
@@ -1793,7 +1846,7 @@ function openPlayerFromEvent(ev){
   const id = el.getAttribute("data-player-id");
   const p = (PLAYERS||[]).find(x=>String(x.id)===String(id)) || {id:Number(id), name: el.textContent || "Player"};
   if(typeof showPlayerModal === "function"){
-    ev.preventDefault();
+    if(ev.cancelable) ev.preventDefault();
     showPlayerModal(p);
   }
 }
