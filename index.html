@@ -315,7 +315,9 @@ function findApiId(name){
 function fillLiveStats(){
   const week = String(currentNflWeek());
   const seen = new Set();
-  document.querySelectorAll(".live-pts, .live-line").forEach(el => {
+  const els = document.querySelectorAll(".live-pts, .live-line");
+  console.log("fillLiveStats", els.length, "elements");
+  els.forEach(el => {
     const id = el.getAttribute("data-id");
     if(!id || seen.has(id)) return;
     seen.add(id);
