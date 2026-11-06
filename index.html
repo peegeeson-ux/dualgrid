@@ -291,20 +291,22 @@ function liveLine(stats){
   return parts.length ? parts.join(" · ") : "";
 }
 function fillLiveStats(){
+  const week = String(currentNflWeek());
   document.querySelectorAll(".live-pts").forEach(el => {
     const id = el.getAttribute("data-id");
     if(!id) return;
-    fetchPlayerStats(id).then(stats => {
-      const pts = fantasyPoints(stats);
-      el.textContent = pts != null ? pts : "—";
-      const line = document.querySelector('.live-line[data-id="'+id+'"]');
-      if(line) line.textContent = liveLine(stats);
-    });
+    const p = enrich({id:Number(id)});
+    const wk = (p && p.weeks && p.weeks[week] != null) ? p.weeks[week] : null;
+    el.textContent = (wk != null) ? wk : (p && p.projWeek ? p.projWeek : "—");
+    const line = document.querySelector('.live-line[data-id="'+id+'"]');
+    if(line) line.textContent = (wk != null) ? "Week "+week+" points" : (p && p.projWeek ? "Proj" : "");
   });
   document.querySelectorAll(".live-line").forEach(el => {
     const id = el.getAttribute("data-id");
-    if(!id) return;
-    fetchPlayerStats(id).then(stats => { el.textContent = liveLine(stats); });
+    if(!id || el.textContent) return;
+    const p = enrich({id:Number(id)});
+    const wk = (p && p.weeks && p.weeks[week] != null) ? p.weeks[week] : null;
+    el.textContent = (wk != null) ? "Week "+week+" points" : "";
   });
 }
 function fetchNflGames(force){
@@ -398,22 +400,12 @@ let PLAYERS = [];
 
 function showPlayerModal(p){
   const e = enrich(p) || p;
+  const week = String(currentNflWeek());
+  const wk = (e.weeks && e.weeks[week] != null) ? e.weeks[week] : null;
   const weeks = e.weeks ? Object.entries(e.weeks).map(([w,pts])=>'<div>Wk '+w+': '+pts+'</div>').join("") : "<div>No weekly breakdown yet</div>";
-  const html = '<div style="position:fixed;inset:0;background:#000a;z-index:50;display:flex;align-items:center;justify-content:center" onclick="this.remove()"><div class="card" style="max-width:360px;width:90%;max-height:80vh;overflow:auto" onclick="event.stopPropagation()"><h2>'+(e.name||"Player")+'</h2><p>'+(e.pos||"")+' · '+(e.team||"")+'</p><p>Season proj: '+(e.proj||"—")+' · Week '+currentNflWeek()+' proj: '+(e.projWeek||"—")+'</p><h3>Fantasy points</h3>'+(e.points!=null?'<p>Season total: '+e.points+'</p>':'')+weeks+'<div id="live-stats" style="margin-top:10px;font-size:13px;color:#7cc8ff">Loading live stats…</div><button class="btn" style="margin-top:12px" onclick="this.closest(\'div\').parentElement.remove()">Close</button></div></div>';
+  const live = wk != null ? '<strong>Week '+week+': '+wk+' pts</strong>' : 'No weekly points yet';
+  const html = '<div style="position:fixed;inset:0;background:#000a;z-index:50;display:flex;align-items:center;justify-content:center" onclick="this.remove()"><div class="card" style="max-width:360px;width:90%;max-height:80vh;overflow:auto" onclick="event.stopPropagation()"><h2>'+(e.name||"Player")+'</h2><p>'+(e.pos||"")+' · '+(e.team||"")+'</p><p>Season proj: '+(e.proj||"—")+' · Week '+week+' proj: '+(e.projWeek||"—")+'</p><h3>Fantasy points</h3>'+(e.points!=null?'<p>Season total: '+e.points+'</p>':'')+weeks+'<div style="margin-top:10px;font-size:13px;color:#7cc8ff">'+live+'</div><button class="btn" style="margin-top:12px" onclick="this.closest(\'div\').parentElement.remove()">Close</button></div></div>';
   document.body.insertAdjacentHTML("beforeend", html);
-  fetchPlayerStats(e.id).then(stats => {
-    const box = document.getElementById("live-stats");
-    if(!box) return;
-    const pts = fantasyPoints(stats);
-    box.innerHTML = pts != null ? '<strong>Live this week: '+pts+' pts</strong>' : 'No live stats yet';
-  }).catch(()=>{
-    const box = document.getElementById("live-stats");
-    if(box) box.innerHTML = 'Stats unavailable';
-  });
-  setTimeout(()=>{
-    const box = document.getElementById("live-stats");
-    if(box && box.innerHTML.includes("Loading")) box.innerHTML = "Stats unavailable";
-  }, 4000);
 }
 
 function enrich(p){
