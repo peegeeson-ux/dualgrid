@@ -1667,6 +1667,7 @@ document.addEventListener("click",e=>{const a=e.target.closest&&e.target.closest
 document.addEventListener("click",e=>{if(e.target&&e.target.id==="menu-btn"){const n=document.querySelector(".nav-links"); if(n)n.classList.toggle("open");}});
 document.addEventListener("click",e=>{if(e.target&&e.target.id==="logout-btn"){e.preventDefault(); const st=load(); st.email=""; delete st.email; save(st); localStorage.removeItem("dualgrid-email"); location.href=location.pathname+"?out="+Date.now();}});
 document.addEventListener("click",e=>{const btn=e.target.closest&&e.target.closest("#logout-btn"); if(!btn)return; e.preventDefault(); const st=load(); delete st.email; st.email=""; save(st); location.replace(location.pathname+"#lobby");});
+window.addEventListener("hashchange", route);
 // live pick clock tick
 if(!window._clockTick){
   window._clockTick = setInterval(()=>{
