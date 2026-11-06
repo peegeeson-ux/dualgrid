@@ -313,7 +313,10 @@ function fetchNflGames(force){
     .then(r => r.json()).then(d => {
       const games = d.response || [];
       const week = currentNflWeek();
-      nflGamesCache = games.filter(g => g.game && String(g.game.week||"").includes(String(week)));
+      const label = "Week " + week;
+      let filtered = games.filter(g => g.game && String(g.game.week||"") === label);
+      if(!filtered.length) filtered = games.filter(g => g.game && String(g.game.week||"").startsWith("Week "));
+      nflGamesCache = filtered.slice(0, 16);
       nflCacheTime = Date.now();
       return nflGamesCache;
     }).catch(()=>[]);
@@ -371,7 +374,7 @@ function renderNflTicker(games){
   try {
     const ticker = document.getElementById("nfl-ticker");
     if(!ticker) return;
-    if(!games || !games.length){ ticker.innerHTML = '<span>NFL scores loading…</span>'; return; }
+    if(!games || !games.length){ ticker.innerHTML = '<span>NFL scores unavailable</span>'; return; }
     const text = games.map(g => {
       const home = (g.teams && g.teams.home && g.teams.home.name) || "Home";
       const away = (g.teams && g.teams.away && g.teams.away.name) || "Away";
