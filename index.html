@@ -257,7 +257,8 @@ function fetchPlayerStats(playerId, week){
   if(!playerId) return Promise.resolve(null);
   const key = playerId + "-" + (week || currentNflWeek());
   if(playerStatsCache[key]) return Promise.resolve(playerStatsCache[key]);
-  return fetch("https://v1.american-football.api-sports.io/players/statistics?season=2026&player="+playerId, {
+  const url = "https://v1.american-football.api-sports.io/players/statistics?season=2026&player="+playerId;
+  return fetch("https://corsproxy.io/?" + encodeURIComponent(url), {
     headers: { "x-apisports-key": API_SPORTS_KEY }
   }).then(r => r.json()).then(d => {
     const stats = (d.response && d.response[0]) || null;
@@ -292,13 +293,36 @@ function liveLine(stats){
   return parts.length ? parts.join(" · ") : "";
 }
 function fillLiveStats(){
-  // CORS blocks direct API-Sports calls from GitHub Pages.
-  // Skip until a proxy is in place so the page stays responsive.
-  return;
+  document.querySelectorAll(".live-pts").forEach(el => {
+    const id = el.getAttribute("data-id");
+    if(!id) return;
+    fetchPlayerStats(id).then(stats => {
+      const pts = fantasyPoints(stats);
+      el.textContent = pts != null ? pts : "—";
+      const line = document.querySelector('.live-line[data-id="'+id+'"]');
+      if(line) line.textContent = liveLine(stats);
+    });
+  });
+  document.querySelectorAll(".live-line").forEach(el => {
+    const id = el.getAttribute("data-id");
+    if(!id) return;
+    fetchPlayerStats(id).then(stats => { el.textContent = liveLine(stats); });
+  });
+  document.querySelectorAll(".live-sum").forEach(el => {
+    const parent = el.closest("details, .card");
+    if(!parent) return;
+    let sum = 0, n = 0;
+    parent.querySelectorAll(".live-pts").forEach(p => {
+      const v = parseFloat(p.textContent);
+      if(!isNaN(v)){ sum += v; n++; }
+    });
+    if(n) el.textContent = Math.round(sum*10)/10;
+  });
 }
 function fetchNflGames(force){
   if(!force && nflGamesCache && (Date.now() - nflCacheTime < 60000)) return Promise.resolve(nflGamesCache);
-  return fetch("https://v1.american-football.api-sports.io/games?league=1&season=2026", {
+  const url = "https://v1.american-football.api-sports.io/games?league=1&season=2026";
+  return fetch("https://corsproxy.io/?" + encodeURIComponent(url), {
     headers: { "x-apisports-key": API_SPORTS_KEY }
   }).then(r => r.json()).then(d => {
     const games = d.response || [];
@@ -1225,6 +1249,13 @@ function renderWaiver(){
   const closed=!!(deadline && Date.now()>new Date(deadline).getTime());
   const claims=rec.claims||[];
   const taken=new Set(claims.map(c=>c.id));
+  // also hide anyone already on a roster
+  ["east","west","north","south"].forEach(pod=>{
+    const d=ensureDraft(s,pod);
+    (d.teams||[]).forEach(t=>{
+      (t.picks||[]).forEach(p=>{ if(p&&p.id) taken.add(Number(p.id)); });
+    });
+  });
   const free=PLAYERS.filter(p=>!taken.has(p.id));
   const q=rec.waiverQ||"";
   const shown=free.filter(p=>{
