@@ -293,30 +293,19 @@ function liveLine(stats){
   return parts.length ? parts.join(" · ") : "";
 }
 function fillLiveStats(){
+  // Live stats need a proxy in the existing Cloudflare Worker.
+  // For now show projections so the page is usable.
   document.querySelectorAll(".live-pts").forEach(el => {
     const id = el.getAttribute("data-id");
     if(!id) return;
-    fetchPlayerStats(id).then(stats => {
-      const pts = fantasyPoints(stats);
-      el.textContent = pts != null ? pts : "—";
-      const line = document.querySelector('.live-line[data-id="'+id+'"]');
-      if(line) line.textContent = liveLine(stats);
-    });
+    const p = (PLAYERS||[]).find(x=>String(x.id)===String(id));
+    el.textContent = (p && p.projWeek) ? p.projWeek : "—";
   });
   document.querySelectorAll(".live-line").forEach(el => {
     const id = el.getAttribute("data-id");
     if(!id) return;
-    fetchPlayerStats(id).then(stats => { el.textContent = liveLine(stats); });
-  });
-  document.querySelectorAll(".live-sum").forEach(el => {
-    const parent = el.closest("details, .card");
-    if(!parent) return;
-    let sum = 0, n = 0;
-    parent.querySelectorAll(".live-pts").forEach(p => {
-      const v = parseFloat(p.textContent);
-      if(!isNaN(v)){ sum += v; n++; }
-    });
-    if(n) el.textContent = Math.round(sum*10)/10;
+    const p = (PLAYERS||[]).find(x=>String(x.id)===String(id));
+    el.textContent = (p && p.proj) ? "Proj "+p.proj : "";
   });
 }
 function fetchNflGames(force){
@@ -1247,14 +1236,16 @@ function renderWaiver(){
   const rec=s.records;
   const deadline=rec.waiverDeadline||"";
   const closed=!!(deadline && Date.now()>new Date(deadline).getTime());
-  const claims=rec.claims||[];
+  const seat = currentSeat();
+  const myPod = seat && seat.pod;
+  const pod = (s.owner && window.waiverPod) || myPod || "east";
+  window.waiverPod = pod;
+  const claims=(rec.claims||[]).filter(c=>c.pod===pod);
   const taken=new Set(claims.map(c=>c.id));
-  // also hide anyone already on a roster
-  ["east","west","north","south"].forEach(pod=>{
-    const d=ensureDraft(s,pod);
-    (d.teams||[]).forEach(t=>{
-      (t.picks||[]).forEach(p=>{ if(p&&p.id) taken.add(Number(p.id)); });
-    });
+  // only hide players rostered in THIS division
+  const d=ensureDraft(s,pod);
+  (d.teams||[]).forEach(t=>{
+    (t.picks||[]).forEach(p=>{ if(p&&p.id) taken.add(Number(p.id)); });
   });
   const free=PLAYERS.filter(p=>!taken.has(p.id));
   const q=rec.waiverQ||"";
@@ -1264,11 +1255,12 @@ function renderWaiver(){
 const posMatch = !window.waiverPos || p.pos===window.waiverPos || (window.waiverPos==="DEF" && (p.pos==="DEF"||p.pos==="DST")) || (window.waiverPos==="IDP" && isIdp && ((p.rank && p.rank < 9999) || (p.proj && p.proj > 0)));
   return qMatch && posMatch;
 }).slice(0,40);
-  document.getElementById("app").innerHTML=header('<a class="btn" href="#home">Home</a>')+'<div class="page"><div class="eyebrow">'+(closed?"FREE AGENTS":"WAIVER")+'</div><h1>'+(closed?"Waiver cleared. Free agent pickups.":"Claims close at the deadline.")+'</h1>'+(s.owner?'<div class="card"><label>Deadline</label><input id="waiver-deadline" class="search" type="datetime-local" value="'+deadline+'"><button class="btn btn-lime" type="button" onclick="saveWaiverDeadline()">Save deadline</button><p id="waiver-note"></p></div>':'')+'<div class="card"><p>'+(deadline?(closed?"Players have cleared waivers.":"Open until "+deadline):"No deadline yet.")+'</p><input id="waiver-q" class="search" placeholder="Find a player" value="'+q+'" oninput="filterWaiver(this.value)"><div style="display:flex;gap:6px;flex-wrap:wrap;margin:8px 0">'+["ALL","QB","RB","WR","TE","K","DEF"].concat((Number((window.rosterSettings||{}).defPlayers)>0)?["IDP"]:[]).map(pos=>'<button class="btn" data-wpos="'+pos+'" style="padding:4px 10px;font-size:12px'+(window.waiverPos===pos||(pos==="ALL"&&!window.waiverPos)?" ;background:var(--lime);color:#111":"")+'" onclick="window.waiverPos=\''+(pos==="ALL"?"":pos)+'\';renderWaiver()">'+pos+'</button>').join("")+'</div><table><tr><th>Player</th><th></th></tr>'+shown.map(pl=>'<tr><td>'+pl.name+' · '+pl.pos+'</td><td><button class="btn" type="button" onclick="addWaiver('+pl.id+')">'+(closed?"Pick up":"Add")+'</button></td></tr>').join("")+'</table></div><div class="card"><h2>'+(closed?"Pickups":"Claims")+'</h2>'+(claims.map(c=>'<div class="log-item">'+c.player+'</div>').join("")||'<p>None yet.</p>')+'</div></div>';
+  const podBtns = s.owner ? ["east","west","north","south"].map(p=>'<button class="btn" style="padding:4px 10px'+(pod===p?";background:var(--lime);color:#111":"")+'" onclick="window.waiverPod=\''+p+'\';renderWaiver()">'+podName(p)+'</button>').join("") : "";
+  document.getElementById("app").innerHTML=header('<a class="btn" href="#home">Home</a>')+'<div class="page"><div class="eyebrow">'+(closed?"FREE AGENTS":"WAIVER")+' · '+podName(pod)+'</div><h1>'+(closed?"Waiver cleared. Free agent pickups.":"Claims close at the deadline.")+'</h1><div style="display:flex;gap:6px;flex-wrap:wrap;margin:8px 0">'+podBtns+'</div>'+(s.owner?'<div class="card"><label>Deadline</label><input id="waiver-deadline" class="search" type="datetime-local" value="'+deadline+'"><button class="btn btn-lime" type="button" onclick="saveWaiverDeadline()">Save deadline</button><p id="waiver-note"></p></div>':'')+'<div class="card"><p>'+(deadline?(closed?"Players have cleared waivers.":"Open until "+deadline):"No deadline yet.")+'</p><input id="waiver-q" class="search" placeholder="Find a player" value="'+q+'" oninput="filterWaiver(this.value)"><div style="display:flex;gap:6px;flex-wrap:wrap;margin:8px 0">'+["ALL","QB","RB","WR","TE","K","DEF"].concat((Number((window.rosterSettings||{}).defPlayers)>0)?["IDP"]:[]).map(pos=>'<button class="btn" data-wpos="'+pos+'" style="padding:4px 10px;font-size:12px'+(window.waiverPos===pos||(pos==="ALL"&&!window.waiverPos)?" ;background:var(--lime);color:#111":"")+'" onclick="window.waiverPos=\''+(pos==="ALL"?"":pos)+'\';renderWaiver()">'+pos+'</button>').join("")+'</div><table><tr><th>Player</th><th>Proj</th><th></th></tr>'+shown.map(pl=>'<tr><td>'+pl.name+' · '+pl.pos+'</td><td>'+(pl.projWeek||"—")+'</td><td><button class="btn" type="button" onclick="addWaiver('+pl.id+')">'+(closed?"Pick up":"Add")+'</button></td></tr>').join("")+'</table></div><div class="card"><h2>'+(closed?"Pickups":"Claims")+' · '+podName(pod)+'</h2>'+(claims.map(c=>'<div class="log-item">'+c.player+'</div>').join("")||'<p>None yet.</p>')+'</div></div>';
 }
 function saveWaiverDeadline(){const s=waiverState(); if(!s.owner){alert("Unlock first."); return;} s.records.waiverDeadline=document.getElementById("waiver-deadline").value; saveWaiver(s); renderWaiver();}
 function filterWaiver(v){const s=waiverState(); s.records.waiverQ=v; save(s); renderWaiver();}
-function addWaiver(id){const s=waiverState(); const rec=s.records; const closed=!!(rec.waiverDeadline && Date.now()>new Date(rec.waiverDeadline).getTime()); const player=PLAYERS.find(p=>p.id===Number(id)); if(!player){alert("Player not found."); return;} rec.claims=rec.claims||[]; if(rec.claims.some(c=>c.id===player.id))return; rec.claims.unshift({id:player.id, player:player.name, kind:closed?"fa":"waiver", at:Date.now()}); saveWaiver(s); renderWaiver();}
+function addWaiver(id){const s=waiverState(); const rec=s.records; const closed=!!(rec.waiverDeadline && Date.now()>new Date(rec.waiverDeadline).getTime()); const player=PLAYERS.find(p=>p.id===Number(id)); if(!player){alert("Player not found."); return;} const pod=window.waiverPod||"east"; rec.claims=rec.claims||[]; if(rec.claims.some(c=>c.id===player.id&&c.pod===pod))return; rec.claims.unshift({id:player.id, player:player.name, kind:closed?"fa":"waiver", at:Date.now(), pod:pod}); saveWaiver(s); renderWaiver();}
 
 
 
