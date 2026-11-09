@@ -277,7 +277,7 @@ function fetchPlayerStats(playerId, week){
     }).catch(()=>null);
 }
 function fantasyPoints(stats){
-  if(!stats || !stats.teams) return null;
+  if(!stats || !stats.teams || !stats.teams.length) return null;
   let pts = 0;
   const grab = (group, name) => {
     const g = (stats.teams[0] && stats.teams[0].groups || []).find(x => x.name === group);
@@ -355,7 +355,7 @@ function fillLiveStats(){
       }
       fetchPlayerStats(apiId, week).then(stats => {
         const pts = fantasyPoints(stats);
-        if(pts != null){
+        if(pts != null && pts > 0){
           if(ptsEl) ptsEl.textContent = pts;
           if(lineEl) lineEl.textContent = liveLine(stats) || "Live";
         } else {
