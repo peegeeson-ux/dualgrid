@@ -337,11 +337,12 @@ function fillLiveStats(){
     if(!p || !p.name || p.name === "—") return;
     const ptsEl = document.querySelector('.live-pts[data-id="'+id+'"]');
     const lineEl = document.querySelector('.live-line[data-id="'+id+'"]');
-    // immediate fallback so scores appear even if API is down
-    const wk = (p.weeks && p.weeks[week] != null) ? p.weeks[week] : null;
-    const fallback = (wk != null) ? wk : (p.projWeek || "—");
+    // immediate fallback — prefer real week points, then projection, never force 0
+    const wk = (p.weeks && p.weeks[week] != null && p.weeks[week] !== 0) ? p.weeks[week] : null;
+    const proj = (p.projWeek && p.projWeek !== 0) ? p.projWeek : null;
+    const fallback = (wk != null) ? wk : (proj != null ? proj : "—");
     if(ptsEl) ptsEl.textContent = fallback;
-    if(lineEl) lineEl.textContent = (wk != null) ? "Wk "+week : (p.projWeek ? "Proj" : "");
+    if(lineEl) lineEl.textContent = (wk != null) ? "Wk "+week : (proj != null ? "Proj" : "");
     updateMatchupTotals();
     findApiId(p.name).then(apiId => {
       if(!apiId){
@@ -766,7 +767,7 @@ root.innerHTML=header('<a class="btn" href="#lobby">League</a><a class="btn" hre
 '<details class="card"><summary>League</summary><div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px"><a class="btn" href="#scores">Standings</a><a class="btn" href="#scoreboard">Scoreboard</a><a class="btn" href="#bracket">Bracket</a><a class="btn" href="#talk">Talk</a><a class="btn" href="#waiver">Waiver</a><a class="btn" href="#roster">Roster</a><a class="btn" href="#history">History</a><a class="btn" href="#matchup">Matchup</a><a class="btn" href="#payout">Payouts</a></div>'+( (Array.isArray(rivals)?rivals:Object.values(rivals||{})).length ? '<h2 style="margin:12px 0 6px">Rival Week</h2>'+(Array.isArray(rivals)?rivals:Object.values(rivals||{})).map(r=>'<div class="team-row"><strong>'+r.a+'</strong><span>vs</span><strong>'+r.b+'</strong></div>').join('') : '' )+'</details>'+
 '<details class="card"><summary>Commissioner</summary><div class="join-row"><input id="commish-code" placeholder="Commissioner code"/><button class="btn" id="commish-btn">Unlock</button></div></details>'+
 '</div></div>';
-document.getElementById("join-btn").onclick=()=>{const raw=(document.getElementById("join-code").value||"").toUpperCase().trim();const hit=Object.keys(CODES).find(k=>CODES[k]===raw||k.toUpperCase()===raw);if(hit)location.hash="#draft/"+hit;else alert("Unknown code. Try EAST-7K2");};
+const joinBtn=document.getElementById("join-btn"); if(joinBtn) joinBtn.onclick=()=>{const raw=(document.getElementById("join-code").value||"").toUpperCase().trim();const hit=Object.keys(CODES).find(k=>CODES[k]===raw||k.toUpperCase()===raw);if(hit)location.hash="#draft/"+hit;else alert("Unknown code. Try EAST-7K2");};
 const fillTeams=()=>{const podEl=document.getElementById("home-pod"); if(!podEl)return; const pod=podEl.value; const d=ensureDraft(load(),pod); document.getElementById("home-team").innerHTML=d.teams.map(team=>'<option value="'+team.id+'">'+team.name+(team.ownerName?" · "+team.ownerName:"")+'</option>').join("");};
 const podSel=document.getElementById("home-pod"); if(podSel){podSel.onchange=fillTeams; fillTeams();}
 const link=document.getElementById("link-seat"); if(link) link.onclick=()=>linkByName(document.getElementById("link-name").value);
@@ -977,7 +978,7 @@ const cleanBtn=document.getElementById("clean-dupes"); if(cleanBtn) cleanBtn.onc
 root.querySelectorAll(".pick-btn").forEach(btn=>btn.onclick=()=>{makePick(load(),pod,Number(btn.dataset.id));paint();});
 const actor=document.getElementById("actor");if(actor)actor.onchange=()=>{const st=load();st.actingAs[pod]=Number(actor.value);save(st);paint();};
 const bidBtn=document.getElementById("bid");if(bidBtn)bidBtn.onclick=()=>{bid(load(),pod,acting);paint();};
-document.getElementById("reset").onclick=()=>{ if(!unlocked(load())){ alert("Commissioner code required to reset."); location.hash="#home"; return;} if(confirm("Reset this pod for everyone?")){resetPod(load(),pod);paint();}};
+const resetBtn=document.getElementById("reset"); if(resetBtn) resetBtn.onclick=()=>{ if(!unlocked(load())){ alert("Commissioner code required to reset."); location.hash="#home"; return;} if(confirm("Reset this pod for everyone?")){resetPod(load(),pod);paint();}};
 const fc=document.getElementById("force-clear"); if(fc){ fc.onclick=()=>{ if(!unlocked(load())){ alert("Commissioner only."); return;} if(confirm("Force clear ALL divisions?")){ const st=load(); ["east","west","north","south"].forEach(p=>{ const d=ensureDraft(st,p); d.teams.forEach(t=>{ t.picks=[]; t.lineup={starters:[],bench:[],ir:[]}; }); d.pickIndex=0; d.log=[]; d.started=false; try{ dataRef("drafts/"+p).set(d); }catch(e){} }); save(st); paint(); alert("All divisions cleared."); }}; }
 
 const claim=document.getElementById("claim"); if(claim) claim.onclick=()=>{ const st=load(); const id=Number((document.getElementById("actor")||{}).value||0); claimSeat(st,pod,id,(document.getElementById("seat-name")||{}).value||""); paint(); };
