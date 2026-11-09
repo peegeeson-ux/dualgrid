@@ -278,12 +278,20 @@ function fetchPlayerStats(playerId, week){
 }
 function fantasyPoints(stats){
   if(!stats || !stats.teams || !stats.teams.length) return null;
+  const s = stats.teams[0] && stats.teams[0].statistics && stats.teams[0].statistics[0];
+  if(s && s.fantasy && s.fantasy.points){
+    const fp = s.fantasy.points;
+    const val = (typeof fp === "object") ? (fp.PPR || fp.halfPPR || fp.standard) : fp;
+    const n = Number(val);
+    if(!isNaN(n) && n > 0) return Math.round(n * 10) / 10;
+  }
+  // legacy group format
   let pts = 0;
   const grab = (group, name) => {
     const g = (stats.teams[0] && stats.teams[0].groups || []).find(x => x.name === group);
     if(!g) return 0;
-    const s = (g.statistics || []).find(x => x.name === name);
-    return s ? Number(s.value) || 0 : 0;
+    const st = (g.statistics || []).find(x => x.name === name);
+    return st ? Number(st.value) || 0 : 0;
   };
   pts += grab("Passing", "passing touchdowns") * 4;
   pts += grab("Passing", "yards") * 0.04;
@@ -292,7 +300,7 @@ function fantasyPoints(stats){
   pts += grab("Receiving", "receiving touchdowns") * 6;
   pts += grab("Receiving", "yards") * 0.1;
   pts += grab("Receiving", "receptions") * 1;
-  return Math.round(pts * 10) / 10;
+  return pts > 0 ? Math.round(pts * 10) / 10 : null;
 }
 function liveLine(stats){
   if(!stats || !stats.teams) return "";
