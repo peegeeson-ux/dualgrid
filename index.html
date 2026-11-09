@@ -337,9 +337,9 @@ function fillLiveStats(){
     if(!p || !p.name || p.name === "—") return;
     const ptsEl = document.querySelector('.live-pts[data-id="'+id+'"]');
     const lineEl = document.querySelector('.live-line[data-id="'+id+'"]');
-    // immediate fallback — prefer real week points, then projection, never force 0
-    const wk = (p.weeks && p.weeks[week] != null && p.weeks[week] !== 0) ? p.weeks[week] : null;
-    const proj = (p.projWeek && p.projWeek !== 0) ? p.projWeek : null;
+    // immediate fallback — always show projection if live is missing
+    const wk = (p.weeks && p.weeks[week] != null && Number(p.weeks[week]) > 0) ? Number(p.weeks[week]) : null;
+    const proj = (p.projWeek && Number(p.projWeek) > 0) ? Number(p.projWeek) : null;
     const fallback = (wk != null) ? wk : (proj != null ? proj : "—");
     if(ptsEl) ptsEl.textContent = fallback;
     if(lineEl) lineEl.textContent = (wk != null) ? "Wk "+week : (proj != null ? "Proj" : "");
@@ -423,8 +423,8 @@ function renderNflScoreboard(){
       const away = (g.teams && g.teams.away && g.teams.away.name) || "Away";
       const hsRaw = (g.scores && g.scores.home && g.scores.home.total);
       const asRaw = (g.scores && g.scores.away && g.scores.away.total);
-      const hs = (hsRaw != null && hsRaw !== "" && hsRaw !== 0) ? hsRaw : "—";
-      const as = (asRaw != null && asRaw !== "" && asRaw !== 0) ? asRaw : "—";
+      const hs = (hsRaw != null && hsRaw !== "" && String(hsRaw) !== "0") ? hsRaw : "—";
+      const as = (asRaw != null && asRaw !== "" && String(asRaw) !== "0") ? asRaw : "—";
       const status = (g.game && g.game.status && g.game.status.short) || "";
       const time = (g.game && g.game.date && g.game.date.time) || "";
       const id = (g.game && g.game.id) || "";
@@ -442,8 +442,8 @@ function showBoxScore(id, games){
   const away = (g.teams && g.teams.away && g.teams.away.name) || "Away";
   const hsRaw = (g.scores && g.scores.home && g.scores.home.total);
   const asRaw = (g.scores && g.scores.away && g.scores.away.total);
-  const hs = (hsRaw != null && hsRaw !== "" && hsRaw !== 0) ? hsRaw : "—";
-  const as = (asRaw != null && asRaw !== "" && asRaw !== 0) ? asRaw : "—";
+  const hs = (hsRaw != null && hsRaw !== "" && String(hsRaw) !== "0") ? hsRaw : "—";
+  const as = (asRaw != null && asRaw !== "" && String(asRaw) !== "0") ? asRaw : "—";
   const status = (g.game && g.game.status && g.game.status.short) || "";
   const root = document.getElementById("app");
   root.innerHTML = header('<a class="btn" href="#nfl" id="back-scores">Back to scores</a>') +
