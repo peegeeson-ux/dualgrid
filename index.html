@@ -337,13 +337,14 @@ function fillLiveStats(){
     if(!p || !p.name || p.name === "—") return;
     const ptsEl = document.querySelector('.live-pts[data-id="'+id+'"]');
     const lineEl = document.querySelector('.live-line[data-id="'+id+'"]');
-    // immediate fallback — always show projection if live is missing
-    const wk = (p.weeks && p.weeks[week] != null && Number(p.weeks[week]) > 0) ? Number(p.weeks[week]) : null;
+    // Always paint the projection right away so the page is never blank
     const proj = (p.projWeek && Number(p.projWeek) > 0) ? Number(p.projWeek) : null;
-    const fallback = (wk != null) ? wk : (proj != null ? proj : "—");
-    if(ptsEl) ptsEl.textContent = fallback;
+    const wk = (p.weeks && p.weeks[week] != null && Number(p.weeks[week]) > 0) ? Number(p.weeks[week]) : null;
+    const show = (wk != null) ? wk : (proj != null ? proj : "—");
+    if(ptsEl) ptsEl.textContent = show;
     if(lineEl) lineEl.textContent = (wk != null) ? "Wk "+week : (proj != null ? "Proj" : "");
     updateMatchupTotals();
+    // Live stats are optional — only replace if real data arrives
     findApiId(p.name).then(apiId => {
       if(!apiId){
         const wk = (p.weeks && p.weeks[week] != null) ? p.weeks[week] : null;
