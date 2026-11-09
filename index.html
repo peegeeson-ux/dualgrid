@@ -364,13 +364,16 @@ function fillLiveStats(){
     if(!p || !p.name || p.name === "—") return;
     const ptsEl = document.querySelector('.live-pts[data-id="'+id+'"]');
     const lineEl = document.querySelector('.live-line[data-id="'+id+'"]');
-    // Always paint the projection right away so the page is never blank
-    const proj = (p.projWeek && Number(p.projWeek) > 0) ? Number(p.projWeek) : null;
-    const wk = (p.weeks && p.weeks[week] != null && Number(p.weeks[week]) > 0) ? Number(p.weeks[week]) : null;
-    const show = (wk != null) ? wk : (proj != null ? proj : "—");
-    if(ptsEl) ptsEl.textContent = show;
-    if(lineEl) lineEl.textContent = (wk != null) ? "Wk "+week : (proj != null ? "Proj" : "");
-    updateMatchupTotals();
+    // Only paint the projection if we don't already have a live number
+    const already = ptsEl && ptsEl.getAttribute("data-live") === "1";
+    if(!already){
+      const proj = (p.projWeek && Number(p.projWeek) > 0) ? Number(p.projWeek) : null;
+      const wk = (p.weeks && p.weeks[week] != null && Number(p.weeks[week]) > 0) ? Number(p.weeks[week]) : null;
+      const show = (wk != null) ? wk : (proj != null ? proj : "—");
+      if(ptsEl) ptsEl.textContent = show;
+      if(lineEl) lineEl.textContent = (wk != null) ? "Wk "+week : (proj != null ? "Proj" : "");
+      updateMatchupTotals();
+    }
     // Prefer live box score data if we already have it
     const key = (p.name||"").toLowerCase().trim();
     let cached = boxCache[key];
@@ -386,7 +389,7 @@ function fillLiveStats(){
     if(cached){
       const pts = fantasyPoints(cached);
       if(pts != null && pts > 0){
-        if(ptsEl) ptsEl.textContent = pts;
+        if(ptsEl){ ptsEl.textContent = pts; ptsEl.setAttribute("data-live","1"); }
         if(lineEl) lineEl.textContent = liveLine(cached) || "Live";
         updateMatchupTotals();
       }
