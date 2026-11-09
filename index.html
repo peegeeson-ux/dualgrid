@@ -304,20 +304,22 @@ function fantasyPoints(stats){
 }
 function liveLine(stats){
   if(!stats || !stats.teams) return "";
-  const grab = (group, name) => {
-    const g = (stats.teams[0] && stats.teams[0].groups || []).find(x => x.name === group);
-    if(!g) return 0;
-    const s = (g.statistics || []).find(x => x.name === name);
-    return s ? Number(s.value) || 0 : 0;
-  };
+  const s = stats.teams[0] && stats.teams[0].statistics && stats.teams[0].statistics[0];
+  if(!s) return "";
   const parts = [];
-  const py = grab("Passing", "yards"); if(py) parts.push(py+" pass yds");
-  const pt = grab("Passing", "passing touchdowns"); if(pt) parts.push(pt+" pass TD");
-  const ry = grab("Rushing", "yards"); if(ry) parts.push(ry+" rush yds");
-  const rt = grab("Rushing", "rushing touchdowns"); if(rt) parts.push(rt+" rush TD");
-  const rc = grab("Receiving", "receptions"); if(rc) parts.push(rc+" rec");
-  const rcy = grab("Receiving", "yards"); if(rcy) parts.push(rcy+" rec yds");
-  const rct = grab("Receiving", "receiving touchdowns"); if(rct) parts.push(rct+" rec TD");
+  if(s.pass){
+    const y = Number(s.pass.yards)||0; if(y) parts.push(y+" pass yds");
+    const t = Number(s.pass.touchdowns)||0; if(t) parts.push(t+" pass TD");
+  }
+  if(s.rush){
+    const y = Number(s.rush.yards)||0; if(y) parts.push(y+" rush yds");
+    const t = Number(s.rush.touchdowns)||0; if(t) parts.push(t+" rush TD");
+  }
+  if(s.rec){
+    const r = Number(s.rec.receptions)||0; if(r) parts.push(r+" rec");
+    const y = Number(s.rec.yards)||0; if(y) parts.push(y+" rec yds");
+    const t = Number(s.rec.touchdowns)||0; if(t) parts.push(t+" rec TD");
+  }
   return parts.length ? parts.join(" · ") : "";
 }
 let apiIdCache = {};
@@ -331,6 +333,23 @@ function findApiId(name){
       if(id) apiIdCache[name] = id;
       return id || null;
     }).catch(()=>null);
+}
+let boxCache = {};
+function loadBoxCache(){
+  return fetchNflGames(false).then(games => {
+    const done = (games||[]).filter(g => g.game && (g.game.status.short === "Completed" || g.game.status.short === "Live - In Progress"));
+    return Promise.all(done.map(g => {
+      const id = g.game.id;
+      if(boxCache[id]) return Promise.resolve();
+      return fetch("https://dualgrid-players.peegeeson.workers.dev/box?game="+encodeURIComponent(id), {cache:"no-store"})
+        .then(r=>r.json()).then(d => {
+          (d.response||[]).forEach(p => {
+            const name = (p.player && p.player.name)||"";
+            if(name) boxCache[name.toLowerCase()] = p;
+          });
+        }).catch(()=>{});
+    }));
+  });
 }
 function fillLiveStats(){
   const week = String(currentNflWeek());
@@ -352,6 +371,16 @@ function fillLiveStats(){
     if(ptsEl) ptsEl.textContent = show;
     if(lineEl) lineEl.textContent = (wk != null) ? "Wk "+week : (proj != null ? "Proj" : "");
     updateMatchupTotals();
+    // Prefer live box score data if we already have it
+    const cached = boxCache[(p.name||"").toLowerCase()];
+    if(cached){
+      const pts = fantasyPoints(cached);
+      if(pts != null && pts > 0){
+        if(ptsEl) ptsEl.textContent = pts;
+        if(lineEl) lineEl.textContent = liveLine(cached) || "Live";
+        updateMatchupTotals();
+      }
+    }
     // Live stats are optional — only replace if real data arrives
     findApiId(p.name).then(apiId => {
       if(!apiId){
@@ -1616,7 +1645,7 @@ if(added) save(s);
   });
   const settings = s.owner ? '<div class="card no-print"><h3>Must-start positions</h3><p style="opacity:.8;margin-bottom:10px">Set the minimum number of each position that must be started. Owners cannot lock a lineup until these are filled.</p><div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:10px"><div><label>QB</label><input id="rs-qb" type="number" min="0" value="'+(rs.qb||1)+'"></div><div><label>RB</label><input id="rs-rb" type="number" min="0" value="'+(rs.rb||2)+'"></div><div><label>WR</label><input id="rs-wr" type="number" min="0" value="'+(rs.wr||2)+'"></div><div><label>TE</label><input id="rs-te" type="number" min="0" value="'+(rs.te||1)+'"></div><div><label>Team DEF</label><input id="rs-teamDef" type="number" min="0" value="'+(rs.teamDef||0)+'"></div><div><label>Def players</label><input id="rs-defPlayers" type="number" min="0" value="'+(rs.defPlayers||0)+'"></div><div><label>K</label><input id="rs-k" type="number" min="0" value="'+(rs.k||1)+'"></div><div><label>FLEX</label><input id="rs-flex" type="number" min="0" value="'+(rs.flex||1)+'"></div><div><label>Bench</label><input id="rs-bench" type="number" min="0" value="'+(rs.bench||6)+'"></div><div><label>IR</label><input id="rs-ir" type="number" min="0" value="'+(rs.ir||1)+'"></div></div><label style="margin-top:10px;display:block"><input type="checkbox" id="rs-matchRounds" checked> Make draft rounds equal the total roster slots (starters + bench)</label><button class="btn btn-lime" id="save-roster" style="margin-top:12px">Save must-start settings</button></div>' : '<div class="card"><p>Required starters: QB '+(rs.qb||1)+' · RB '+(rs.rb||2)+' · WR '+(rs.wr||2)+' · TE '+(rs.te||1)+' · Team DEF '+(rs.teamDef||0)+' · Def players '+(rs.defPlayers||0)+' · K '+(rs.k||1)+' · FLEX '+(rs.flex||1)+'</p></div>';
   document.getElementById("app").innerHTML=header('<a class="btn" href="#home">Home</a>')+'<div class="page"><div class="eyebrow">ROSTER</div><h1>Lineups</h1>'+settings+(html||'<div class="card"><p>No picks yet. Draft first.</p></div>')+'</div>';
-  setTimeout(fillLiveStats, 100);
+  loadBoxCache().then(()=>setTimeout(fillLiveStats, 100)).catch(()=>setTimeout(fillLiveStats, 100));
   const btn=document.getElementById("save-roster");
   if(btn) btn.onclick=()=>{
     if(!load().owner) return;
@@ -1768,7 +1797,7 @@ games.forEach(g=>{
 });
 document.getElementById("app").innerHTML=header('<a class="btn" href="#home">Home</a><a class="btn" href="#scoreboard">Scoreboard</a>')+
 '<div class="page"><div class="eyebrow">WEEK '+week+' MATCHUPS</div><h1>All games</h1><p class="lede">Your team is highlighted. Tap a game to see the lineup.</p>'+list+'</div>';
-  setTimeout(fillLiveStats, 100);
+  loadBoxCache().then(()=>setTimeout(fillLiveStats, 100)).catch(()=>setTimeout(fillLiveStats, 100));
 }
 
 
