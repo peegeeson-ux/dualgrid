@@ -106,6 +106,16 @@ details.card{margin-bottom:12px}
 #available-players .player .btn{min-height:32px;padding:6px 12px}
 }
 
+
+.injury-badge{display:inline-block;font-size:10px;font-weight:800;letter-spacing:.04em;padding:1px 6px;border-radius:4px;background:#e74c3c;color:#fff;margin-left:6px;vertical-align:middle}
+.injury-badge.Q{background:#eab308;color:#111}
+.injury-badge.OUT,.injury-badge.IR{background:#e74c3c}
+.injury-badge.PUP,.injury-badge.SUSP{background:#64748b}
+.inj-table{width:100%;border-collapse:collapse;font-size:14px}
+.inj-table th{background:#0a1a33;color:#fff;text-align:left;padding:8px;position:sticky;top:0}
+.inj-table td{padding:8px;border-bottom:1px solid #1a3a5c}
+.inj-table tr:hover{background:#0a1a33}
+
 </style>
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js">
 dataRef("drafts").on("value", snap => {
@@ -1867,7 +1877,49 @@ function loadWeekTicker(){
   }
 }
 
-function route(){const page=(location.hash.replace("#","").split("/")[0]||"lobby"); const st=load(); if(!st.email && page!=="login"){ location.hash="#login"; return renderLogin(); } if(page==="login"){ return renderLogin(); } if(page!=="lobby"&&!leagueCode()&&page!=="draft"&&page!=="board"&&page!=="trade"){location.hash="#lobby"; return renderLobby();}if(page==="pay")renderPay();else if(page==="draft")renderDraft();else if(page==="board")renderBoard();else if(page==="wall")renderWall();else if(page==="payout"){ if(!unlocked(load())){ alert("Commissioner code required."); location.hash="#home"; return;} renderPayout(); }else if(page==="scores")renderScores();else if(page==="scoreboard")renderScoreboard();else if(page==="bracket")renderBracket();else if(page==="talk")renderTalk();else if(page==="waiver")renderWaiver();else if(page==="roster")renderRoster();else if(page==="history")renderHistory();else if(page==="scoring")renderScoring();else if(page==="matchup")renderMatchup();else if(page==="trade")renderTrade();else if(page==="dash")renderDash();else if(page==="nfl")renderNflScoreboard();else if(page==="lobby"||page==="")renderLobby();else renderHome();
+
+let injuryCache = null;
+let injuryCacheTime = 0;
+async function loadInjuries(force){
+  if(!force && injuryCache && (Date.now()-injuryCacheTime < 300000)) return injuryCache;
+  try{
+    const r = await fetch("https://dualgrid-players.peegeeson.workers.dev/injuries");
+    const data = await r.json();
+    injuryCache = data.response || [];
+    injuryCacheTime = Date.now();
+    return injuryCache;
+  }catch(e){ return injuryCache || []; }
+}
+function injuryBadge(name){
+  if(!injuryCache || !name) return "";
+  const n = name.toLowerCase().trim();
+  const hit = injuryCache.find(p => (p.name||"").toLowerCase().includes(n) || n.includes((p.name||"").toLowerCase().split(" ")[0]));
+  if(!hit) return "";
+  const st = (hit.status||"").toUpperCase();
+  const cls = st.includes("OUT")||st.includes("IR") ? "OUT" : st.includes("Q") ? "Q" : st.includes("PUP") ? "PUP" : "";
+  return `<span class="injury-badge ${cls}" title="${hit.description||hit.status}">${hit.status||"INJ"}</span>`;
+}
+function renderInjuries(){
+  const root = document.getElementById("app") || document.body;
+  root.innerHTML = `<div class="page"><div class="eyebrow">NFL</div><h1>Injury Report</h1><p class="lede">Live injury list from Tank01. Updates when you open this page.</p><div id="inj-box">Loading injuries…</div></div>`;
+  loadInjuries(true).then(list=>{
+    const box = document.getElementById("inj-box");
+    if(!list.length){ box.innerHTML = "<p>No injuries reported right now.</p>"; return; }
+    let html = `<table class="inj-table"><thead><tr><th>Player</th><th>Team</th><th>Pos</th><th>Status</th><th>Injury</th><th>Return</th></tr></thead><tbody>`;
+    list.forEach(p=>{
+      const st = (p.status||"").toUpperCase();
+      const badge = st.includes("OUT")||st.includes("IR") ? "OUT" : st.includes("Q") ? "Q" : "";
+      html += `<tr><td>${p.name||"—"} <span class="injury-badge ${badge}">${p.status||"—"}</span></td><td>${p.team||"—"}</td><td>${p.position||"—"}</td><td>${p.status||"—"}</td><td>${p.description||"—"}</td><td>${p.returnDate||"—"}</td></tr>`;
+    });
+    html += `</tbody></table>`;
+    box.innerHTML = html;
+  }).catch(()=>{
+    const box = document.getElementById("inj-box");
+    if(box) box.innerHTML = "<p>Could not load injuries. Try again in a minute.</p>";
+  });
+}
+
+function route(){const page=(location.hash.replace("#","").split("/")[0]||"lobby"); const st=load(); if(!st.email && page!=="login"){ location.hash="#login"; return renderLogin(); } if(page==="login"){ return renderLogin(); } if(page!=="lobby"&&!leagueCode()&&page!=="draft"&&page!=="board"&&page!=="trade"){location.hash="#lobby"; return renderLobby();}if(page==="pay")renderPay();else if(page==="draft")renderDraft();else if(page==="board")renderBoard();else if(page==="wall")renderWall();else if(page==="payout"){ if(!unlocked(load())){ alert("Commissioner code required."); location.hash="#home"; return;} renderPayout(); }else if(page==="scores")renderScores();else if(page==="scoreboard")renderScoreboard();else if(page==="bracket")renderBracket();else if(page==="talk")renderTalk();else if(page==="waiver")renderWaiver();else if(page==="roster")renderRoster();else if(page==="history")renderHistory();else if(page==="scoring")renderScoring();else if(page==="matchup")renderMatchup();else if(page==="trade")renderTrade();else if(page==="dash")renderDash();else if(page==="nfl")renderNflScoreboard();else if(page==="injuries")renderInjuries();else if(page==="lobby"||page==="")renderLobby();else renderHome();
   setTimeout(loadWeekTicker, 50);
   setTimeout(loadNflTicker, 80);
   setTimeout(loadWeekTicker, 400); // extra refresh after league switch
@@ -1937,6 +1989,7 @@ if(!window._clockTick){
 setTimeout(()=>{ const o=document.getElementById("draft-countdown"); if(o) o.remove(); }, 500);
 setTimeout(loadWeekTicker, 300);
 setTimeout(loadNflTicker, 400);
+setTimeout(()=>loadInjuries(false), 800);
 
 dataRef("drafts").on("value", snap => {
   const s = load();
