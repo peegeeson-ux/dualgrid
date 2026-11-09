@@ -421,8 +421,10 @@ function renderNflScoreboard(){
     box.innerHTML = games.map(g => {
       const home = (g.teams && g.teams.home && g.teams.home.name) || "Home";
       const away = (g.teams && g.teams.away && g.teams.away.name) || "Away";
-      const hs = (g.scores && g.scores.home && g.scores.home.total != null) ? g.scores.home.total : "—";
-      const as = (g.scores && g.scores.away && g.scores.away.total != null) ? g.scores.away.total : "—";
+      const hsRaw = (g.scores && g.scores.home && g.scores.home.total);
+      const asRaw = (g.scores && g.scores.away && g.scores.away.total);
+      const hs = (hsRaw != null && hsRaw !== "" && hsRaw !== 0) ? hsRaw : "—";
+      const as = (asRaw != null && asRaw !== "" && asRaw !== 0) ? asRaw : "—";
       const status = (g.game && g.game.status && g.game.status.short) || "";
       const time = (g.game && g.game.date && g.game.date.time) || "";
       const id = (g.game && g.game.id) || "";
@@ -438,8 +440,10 @@ function showBoxScore(id, games){
   if(!g) return;
   const home = (g.teams && g.teams.home && g.teams.home.name) || "Home";
   const away = (g.teams && g.teams.away && g.teams.away.name) || "Away";
-  const hs = (g.scores && g.scores.home && g.scores.home.total != null) ? g.scores.home.total : "—";
-  const as = (g.scores && g.scores.away && g.scores.away.total != null) ? g.scores.away.total : "—";
+  const hsRaw = (g.scores && g.scores.home && g.scores.home.total);
+  const asRaw = (g.scores && g.scores.away && g.scores.away.total);
+  const hs = (hsRaw != null && hsRaw !== "" && hsRaw !== 0) ? hsRaw : "—";
+  const as = (asRaw != null && asRaw !== "" && asRaw !== 0) ? asRaw : "—";
   const status = (g.game && g.game.status && g.game.status.short) || "";
   const root = document.getElementById("app");
   root.innerHTML = header('<a class="btn" href="#nfl" id="back-scores">Back to scores</a>') +
@@ -808,7 +812,7 @@ root.innerHTML=header('<a class="btn btn-lime" href="#home">Home</a><a class="bt
 '</div>';
 document.querySelectorAll("[data-circuit]").forEach(b=>b.onclick=()=>{const st=load();st.circuit=b.dataset.circuit;save(st);renderHome();});
 document.querySelectorAll("[data-format]").forEach(b=>b.onclick=()=>{const st=load();st.format=b.dataset.format;save(st);renderHome();});
-document.getElementById("join-btn").onclick=()=>{/* players can draft */const raw=(document.getElementById("join-code").value||"").toUpperCase().trim();const hit=Object.keys(CODES).find(k=>CODES[k]===raw||k.toUpperCase()===raw);if(hit)location.hash="#draft/"+hit;else alert("Unknown code. Try EAST-7K2");};
+const joinBtn=document.getElementById("join-btn"); if(joinBtn) joinBtn.onclick=()=>{/* players can draft */const raw=(document.getElementById("join-code").value||"").toUpperCase().trim();const hit=Object.keys(CODES).find(k=>CODES[k]===raw||k.toUpperCase()===raw);if(hit)location.hash="#draft/"+hit;else alert("Unknown code. Try EAST-7K2");};
 const cb=document.getElementById("commish-btn"); if(cb) cb.onclick=()=>{ if(grantCommish(document.getElementById("commish-code").value)) renderHome(); };
 const fillDesk=()=>{const sel=document.getElementById("desk-pod"); if(!sel)return; const d=ensureDraft(load(),sel.value); const isOwner=!!load().owner; document.getElementById("desk-team").innerHTML=d.teams.map(team=>{ const locked=!!team.ownerName && !isOwner; return '<option value="'+team.id+'"'+(locked?' disabled':'')+'>'+team.name+(team.ownerName?" · LOCKED · "+team.ownerName:"")+'</option>'; }).join("");};
 const dp=document.getElementById("desk-pod"); if(dp){dp.onchange=fillDesk; fillDesk();}
@@ -832,7 +836,7 @@ const cl=document.getElementById("clear-logo"); if(cl) cl.onclick=()=>{ if(!load
 }
 function renderPay(){
 const plan=(location.hash.split("/")[1]||"dual").toLowerCase()==="quad"?"quad":"dual";
-document.getElementById("pay-now").onclick=()=>{const s=load();s.paid=true;s.plan=plan;s.circuit=plan;s.paidAt=new Date().toLocaleDateString();save(s);location.hash="#home";};
+const payNow=document.getElementById("pay-now"); if(payNow) payNow.onclick=()=>{const s=load();s.paid=true;s.plan=plan;s.circuit=plan;s.paidAt=new Date().toLocaleDateString();save(s);location.hash="#home";};
 }
 function restrictedPositions(team, rs, roundsLeft){
   if(!team || !team.picks) return null;
