@@ -506,7 +506,7 @@ function fetchNflGames(force){
       let filtered = games.filter(g => g.game && String(g.game.week||"") === label);
       if(!filtered.length) filtered = games.filter(g => g.game && String(g.game.week||"").startsWith("Week "));
       if(filtered.length){
-        nflGamesCache = filtered.slice(0, 16);
+        nflGamesCache = filtered.slice(0, 16); fillGameScores();
         nflCacheTime = Date.now();
       }
       return nflGamesCache || [];
@@ -1696,7 +1696,7 @@ if(added) save(s);
       html+='<div class="card"><h3>Starters</h3><div class="log-item" style="opacity:.6;font-size:11px;border-bottom:1px solid #333"><span>POS</span><span>PLAYER</span><span>SZN</span><span>WK</span><span>PTS</span><span></span></div>'+slots.map((slot,i)=>{
         const pl = assigned[i];
         const e = pl ? enrich(pl) : null;
-        return '<div class="log-item" data-player-id="'+(pl?pl.id:'')+'" style="border-left:6px solid '+(pl?colors[pl.pos]||"#999":"#444")+'"><b>'+slot.label+'</b><span class="name" data-player-id="'+(pl?pl.id:'')+'">'+(e?e.name+injuryBadge(e.name):"empty")+'</span><span style="opacity:.7">'+(e&&e.proj?e.proj:"")+'</span><span style="opacity:.7">'+(e&&e.projWeek?e.projWeek:"")+'</span><span style="color:#69be28;font-weight:700" class="live-pts" data-id="'+(pl?pl.id:'')+'">—</span>'+(pl && (mineHere || override)?'<button class="btn" data-move="bench" data-pod="'+pod+'" data-team="'+team.id+'" data-id="'+pl.id+'">Bench</button>':'<span></span>')+'</div>';
+        return '<div class="log-item" data-player-id="'+(pl?pl.id:'')+'" style="border-left:6px solid '+(pl?colors[pl.pos]||"#999":"#444")+'"><b>'+slot.label+'</b><span class="name" data-player-id="'+(pl?pl.id:'')+'">'+(e?e.name+injuryBadge(e.name):"empty")+'</span><span style="opacity:.7">'+(e&&e.proj?e.proj:"")+'</span><span style="opacity:.7">'+(e&&e.projWeek?e.projWeek:"")+'</span><span style="color:#69be28;font-weight:700" class="live-pts" data-id="'+(pl?pl.id:'')+'">—</span><span class="game-score" data-id="'+(pl?pl.id:'')+'" style="font-size:10px;color:#aaa;margin-left:6px"></span>'+(pl && (mineHere || override)?'<button class="btn" data-move="bench" data-pod="'+pod+'" data-team="'+team.id+'" data-id="'+pl.id+'">Bench</button>':'<span></span>')+'</div>';
       }).join("")+'<div style="margin-top:8px;font-size:13px;color:#7cc8ff"><strong>Starters</strong> Proj <span class="proj-sum">'+(assigned.reduce((s,p)=>s+((enrich(p)||{}).projWeek||0),0).toFixed(1))+'</span> · Live <span class="live-sum">—</span></div></div>';
       html+='<div class="card"><h3>Bench</h3>'+bench.map(pl=>{
         const e = enrich(pl);
