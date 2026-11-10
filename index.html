@@ -381,16 +381,16 @@ function fillLiveStats(){
     if(!p || !p.name || p.name === "—") return;
     const ptsEl = document.querySelector('.live-pts[data-id="'+id+'"]');
     const lineEl = document.querySelector('.live-line[data-id="'+id+'"]');
-    // Always start with projection so something shows
+    // Always show projection as fallback, then live if available
     const proj = (p.projWeek && Number(p.projWeek) > 0) ? Number(p.projWeek) : null;
     const wk = (p.weeks && p.weeks[week] != null && Number(p.weeks[week]) > 0) ? Number(p.weeks[week]) : null;
     const fallback = (wk != null) ? wk : (proj != null ? proj : "—");
-    if(ptsEl && ptsEl.textContent === "—") ptsEl.textContent = fallback;
-    if(lineEl && !lineEl.textContent) lineEl.textContent = (wk != null) ? "Wk "+week : (proj != null ? "Proj" : "");
-    // Then prefer live if we have it
     if(livePts[id] != null){
       if(ptsEl) ptsEl.textContent = livePts[id];
       if(lineEl) lineEl.textContent = "Live";
+    } else if(ptsEl && (ptsEl.textContent === "—" || !ptsEl.textContent || ptsEl.getAttribute("data-live") !== "1")){
+      if(ptsEl) ptsEl.textContent = fallback;
+      if(lineEl && !lineEl.textContent) lineEl.textContent = (wk != null) ? "Wk "+week : (proj != null ? "Proj" : "");
     }
     updateMatchupTotals();
     // Prefer live box score data if we already have it
