@@ -411,8 +411,10 @@ function fillLiveStats(){
       }
       if(!cached){
         const last = key.split(" ").pop();
+        const first = key.split(" ")[0];
         for(const k in boxCache){
-          if(k === last || k.includes(key) || key.includes(k) || k.split(" ").pop() === last){
+          const kLast = k.split(" ").pop();
+          if(k === last || kLast === last || k.includes(last) || (first.length > 2 && k.includes(first) && k.includes(last))){
             cached = boxCache[k];
             break;
           }
