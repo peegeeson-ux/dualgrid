@@ -456,12 +456,13 @@ function fillGameScores(){
     const p = PLAYERS.find(x => x.id === id);
     if(!p || !p.team) return;
     const team = (p.team||"").toUpperCase();
+    if(!team) return;
     const g = games.find(gm => {
       const home = ((gm.teams && gm.teams.home && (gm.teams.home.name || gm.teams.home.id)) || "").toUpperCase();
       const away = ((gm.teams && gm.teams.away && (gm.teams.away.name || gm.teams.away.id)) || "").toUpperCase();
       return home === team || away === team || home.includes(team) || away.includes(team);
     });
-    if(!g) return;
+    if(!g){ if(team === "NE" || team === "BUF") console.log("no game for", team, "games:", games.map(gm=>gm.teams&&gm.teams.home&&gm.teams.home.name)); return; }
     const hs = (g.scores && g.scores.home && g.scores.home.total) || 0;
     const as = (g.scores && g.scores.away && g.scores.away.total) || 0;
     const home = (g.teams && g.teams.home && g.teams.home.name) || "";
@@ -475,7 +476,7 @@ function updateRosterTotal(){
     let total = 0;
     const card = sum.closest(".card");
     if(!card) return;
-    card.querySelectorAll(".live-pts[data-live]").forEach(el => {
+    card.querySelectorAll(".log-item .live-pts").forEach(el => {
       const n = Number(el.textContent);
       if(!isNaN(n)) total += n;
     });
