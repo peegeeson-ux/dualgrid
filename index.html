@@ -335,6 +335,7 @@ function findApiId(name){
     }).catch(()=>null);
 }
 let boxCache = {};
+const TEAM_ABV = {"arizona cardinals":"ARI","atlanta falcons":"ATL","baltimore ravens":"BAL","buffalo bills":"BUF","carolina panthers":"CAR","chicago bears":"CHI","cincinnati bengals":"CIN","cleveland browns":"CLE","dallas cowboys":"DAL","denver broncos":"DEN","detroit lions":"DET","green bay packers":"GB","houston texans":"HOU","indianapolis colts":"IND","jacksonville jaguars":"JAX","kansas city chiefs":"KC","las vegas raiders":"LV","los angeles chargers":"LAC","los angeles rams":"LAR","miami dolphins":"MIA","minnesota vikings":"MIN","new england patriots":"NE","new orleans saints":"NO","new york giants":"NYG","new york jets":"NYJ","philadelphia eagles":"PHI","pittsburgh steelers":"PIT","san francisco 49ers":"SF","seattle seahawks":"SEA","tampa bay buccaneers":"TB","tennessee titans":"TEN","washington commanders":"WAS"};
 let livePts = {}; // survives re-renders
 function loadBoxCache(){
   return fetchNflGames(false).then(games => {
@@ -388,9 +389,12 @@ function fillLiveStats(){
           cached = boxCache[k];
           break;
         }
-        if(isDef && k.includes("defense") && (k.includes(key.split(" ")[0]) || key.includes(k.split(" ")[0]))){
-          cached = boxCache[k];
-          break;
+        if(isDef){
+          const abv = TEAM_ABV[key] || TEAM_ABV[key.replace(" defense","").replace(" dst","")] || "";
+          if(abv && k.includes(abv.toLowerCase() + " defense")){
+            cached = boxCache[k];
+            break;
+          }
         }
       }
     }
