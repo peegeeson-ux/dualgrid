@@ -397,26 +397,17 @@ function fillLiveStats(){
         updateMatchupTotals();
       }
     }
-    // Live stats are optional — only replace if real data arrives
+    // Live stats are optional — only replace if real data arrives and we don't already have a live number
+    if(livePts[id] != null) return;
     findApiId(p.name).then(apiId => {
-      if(!apiId){
-        const wk = (p.weeks && p.weeks[week] != null) ? p.weeks[week] : null;
-        if(ptsEl) ptsEl.textContent = (wk != null) ? wk : (p.projWeek || "—");
-        if(lineEl) lineEl.textContent = (wk != null) ? "Wk "+week : (p.projWeek ? "Proj" : "");
-        updateMatchupTotals();
-        return;
-      }
+      if(!apiId) return;
       fetchPlayerStats(apiId, week).then(stats => {
         const pts = fantasyPoints(stats);
         if(pts != null && pts > 0){
-          if(ptsEl) ptsEl.textContent = pts;
+          if(ptsEl){ ptsEl.textContent = pts; livePts[id] = pts; }
           if(lineEl) lineEl.textContent = liveLine(stats) || "Live";
-        } else {
-          const wk = (p.weeks && p.weeks[week] != null) ? p.weeks[week] : null;
-          if(ptsEl) ptsEl.textContent = (wk != null) ? wk : (p.projWeek || "—");
-          if(lineEl) lineEl.textContent = (wk != null) ? "Wk "+week : (p.projWeek ? "Proj" : "");
+          updateMatchupTotals();
         }
-        updateMatchupTotals();
       });
     });
   });
