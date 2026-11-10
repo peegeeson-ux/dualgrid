@@ -375,26 +375,30 @@ function fillLiveStats(){
     if(!p || !p.name || p.name === "—") return;
     const ptsEl = document.querySelector('.live-pts[data-id="'+id+'"]');
     const lineEl = document.querySelector('.live-line[data-id="'+id+'"]');
-    // Prefer a previously seen live number, else projection
+    // Always start with projection so something shows
+    const proj = (p.projWeek && Number(p.projWeek) > 0) ? Number(p.projWeek) : null;
+    const wk = (p.weeks && p.weeks[week] != null && Number(p.weeks[week]) > 0) ? Number(p.weeks[week]) : null;
+    const fallback = (wk != null) ? wk : (proj != null ? proj : "—");
+    if(ptsEl && ptsEl.textContent === "—") ptsEl.textContent = fallback;
+    if(lineEl && !lineEl.textContent) lineEl.textContent = (wk != null) ? "Wk "+week : (proj != null ? "Proj" : "");
+    // Then prefer live if we have it
     if(livePts[id] != null){
       if(ptsEl) ptsEl.textContent = livePts[id];
       if(lineEl) lineEl.textContent = "Live";
-    } else {
-      const proj = (p.projWeek && Number(p.projWeek) > 0) ? Number(p.projWeek) : null;
-      const wk = (p.weeks && p.weeks[week] != null && Number(p.weeks[week]) > 0) ? Number(p.weeks[week]) : null;
-      const show = (wk != null) ? wk : (proj != null ? proj : "—");
-      if(ptsEl) ptsEl.textContent = show;
-      if(lineEl) lineEl.textContent = (wk != null) ? "Wk "+week : (proj != null ? "Proj" : "");
     }
     updateMatchupTotals();
     // Prefer live box score data if we already have it
     const key = (p.name||"").toLowerCase().trim();
     let cached = boxCache[key];
     if(!cached){
-      const isDef = /def|dst|defense/i.test(p.pos||"") || /def|dst|defense/i.test(p.name||"");
+      const isDef = /def|dst|defense/i.test(p.pos||"") || /def|dst|defense/i.test(p.name||"") || /def|dst|defense/i.test(p.name||"");
       if(isDef){
-        const abv = (TEAM_ABV[key] || TEAM_ABV[key.replace(/ defense| dst/g,"")] || "").toLowerCase();
-        if(abv) cached = boxCache[abv] || boxCache[abv + " defense"];
+        const clean = key.replace(/ defense| dst| def/g,"").trim();
+        const abv = (TEAM_ABV[clean] || TEAM_ABV[key] || "").toLowerCase();
+        if(abv){
+          cached = boxCache[abv] || boxCache[abv + " defense"] || boxCache[abv + " def"];
+          console.log("def match", key, "->", abv, cached ? "HIT" : "miss");
+        }
       }
       if(!cached){
         for(const k in boxCache){
