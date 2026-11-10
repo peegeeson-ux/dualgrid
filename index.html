@@ -382,18 +382,18 @@ function fillLiveStats(){
       if(nm) p = enrich({name:nm});
     }
     if(!p || !p.name || p.name === "—") return;
-    const ptsEl = document.querySelector('.live-pts[data-id="'+id+'"]');
-    const lineEl = document.querySelector('.live-line[data-id="'+id+'"]');
+    const ptsEls = document.querySelectorAll('.live-pts[data-id="'+id+'"]');
+    const lineEls = document.querySelectorAll('.live-line[data-id="'+id+'"]');
     // Always show projection as fallback, then live if available
     const proj = (p.projWeek && Number(p.projWeek) > 0) ? Number(p.projWeek) : null;
     const wk = (p.weeks && p.weeks[week] != null && Number(p.weeks[week]) > 0) ? Number(p.weeks[week]) : null;
     const fallback = (wk != null) ? wk : (proj != null ? proj : "—");
     if(livePts[id] != null){
-      if(ptsEl) ptsEl.textContent = livePts[id];
-      if(lineEl) lineEl.textContent = "Live";
+      ptsEls.forEach(el => el.textContent = livePts[id]);
+      lineEls.forEach(el => el.textContent = "Live");
     } else {
-      if(ptsEl) ptsEl.textContent = fallback;
-      if(lineEl) lineEl.textContent = (wk != null) ? "Wk "+week : (proj != null ? "Proj" : "");
+      ptsEls.forEach(el => el.textContent = fallback);
+      lineEls.forEach(el => { if(!el.textContent) el.textContent = (wk != null) ? "Wk "+week : (proj != null ? "Proj" : ""); });
     }
     updateMatchupTotals();
     // Prefer live box score data if we already have it
