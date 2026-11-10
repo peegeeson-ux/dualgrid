@@ -395,7 +395,7 @@ function fillLiveStats(){
       ptsEls.forEach(el => el.textContent = fallback);
       lineEls.forEach(el => { if(!el.textContent) el.textContent = (wk != null) ? "Wk "+week : (proj != null ? "Proj" : ""); });
     }
-    updateMatchupTotals();
+    updateMatchupTotals(); fillGameScores();
     // Prefer live box score data if we already have it
     const key = (p.name||"").toLowerCase().trim();
     let cached = boxCache[key];
@@ -447,6 +447,28 @@ function fillLiveStats(){
     });
   });
 }
+function fillGameScores(){
+  const games = (nflGamesCache || []) || [];
+  document.querySelectorAll(".game-score").forEach(el => {
+    const id = el.getAttribute("data-id");
+    if(!id) return;
+    const p = PLAYERS.find(x => x.id === id);
+    if(!p || !p.team) return;
+    const team = p.team.toLowerCase();
+    const g = games.find(gm => {
+      const home = ((gm.teams && gm.teams.home && gm.teams.home.name) || "").toLowerCase();
+      const away = ((gm.teams && gm.teams.away && gm.teams.away.name) || "").toLowerCase();
+      return home.includes(team) || away.includes(team) || home.endsWith(team) || away.endsWith(team);
+    });
+    if(!g) return;
+    const hs = (g.scores && g.scores.home && g.scores.home.total) || 0;
+    const as = (g.scores && g.scores.away && g.scores.away.total) || 0;
+    const home = (g.teams && g.teams.home && g.teams.home.name) || "";
+    const away = (g.teams && g.teams.away && g.teams.away.name) || "";
+    el.textContent = away + " " + as + " @ " + home + " " + hs;
+  });
+}
+
 function updateMatchupTotals(){
   document.querySelectorAll("details.card").forEach(card => {
     let home = 0, away = 0, homeN = 0, awayN = 0;
@@ -1831,7 +1853,7 @@ games.forEach(g=>{
     const bLabel = (slots[i] && slots[i].pos === "FLEX") ? "FLEX" : (slotLabel(b) || b.pos || "");
     const aLive = livePts[a.id];
     const bLive = livePts[b.id];
-    rows+='<div style="display:grid;grid-template-columns:1fr auto 1fr;gap:8px;align-items:center;padding:4px 0;border-bottom:1px solid #1a3a5c"><div><div class="name" data-player-id="'+(a.id||'')+'">'+a.name+injuryBadge(a.name)+'</div><div class="sub">'+aLabel+(a.projWeek?' · '+a.projWeek:'')+'</div><div class="sub live-line" data-id="'+(a.id||'')+'" style="font-size:11px;color:#7cc8ff"></div><div class="live-pts" data-id="'+(a.id||'')+'" style="font-size:12px;color:#69be28;font-weight:700">'+(aLive!=null?aLive:"—")+'</div></div><div class="pos '+(a.pos||"")+'" style="min-width:36px;text-align:center">'+(aLabel||"")+'</div><div style="text-align:right"><div class="name" data-player-id="'+(b.id||'')+'">'+b.name+injuryBadge(b.name)+'</div><div class="sub">'+bLabel+(b.projWeek?' · '+b.projWeek:'')+'</div><div class="sub live-line" data-id="'+(b.id||'')+'" style="font-size:11px;color:#7cc8ff"></div><div class="live-pts" data-id="'+(b.id||'')+'" style="font-size:12px;color:#69be28;font-weight:700">'+(bLive!=null?bLive:"—")+'</div></div></div>';
+    rows+='<div style="display:grid;grid-template-columns:1fr auto 1fr;gap:8px;align-items:center;padding:4px 0;border-bottom:1px solid #1a3a5c"><div><div class="name" data-player-id="'+(a.id||'')+'">'+a.name+injuryBadge(a.name)+'</div><div class="sub">'+aLabel+(a.projWeek?' · '+a.projWeek:'')+'</div><div class="sub live-line" data-id="'+(a.id||'')+'" style="font-size:11px;color:#7cc8ff"></div><div class="sub game-score" data-id="'+(a.id||'')+'" style="font-size:10px;color:#aaa"></div><div class="live-pts" data-id="'+(a.id||'')+'" style="font-size:12px;color:#69be28;font-weight:700">'+(aLive!=null?aLive:"—")+'</div></div><div class="pos '+(a.pos||"")+'" style="min-width:36px;text-align:center">'+(aLabel||"")+'</div><div style="text-align:right"><div class="name" data-player-id="'+(b.id||'')+'">'+b.name+injuryBadge(b.name)+'</div><div class="sub">'+bLabel+(b.projWeek?' · '+b.projWeek:'')+'</div><div class="sub live-line" data-id="'+(b.id||'')+'" style="font-size:11px;color:#7cc8ff"></div><div class="sub game-score" data-id="'+(b.id||'')+'" style="font-size:10px;color:#aaa"></div><div class="live-pts" data-id="'+(b.id||'')+'" style="font-size:12px;color:#69be28;font-weight:700">'+(bLive!=null?bLive:"—")+'</div></div></div>';
   }
   const homeProj = homeLine.reduce((s,p)=>s+((enrich(p)||{}).projWeek||0),0);
   const awayProj = awayLine.reduce((s,p)=>s+((enrich(p)||{}).projWeek||0),0);
