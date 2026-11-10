@@ -457,9 +457,9 @@ function fillGameScores(){
     if(!p || !p.team) return;
     const team = (p.team||"").toUpperCase();
     const g = games.find(gm => {
-      const home = ((gm.teams && gm.teams.home && gm.teams.home.name) || "").toUpperCase();
-      const away = ((gm.teams && gm.teams.away && gm.teams.away.name) || "").toUpperCase();
-      return home === team || away === team;
+      const home = ((gm.teams && gm.teams.home && (gm.teams.home.name || gm.teams.home.id)) || "").toUpperCase();
+      const away = ((gm.teams && gm.teams.away && (gm.teams.away.name || gm.teams.away.id)) || "").toUpperCase();
+      return home === team || away === team || home.includes(team) || away.includes(team);
     });
     if(!g) return;
     const hs = (g.scores && g.scores.home && g.scores.home.total) || 0;
@@ -471,16 +471,16 @@ function fillGameScores(){
 }
 
 function updateRosterTotal(){
-  const sum = document.querySelector(".live-sum:not([data-side])");
-  if(!sum) return;
-  let total = 0;
-  const card = sum.closest(".card");
-  if(!card) return;
-  card.querySelectorAll(".live-pts[data-live]").forEach(el => {
-    const n = Number(el.textContent);
-    if(!isNaN(n)) total += n;
+  document.querySelectorAll(".live-sum:not([data-side])").forEach(sum => {
+    let total = 0;
+    const card = sum.closest(".card");
+    if(!card) return;
+    card.querySelectorAll(".live-pts[data-live]").forEach(el => {
+      const n = Number(el.textContent);
+      if(!isNaN(n)) total += n;
+    });
+    sum.textContent = total.toFixed(1);
   });
-  sum.textContent = total.toFixed(1);
 }
 
 function updateMatchupTotals(){
