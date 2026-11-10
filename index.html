@@ -655,7 +655,8 @@ async function loadFantasyProsPlayers(attempt) {
       window.PLAYERS_LIVE = true;
       window.PLAYERS_ERROR = "";
       if (window._paint) window._paint();
-      if (typeof route === "function") route();
+      const page = (location.hash||"").replace("#","").split("/")[0];
+      if (page !== "matchup" && typeof route === "function") route();
       setTimeout(()=>{ if(window._paint) window._paint(); }, 500);
     } else {
       throw new Error("No players in response");
