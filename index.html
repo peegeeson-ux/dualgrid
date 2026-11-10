@@ -350,7 +350,10 @@ function loadBoxCache(){
             if(name){
               const k = name.toLowerCase();
               boxCache[k] = p;
-              // Also store by abbreviation for defenses
+              // Store by last name too
+              const last = k.split(" ").pop();
+              if(last && last.length > 2) boxCache[last] = p;
+              // Defenses by abbreviation
               if(k.includes(" defense")){
                 const abv = k.split(" ")[0];
                 boxCache[abv] = p;
@@ -388,9 +391,9 @@ function fillLiveStats(){
     if(livePts[id] != null){
       if(ptsEl) ptsEl.textContent = livePts[id];
       if(lineEl) lineEl.textContent = "Live";
-    } else if(ptsEl && (ptsEl.textContent === "—" || !ptsEl.textContent || ptsEl.getAttribute("data-live") !== "1")){
+    } else {
       if(ptsEl) ptsEl.textContent = fallback;
-      if(lineEl && !lineEl.textContent) lineEl.textContent = (wk != null) ? "Wk "+week : (proj != null ? "Proj" : "");
+      if(lineEl) lineEl.textContent = (wk != null) ? "Wk "+week : (proj != null ? "Proj" : "");
     }
     updateMatchupTotals();
     // Prefer live box score data if we already have it
