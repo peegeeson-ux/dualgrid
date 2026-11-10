@@ -426,8 +426,9 @@ function fillLiveStats(){
     if(cached){
       const pts = fantasyPoints(cached);
       if(pts != null && pts > 0){
-        if(ptsEl){ ptsEl.textContent = pts; ptsEl.setAttribute("data-live","1"); livePts[id] = pts; }
-        if(lineEl){ lineEl.textContent = liveLine(cached) || "Live"; }
+        ptsEls.forEach(el => { el.textContent = pts; el.setAttribute("data-live","1"); });
+        lineEls.forEach(el => el.textContent = liveLine(cached) || "Live");
+        livePts[id] = pts;
         updateMatchupTotals();
       }
     }
