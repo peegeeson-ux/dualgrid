@@ -347,7 +347,16 @@ function loadBoxCache(){
         .then(r=>r.json()).then(d => {
           (d.response||[]).forEach(p => {
             const name = (p.player && p.player.name)||"";
-            if(name) boxCache[name.toLowerCase()] = p;
+            if(name){
+              const k = name.toLowerCase();
+              boxCache[k] = p;
+              // Also store by abbreviation for defenses
+              if(k.includes(" defense")){
+                const abv = k.split(" ")[0];
+                boxCache[abv] = p;
+                boxCache[abv + " defense"] = p;
+              }
+            }
           });
         }).catch(()=>{});
     }));
@@ -382,16 +391,14 @@ function fillLiveStats(){
     const key = (p.name||"").toLowerCase().trim();
     let cached = boxCache[key];
     if(!cached){
-      // partial match — last name, first+last, or defense
       const isDef = /def|dst|defense/i.test(p.pos||"") || /def|dst|defense/i.test(p.name||"");
-      for(const k in boxCache){
-        if(k.includes(key) || key.includes(k) || k.split(" ").pop() === key.split(" ").pop()){
-          cached = boxCache[k];
-          break;
-        }
-        if(isDef){
-          const abv = TEAM_ABV[key] || TEAM_ABV[key.replace(" defense","").replace(" dst","")] || "";
-          if(abv && k.includes(abv.toLowerCase() + " defense")){
+      if(isDef){
+        const abv = (TEAM_ABV[key] || TEAM_ABV[key.replace(/ defense| dst/g,"")] || "").toLowerCase();
+        if(abv) cached = boxCache[abv] || boxCache[abv + " defense"];
+      }
+      if(!cached){
+        for(const k in boxCache){
+          if(k.includes(key) || key.includes(k) || k.split(" ").pop() === key.split(" ").pop()){
             cached = boxCache[k];
             break;
           }
