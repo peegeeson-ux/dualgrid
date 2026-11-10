@@ -420,6 +420,7 @@ function fillLiveStats(){
           }
         }
         if(!cached) console.log("no match for", key);
+        if(key.includes("maye")) console.log("MAYE check", key, "cached:", !!cached, "boxCache keys sample:", Object.keys(boxCache).filter(k=>k.includes("maye")));
       }
     }
     if(cached){
