@@ -395,7 +395,7 @@ function fillLiveStats(){
       ptsEls.forEach(el => el.textContent = fallback);
       lineEls.forEach(el => { if(!el.textContent) el.textContent = (wk != null) ? "Wk "+week : (proj != null ? "Proj" : ""); });
     }
-    updateMatchupTotals(); fillGameScores();
+    updateMatchupTotals(); updateRosterTotal(); fillGameScores();
     // Prefer live box score data if we already have it
     const key = (p.name||"").toLowerCase().trim();
     let cached = boxCache[key];
@@ -448,7 +448,8 @@ function fillLiveStats(){
   });
 }
 function fillGameScores(){
-  const games = (nflGamesCache || []) || [];
+  const games = nflGamesCache || [];
+  console.log("fillGameScores", games.length, "games, sample", games[0] && games[0].teams);
   document.querySelectorAll(".game-score").forEach(el => {
     const id = el.getAttribute("data-id");
     if(!id) return;
@@ -467,6 +468,17 @@ function fillGameScores(){
     const away = (g.teams && g.teams.away && g.teams.away.name) || "";
     el.textContent = away + " " + as + " @ " + home + " " + hs;
   });
+}
+
+function updateRosterTotal(){
+  const sum = document.querySelector(".live-sum:not([data-side])");
+  if(!sum) return;
+  let total = 0;
+  document.querySelectorAll(".log-item .live-pts[data-live]").forEach(el => {
+    const n = Number(el.textContent);
+    if(!isNaN(n)) total += n;
+  });
+  sum.textContent = total.toFixed(1);
 }
 
 function updateMatchupTotals(){
