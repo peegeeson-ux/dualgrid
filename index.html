@@ -410,12 +410,14 @@ function fillLiveStats(){
         }
       }
       if(!cached){
+        const last = key.split(" ").pop();
         for(const k in boxCache){
-          if(k.includes(key) || key.includes(k) || k.split(" ").pop() === key.split(" ").pop()){
+          if(k === last || k.includes(key) || key.includes(k) || k.split(" ").pop() === last){
             cached = boxCache[k];
             break;
           }
         }
+        if(!cached) console.log("no match for", key);
       }
     }
     if(cached){
