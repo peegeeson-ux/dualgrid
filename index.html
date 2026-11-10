@@ -381,9 +381,14 @@ function fillLiveStats(){
     const key = (p.name||"").toLowerCase().trim();
     let cached = boxCache[key];
     if(!cached){
-      // partial match — last name or first+last
+      // partial match — last name, first+last, or defense
+      const isDef = /def|dst|defense/i.test(p.pos||"") || /def|dst|defense/i.test(p.name||"");
       for(const k in boxCache){
         if(k.includes(key) || key.includes(k) || k.split(" ").pop() === key.split(" ").pop()){
+          cached = boxCache[k];
+          break;
+        }
+        if(isDef && k.includes("defense") && (k.includes(key.split(" ")[0]) || key.includes(k.split(" ")[0]))){
           cached = boxCache[k];
           break;
         }
