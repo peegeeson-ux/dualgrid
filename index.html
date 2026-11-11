@@ -1248,6 +1248,7 @@ if(btn) btn.onclick=()=>{
   save(st);
   publishRecords();
   alert("Week saved for every phone.");
+  setTimeout(()=>{renderScores(); if((location.hash||"").startsWith("#bracket"))renderBracket();}, 100);
 };
 const adv=document.getElementById("advance-week");
 if(adv) adv.onclick=()=>{
@@ -1259,8 +1260,6 @@ if(adv) adv.onclick=()=>{
   publishRecords();
   alert("Advanced to week "+st.records.week);
   renderScores();
-};
-  setTimeout(()=>{renderScores(); if((location.hash||"").startsWith("#bracket"))renderBracket();}, 100);
 };
 }
 
