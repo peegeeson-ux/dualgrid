@@ -1228,7 +1228,7 @@ document.getElementById("app").innerHTML=header('<a class="btn btn-lime" href="#
 '<p class="lede no-print">'+(can?"Type wins, losses, and points. Everyone else can read this.":"Read only. The commissioner types the week.")+'</p>'+
 (can?'<div class="no-print"><label>Week</label><input id="week" value="'+rec.week+'" style="max-width:120px"></div>':'')+
 sections+
-(can?'<button class="btn btn-lime no-print" id="save-scores" style="margin-top:12px">Save week</button>':'')+
+(can?'<button class="btn btn-lime no-print" id="save-scores" style="margin-top:12px">Save week</button> <button class="btn no-print" id="advance-week" style="margin-top:12px;margin-left:8px">Advance to next week</button>':'')+
 '</div>'+slap+'</div></div>';
 const btn=document.getElementById("save-scores");
 if(btn) btn.onclick=()=>{
@@ -1248,6 +1248,18 @@ if(btn) btn.onclick=()=>{
   save(st);
   publishRecords();
   alert("Week saved for every phone.");
+};
+const adv=document.getElementById("advance-week");
+if(adv) adv.onclick=()=>{
+  const st=load(); if(!st.owner){alert("Commissioner only.");return;}
+  if(!st.records)st.records={week:1,rows:{}};
+  st.records.week = (Number(st.records.week)||1) + 1;
+  Object.keys(livePts).forEach(k=>delete livePts[k]);
+  save(st);
+  publishRecords();
+  alert("Advanced to week "+st.records.week);
+  renderScores();
+};
   setTimeout(()=>{renderScores(); if((location.hash||"").startsWith("#bracket"))renderBracket();}, 100);
 };
 }
