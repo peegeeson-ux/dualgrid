@@ -624,6 +624,29 @@ function currentNflWeek(){
   const diff = Math.floor((now - start) / (7*24*60*60*1000));
   return Math.max(1, Math.min(18, diff+1));
 }
+function applyWeekResults(s){
+  if(!s.records) s.records = {week:1, rows:{}};
+  if(!s.records.rows) s.records.rows = {};
+  const week = Number(s.records.week)||1;
+  const schedule = seasonSchedule(s);
+  const games = schedule[week-1]||[];
+  games.forEach(g=>{
+    if(!g.home||!g.away||g.home.name==="BYE"||g.away.name==="BYE") return;
+    const homeKey = g.pod+"-"+g.home.id;
+    const awayKey = g.pod+"-"+g.away.id;
+    const homePts = (g.home.lineup&&g.home.lineup.starters||[]).reduce((sum,p)=>sum+(livePts[p.id]!=null?Number(livePts[p.id]):(enrich(p).projWeek||0)),0);
+    const awayPts = (g.away.lineup&&g.away.lineup.starters||[]).reduce((sum,p)=>sum+(livePts[p.id]!=null?Number(livePts[p.id]):(enrich(p).projWeek||0)),0);
+    if(!s.records.rows[homeKey]) s.records.rows[homeKey]={w:0,l:0,pf:0,pa:0};
+    if(!s.records.rows[awayKey]) s.records.rows[awayKey]={w:0,l:0,pf:0,pa:0};
+    const hr = s.records.rows[homeKey], ar = s.records.rows[awayKey];
+    hr.pf = (Number(hr.pf)||0) + homePts;
+    hr.pa = (Number(hr.pa)||0) + awayPts;
+    ar.pf = (Number(ar.pf)||0) + awayPts;
+    ar.pa = (Number(ar.pa)||0) + homePts;
+    if(homePts > awayPts){ hr.w=(Number(hr.w)||0)+1; ar.l=(Number(ar.l)||0)+1; }
+    else if(awayPts > homePts){ ar.w=(Number(ar.w)||0)+1; hr.l=(Number(hr.l)||0)+1; }
+  });
+}
 function autoAdvanceWeek(){
   const s = load();
   if(!s.records) s.records = {week:1, rows:{}};
@@ -631,6 +654,7 @@ function autoAdvanceWeek(){
   const day = new Date().getDay(); // 0=Sun, 3=Wed
   // Advance on Wednesday or later if the stored week is behind
   if(day >= 3 && (Number(s.records.week)||1) < nfl){
+    applyWeekResults(s);
     s.records.week = nfl;
     Object.keys(livePts).forEach(k=>delete livePts[k]);
     save(s);
