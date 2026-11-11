@@ -624,6 +624,19 @@ function currentNflWeek(){
   const diff = Math.floor((now - start) / (7*24*60*60*1000));
   return Math.max(1, Math.min(18, diff+1));
 }
+function autoAdvanceWeek(){
+  const s = load();
+  if(!s.records) s.records = {week:1, rows:{}};
+  const nfl = currentNflWeek();
+  const day = new Date().getDay(); // 0=Sun, 3=Wed
+  // Advance on Wednesday or later if the stored week is behind
+  if(day >= 3 && (Number(s.records.week)||1) < nfl){
+    s.records.week = nfl;
+    Object.keys(livePts).forEach(k=>delete livePts[k]);
+    save(s);
+    publishRecords();
+  }
+}
 const FANTASYPROS_KEY = "JYVWx9pdAQ1tdIimRT0wPaIaHpi3t9jJ75oKlj3h";
 let PLAYERS = [];
 
@@ -1193,6 +1206,7 @@ document.getElementById("savePay").onclick=()=>{const st=load();st.payout.buyIn=
 }
 
 function renderScores(){
+autoAdvanceWeek();
 const s=load(); if(!s.records)s.records={week:1,rows:{}}; if(!s.records.rows)s.records.rows={};
 const pods=podsOf(s); const rec=s.records; const can=!!s.owner;
 const seats=[];
@@ -1839,6 +1853,7 @@ function validateMustStart(starters, rs){
 
 function renderMatchup(){
 loadInjuries();
+autoAdvanceWeek();
 const s=load(); if(!s.records)s.records={week:1,rows:{}};
 const week=s.records.week||1;
 const seat=JSON.parse(localStorage.getItem("dualgrid-my-seat")||"null") || (JSON.parse(localStorage.getItem("dualgrid-my-seats")||"{}")[leagueCode()]||null);
