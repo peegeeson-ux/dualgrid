@@ -562,17 +562,16 @@ function fetchNflGames(force){
     .then(r => r.json()).then(d => {
       if(d.errors && (d.errors.rateLimit || d.errors.requests)) throw new Error("rate");
       const games = d.response || [];
-      // Prefer games from the current calendar week (Sun-Mon window)
+      // Grab games from the last 4 days through the next 6 days
       const now = new Date();
-      const day = now.getDay();
-      const startOfWeek = new Date(now); startOfWeek.setDate(now.getDate() - day);
-      const endOfWeek = new Date(startOfWeek); endOfWeek.setDate(startOfWeek.getDate() + 7);
+      const past = new Date(now); past.setDate(now.getDate() - 4);
+      const future = new Date(now); future.setDate(now.getDate() + 6);
       let filtered = games.filter(g => {
         const id = (g.game && g.game.id) || "";
         const m = id.match(/(\d{4})(\d{2})(\d{2})/);
         if(!m) return false;
         const gd = new Date(m[1]+"-"+m[2]+"-"+m[3]);
-        return gd >= startOfWeek && gd < endOfWeek;
+        return gd >= past && gd <= future;
       });
       if(!filtered.length) filtered = games.filter(g => g.game && String(g.game.week||"").startsWith("Week "));
       if(filtered.length){
