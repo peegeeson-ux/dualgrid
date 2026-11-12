@@ -509,6 +509,7 @@ function fillGameScores(){
 function playerOpp(p){
   if(!p || !p.team) return "";
   const games = nflGamesCache || [];
+  if(!games.length) return "";
   const team = (p.team||"").toUpperCase();
   const g = games.find(gm => {
     const home = ((gm.teams && gm.teams.home && (gm.teams.home.name || gm.teams.home.id)) || "").toUpperCase();
