@@ -562,20 +562,9 @@ function fetchNflGames(force){
     .then(r => r.json()).then(d => {
       if(d.errors && (d.errors.rateLimit || d.errors.requests)) throw new Error("rate");
       const games = d.response || [];
-      // Grab games from the last 4 days through the next 6 days
-      const now = new Date();
-      const past = new Date(now); past.setDate(now.getDate() - 4);
-      const future = new Date(now); future.setDate(now.getDate() + 6);
-      let filtered = games.filter(g => {
-        const id = (g.game && g.game.id) || "";
-        const m = id.match(/(\d{4})(\d{2})(\d{2})/);
-        if(!m) return false;
-        const gd = new Date(m[1]+"-"+m[2]+"-"+m[3]);
-        return gd >= past && gd <= future;
-      });
-      if(!filtered.length) filtered = games.filter(g => g.game && String(g.game.week||"").startsWith("Week "));
-      if(filtered.length){
-        nflGamesCache = filtered.slice(0, 16); fillGameScores();
+      if(games.length){
+        nflGamesCache = games.slice(0, 16);
+        fillGameScores();
         nflCacheTime = Date.now();
       }
       return nflGamesCache || [];
@@ -673,11 +662,7 @@ function renderNflTicker(games){
   } catch(e){ /* silent */ }
 }
 function currentNflWeek(){
-  // 2026 season: Week 10 is the week of Nov 11
-  const start = new Date("2026-09-02");
-  const now = new Date();
-  const diff = Math.floor((now - start) / (7*24*60*60*1000));
-  return Math.max(1, Math.min(18, diff+1));
+  return 10;
 }
 function applyWeekResults(s){
   if(!s.records) s.records = {week:1, rows:{}};
