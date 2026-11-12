@@ -280,7 +280,7 @@ function fantasyPoints(stats){
   if(!stats || !stats.teams || !stats.teams.length) return null;
   const s = stats.teams[0] && stats.teams[0].statistics && stats.teams[0].statistics[0];
   const rules = scoringRules || {};
-  // Prefer raw stats so custom rules apply
+  const r = (k, d) => Number(rules[k]) || d;
   const grab = (group, name) => {
     const g = (stats.teams[0] && stats.teams[0].groups || []).find(x => x.name === group);
     if(!g) return 0;
@@ -289,23 +289,33 @@ function fantasyPoints(stats){
   };
   let pts = 0;
   // Passing
-  pts += grab("Passing", "passing touchdowns") * (Number(rules.ptd) || 4);
-  pts += grab("Passing", "yards") * (Number(rules.pyd) || 0.04);
-  pts += grab("Passing", "interceptions") * (Number(rules.int) || -2);
+  const pYd = grab("Passing", "yards");
+  const pTD = grab("Passing", "passing touchdowns");
+  pts += pTD * r("ptd", 4);
+  pts += pYd * r("pyd", 0.04);
+  pts += grab("Passing", "interceptions") * r("int", -2);
+  if(pYd >= 400) pts += r("pass400", 4);
+  else if(pYd >= 300) pts += r("pass300", 3);
   // Rushing
-  pts += grab("Rushing", "rushing touchdowns") * (Number(rules.rtd) || 6);
-  pts += grab("Rushing", "yards") * (Number(rules.ryd) || 0.1);
+  const rYd = grab("Rushing", "yards");
+  const rTD = grab("Rushing", "rushing touchdowns");
+  pts += rTD * r("rtd", 6);
+  pts += rYd * r("ryd", 0.1);
+  if(rYd >= 200) pts += r("rush200", 4);
+  else if(rYd >= 100) pts += r("rush100", 2);
   // Receiving
-  pts += grab("Receiving", "receiving touchdowns") * (Number(rules.rectd) || 6);
-  pts += grab("Receiving", "yards") * (Number(rules.recyd) || 0.1);
-  pts += grab("Receiving", "receptions") * (Number(rules.rec) || 1);
-  // Bonuses
   const recYd = grab("Receiving", "yards");
-  const rushYd = grab("Rushing", "yards");
-  if(recYd >= 100) pts += (Number(rules.bonus100) || 3);
-  if(rushYd >= 100) pts += (Number(rules.bonus100) || 3);
+  const recTD = grab("Receiving", "receiving touchdowns");
+  const recs = grab("Receiving", "receptions");
+  pts += recTD * r("rectd", 6);
+  pts += recYd * r("recyd", 0.1);
+  pts += recs * r("rec", 1);
+  if(recYd >= 200) pts += r("rec200", 4);
+  else if(recYd >= 100) pts += r("rec100", 2);
+  // Misc
+  pts += grab("Fumbles", "fumbles lost") * r("fumLost", -2);
   if(pts > 0) return Math.round(pts * 10) / 10;
-  // Fallback to API fantasy points if no raw stats
+  // Fallback
   if(s && s.fantasy && s.fantasy.points){
     const fp = s.fantasy.points;
     const val = (typeof fp === "object") ? (fp.PPR || fp.halfPPR || fp.standard) : fp;
@@ -1607,16 +1617,38 @@ if(hs) hs.onclick=()=>{if(!load().owner)return; dataRef("history").push({season:
 function renderScoring(){
 const s=load();
 const fields=[
+  // Passing
   ["ptd","Passing TD",4],["pyd","Passing yard",0.04],["int","Interception",-2],
+  ["pass2pt","2pt Passing Conversion",2],["bonus40pass","40+ yard TD pass bonus",2],["bonus50pass","50+ yard TD pass bonus",2],
+  ["pass300","300-399 yard passing game",3],["pass400","400+ yard passing game",4],
+  ["completions","Every completion",0],["incompletions","Every incomplete pass",0],["passAtt","Each pass attempted",0],["sacked","Every time sacked",0],
+  // Rushing
   ["rtd","Rushing TD",6],["ryd","Rushing yard",0.1],
+  ["rush2pt","2pt Rushing Conversion",2],["bonus40rush","40+ yard TD rush bonus",2],["bonus50rush","50+ yard TD rush bonus",2],
+  ["rush100","100-199 yard rushing game",2],["rush200","200+ yard rushing game",4],
+  ["rushAtt","Every rushing attempt",0],
+  // Receiving
   ["rec","Reception (PPR)",1],["recyd","Receiving yard",0.1],["rectd","Receiving TD",6],
-  ["bonus100","100+ yard bonus",3],["bonus40yd","40+ yard TD bonus",2],
+  ["rec2pt","2pt Receiving Conversion",2],["bonus40rec","40+ yard TD rec bonus",2],["bonus50rec","50+ yard TD rec bonus",2],
+  ["rec100","100-199 yard receiving game",2],["rec200","200+ yard receiving game",4],
+  ["target","Receiving target",0],
+  // Misc offense
+  ["fumLost","Fumble lost",-2],["fumTD","Fumble recovered for TD",6],
+  ["krYd","Kickoff return yard",0],["prYd","Punt return yard",0],
+  ["krTD","Kickoff return TD",6],["prTD","Punt return TD",6],
+  // Kicking
+  ["fg0","FG made 0-39",3],["fg40","FG made 40-49",4],["fg50","FG made 50+",5],
+  ["pat","PAT made",1],["fgMiss","FG missed",-1],["patMiss","PAT missed",-1],
   // Team defense
   ["tdSack","Team DEF sack",1],["tdInt","Team DEF INT",2],["tdFumRec","Team DEF fumble recovery",2],
-  ["tdTD","Team DEF / ST TD",6],["tdSafety","Team DEF safety",2],["tdPtsAllowed","Team DEF points allowed (0-6)",10],
+  ["tdTD","Team DEF / ST TD",6],["tdSafety","Team DEF safety",2],
+  ["td0","0 pts allowed",5],["td1_6","1-6 pts allowed",4],["td7_13","7-13 pts allowed",3],
+  ["td14_17","14-17 pts allowed",1],["td18_27","18-27 pts allowed",0],
+  ["td28_34","28-34 pts allowed",-1],["td35_45","35-45 pts allowed",-3],["td46","46+ pts allowed",-5],
   // Individual defensive players
-  ["idpTackle","IDP tackle",1],["idpAst","IDP assisted tackle",0.5],["idpSack","IDP sack",1],
-  ["idpInt","IDP INT",2],["idpFumRec","IDP fumble recovery",2],["idpTD","IDP TD",6]
+  ["idpTackle","IDP solo tackle",1],["idpAst","IDP assisted tackle",0.5],["idpSack","IDP sack",1],
+  ["idpInt","IDP INT",2],["idpFumRec","IDP fumble recovery",2],["idpTD","IDP TD",6],
+  ["idpFumForced","IDP fumble forced",2],["idpPassDef","IDP pass defensed",1],["idpStuff","IDP stuff",1]
 ];
 const inputs=fields.map(f=>'<label>'+f[1]+'</label><input id="sc-'+f[0]+'" type="number" step="0.01" value="'+f[2]+'">').join("");
 document.getElementById("app").innerHTML=header('<a class="btn" href="#home">Home</a>')+
