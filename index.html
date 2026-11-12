@@ -832,7 +832,8 @@ const ROUNDS = 8; // fallback
 function defaultState(){return{circuit:"dual",format:"snake",actingAs:{},drafts:{},paid:false,plan:null,season:"2026",paidAt:null,owner:false,payout:{buyIn:50,commishPct:0,useCommish:false,weeklyHigh:20,divRecord:40,first:200,second:100,third:50}};}
 function load(){
   const s = _loadRaw();
-  if(s.records && Number(s.records.week) > 10){ s.records.week = 10; save(s); Object.keys(livePts).forEach(k=>delete livePts[k]); }
+  if(s.records && Number(s.records.week) > 10){ s.records.week = 10; save(s); }
+Object.keys(livePts).forEach(k=>delete livePts[k]);
   return s;
 }
 function _loadRaw(){try{const raw=localStorage.getItem(STORE);if(raw)return syncOwner(Object.assign(defaultState(),JSON.parse(raw)));}catch(e){}return syncOwner(defaultState());}
@@ -1528,7 +1529,7 @@ seasonSchedule(s).map((week,i)=>{
     return '<div class="team-row" style="'+(hit?"background:#69be2822;border-radius:8px;padding:6px":"")+'"><span>'+(hit?"<strong>Rival Week</strong> · ":"")+(g.pod&&g.pod!=="league"?podName(g.pod)+" · ":"")+g.home.name+' vs '+g.away.name+scoreTxt+'</span></div>';
   }).join("")+'</div>';
 }).join("")+
-(can?'<div class="card no-print" style="margin-top:12px"><h2>This week\'s schedule</h2><p>Pick the matchups. Seat order is only the default.</p>'+pods.map(pod=>{const teams=ensureDraft(s,pod).teams;const saved=schedule[pod]||[];return '<h3>'+podName(pod)+'</h3>'+teams.filter((_,i)=>i%2===0&&teams[i+1]).map((team,i)=>{const pair=saved[i]||[team.id,teams[i+1].id];return '<div class="join-row"><select data-sched="'+pod+'" data-slot="'+i+'" data-side="home">'+teams.map(x=>'<option value="'+x.id+'"'+(Number(x.id)===Number(pair[0])?" selected":"")+'>'+(x.name)+'</option>').join('')+'</select><select data-sched="'+pod+'" data-slot="'+i+'" data-side="away">'+teams.map(x=>'<option value="'+x.id+'"'+(Number(x.id)===Number(pair[1])?" selected":"")+'>'+(x.name)+'</option>').join('')+'</select></div>';}).join('');}).join('')+'</div><button class="btn btn-lime" id="save-board">Save scoreboard</button>':'')+'</div></div>';
+(can?'<div class="card no-print" style="margin-top:12px"><h2>This week\'s schedule</h2><p>Pick the matchups. Seat order is only the default.</p>'+pods.map(pod=>{const teams=ensureDraft(s,pod).teams;const saved=(rec.board.schedule||{})[pod]||[];return '<h3>'+podName(pod)+'</h3>'+teams.filter((_,i)=>i%2===0&&teams[i+1]).map((team,i)=>{const pair=saved[i]||[team.id,teams[i+1].id];return '<div class="join-row"><select data-sched="'+pod+'" data-slot="'+i+'" data-side="home">'+teams.map(x=>'<option value="'+x.id+'"'+(Number(x.id)===Number(pair[0])?" selected":"")+'>'+(x.name)+'</option>').join('')+'</select><select data-sched="'+pod+'" data-slot="'+i+'" data-side="away">'+teams.map(x=>'<option value="'+x.id+'"'+(Number(x.id)===Number(pair[1])?" selected":"")+'>'+(x.name)+'</option>').join('')+'</select></div>';}).join('');}).join('')+'</div><button class="btn btn-lime" id="save-board">Save scoreboard</button>':'')+'</div></div>';
 const sg=document.getElementById("save-games"); if(sg) sg.onclick=()=>{ if(!load().owner)return; const n=Number(document.getElementById("season-games").value); if(n<1||n>18){alert("Use 1 to 18 games."); return;} seasonGames=n; publishGames(); renderScoreboard(); };
 const sd=document.getElementById("scope-division"); if(sd) sd.onclick=()=>{const st=load(); st.records.board=st.records.board||{}; st.records.board.scope="division"; save(st); publishRecords(); renderScoreboard();};
 const slg=document.getElementById("scope-league"); if(slg) slg.onclick=()=>{const st=load(); st.records.board=st.records.board||{}; st.records.board.scope="league"; save(st); publishRecords(); renderScoreboard();};
