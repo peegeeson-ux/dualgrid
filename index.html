@@ -693,18 +693,8 @@ function applyWeekResults(s){
   });
 }
 function autoAdvanceWeek(){
-  const s = load();
-  if(!s.records) s.records = {week:1, rows:{}};
-  const nfl = currentNflWeek();
-  const day = new Date().getDay(); // 0=Sun, 3=Wed
-  // Advance on Wednesday or later if the stored week is behind
-  if(day >= 3 && (Number(s.records.week)||1) < nfl){
-    applyWeekResults(s);
-    s.records.week = nfl;
-    Object.keys(livePts).forEach(k=>delete livePts[k]);
-    save(s);
-    publishRecords();
-  }
+  // disabled for now — week stays where the commissioner sets it
+  return;
 }
 const FANTASYPROS_KEY = "JYVWx9pdAQ1tdIimRT0wPaIaHpi3t9jJ75oKlj3h";
 let PLAYERS = [];
@@ -837,7 +827,12 @@ function draftRounds(){
 }
 const ROUNDS = 8; // fallback
 function defaultState(){return{circuit:"dual",format:"snake",actingAs:{},drafts:{},paid:false,plan:null,season:"2026",paidAt:null,owner:false,payout:{buyIn:50,commishPct:0,useCommish:false,weeklyHigh:20,divRecord:40,first:200,second:100,third:50}};}
-function load(){try{const raw=localStorage.getItem(STORE);if(raw)return syncOwner(Object.assign(defaultState(),JSON.parse(raw)));}catch(e){}return syncOwner(defaultState());}
+function load(){
+  const s = _loadRaw();
+  if(s.records && Number(s.records.week) > 10){ s.records.week = 10; save(s); Object.keys(livePts).forEach(k=>delete livePts[k]); }
+  return s;
+}
+function _loadRaw(){try{const raw=localStorage.getItem(STORE);if(raw)return syncOwner(Object.assign(defaultState(),JSON.parse(raw)));}catch(e){}return syncOwner(defaultState());}
 function save(s){localStorage.setItem(STORE,JSON.stringify(s));}
 let commishCode = "DUAL-2026";
 let divisionNames = {east:"East",west:"West",north:"North",south:"South"};
