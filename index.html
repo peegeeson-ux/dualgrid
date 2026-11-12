@@ -420,12 +420,14 @@ function fillLiveStats(){
     const proj = (p.projWeek && Number(p.projWeek) > 0) ? Number(p.projWeek) : null;
     const wk = (p.weeks && p.weeks[week] != null && Number(p.weeks[week]) > 0) ? Number(p.weeks[week]) : null;
     const fallback = (wk != null) ? wk : (proj != null ? proj : "—");
-    if(livePts[id] != null){
+    // Show projection until real live data arrives for this week
+    const hasLive = livePts[id] != null && livePts[id+"_wk"] == week;
+    if(hasLive){
       ptsEls.forEach(el => el.textContent = livePts[id]);
       lineEls.forEach(el => el.textContent = "Live");
     } else {
       ptsEls.forEach(el => el.textContent = fallback);
-      lineEls.forEach(el => { if(!el.textContent) el.textContent = (wk != null) ? "Wk "+week : (proj != null ? "Proj" : ""); });
+      lineEls.forEach(el => { if(!el.textContent) el.textContent = (proj != null ? "Proj" : ""); });
     }
     updateMatchupTotals(); updateRosterTotal(); fillGameScores();
     // Prefer live box score data if we already have it
@@ -461,6 +463,7 @@ function fillLiveStats(){
         ptsEls.forEach(el => { el.textContent = pts; el.setAttribute("data-live","1"); });
         lineEls.forEach(el => el.textContent = liveLine(cached) || "Live");
         livePts[id] = pts;
+        livePts[id+"_wk"] = week;
         updateMatchupTotals();
       }
     }
@@ -1483,20 +1486,15 @@ const s=load(); if(!s.records)s.records={week:1,rows:{}};
 const rec=s.records; if(!rec.board)rec.board={style:"standard"};
 const pods=podsOf(s); const can=!!s.owner;
 const style=rec.board.style||"standard";
+const week = rec.week || 10;
+const season = seasonSchedule(s);
+const weekGames = season[week-1] || [];
 const games=[];
-const schedule=rec.board.schedule||{};
-pods.forEach(pod=>{
-  const teams=ensureDraft(s,pod).teams;
-  const savedPairs=schedule[pod];
-  const pairs=savedPairs&&savedPairs.length?savedPairs:teams.map((team,i)=>i%2===0&&teams[i+1]?[team.id,teams[i+1].id]:null).filter(Boolean);
-  pairs.forEach(pair=>{
-    const home=teams.find(team=>Number(team.id)===Number(pair[0]))||teams[0];
-    const away=teams.find(team=>Number(team.id)===Number(pair[1]))||teams[1];
-    if(!home||!away)return;
-    const key=pod+"-"+home.id+"-"+away.id;
-    const saved=(rec.board.games||[]).find(g=>g.key===key)||{};
-    games.push({key,pod,home,away,hs:saved.hs||0,as:saved.as||0,teams});
-  });
+weekGames.forEach(g=>{
+  if(!g.home||!g.away||g.home.name==="BYE"||g.away.name==="BYE") return;
+  const key=(g.pod||"")+"-"+g.home.id+"-"+g.away.id;
+  const saved=(rec.board.games||[]).find(x=>x.key===key)||{};
+  games.push({key,pod:g.pod,home:g.home,away:g.away,hs:saved.hs||0,as:saved.as||0,teams:ensureDraft(s,g.pod).teams});
 });
 const retro=style==="retro";
 const card=games.map(g=>{
