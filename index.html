@@ -279,28 +279,40 @@ function fetchPlayerStats(playerId, week){
 function fantasyPoints(stats){
   if(!stats || !stats.teams || !stats.teams.length) return null;
   const s = stats.teams[0] && stats.teams[0].statistics && stats.teams[0].statistics[0];
-  if(s && s.fantasy && s.fantasy.points){
-    const fp = s.fantasy.points;
-    const val = (typeof fp === "object") ? (fp.PPR || fp.halfPPR || fp.standard) : fp;
-    const n = Number(val);
-    if(!isNaN(n) && n > 0) return Math.round(n * 10) / 10;
-  }
-  // legacy group format
-  let pts = 0;
+  const rules = scoringRules || {};
+  // Prefer raw stats so custom rules apply
   const grab = (group, name) => {
     const g = (stats.teams[0] && stats.teams[0].groups || []).find(x => x.name === group);
     if(!g) return 0;
     const st = (g.statistics || []).find(x => x.name === name);
     return st ? Number(st.value) || 0 : 0;
   };
-  pts += grab("Passing", "passing touchdowns") * 4;
-  pts += grab("Passing", "yards") * 0.04;
-  pts += grab("Rushing", "rushing touchdowns") * 6;
-  pts += grab("Rushing", "yards") * 0.1;
-  pts += grab("Receiving", "receiving touchdowns") * 6;
-  pts += grab("Receiving", "yards") * 0.1;
-  pts += grab("Receiving", "receptions") * 1;
-  return pts > 0 ? Math.round(pts * 10) / 10 : null;
+  let pts = 0;
+  // Passing
+  pts += grab("Passing", "passing touchdowns") * (Number(rules.ptd) || 4);
+  pts += grab("Passing", "yards") * (Number(rules.pyd) || 0.04);
+  pts += grab("Passing", "interceptions") * (Number(rules.int) || -2);
+  // Rushing
+  pts += grab("Rushing", "rushing touchdowns") * (Number(rules.rtd) || 6);
+  pts += grab("Rushing", "yards") * (Number(rules.ryd) || 0.1);
+  // Receiving
+  pts += grab("Receiving", "receiving touchdowns") * (Number(rules.rectd) || 6);
+  pts += grab("Receiving", "yards") * (Number(rules.recyd) || 0.1);
+  pts += grab("Receiving", "receptions") * (Number(rules.rec) || 1);
+  // Bonuses
+  const recYd = grab("Receiving", "yards");
+  const rushYd = grab("Rushing", "yards");
+  if(recYd >= 100) pts += (Number(rules.bonus100) || 3);
+  if(rushYd >= 100) pts += (Number(rules.bonus100) || 3);
+  if(pts > 0) return Math.round(pts * 10) / 10;
+  // Fallback to API fantasy points if no raw stats
+  if(s && s.fantasy && s.fantasy.points){
+    const fp = s.fantasy.points;
+    const val = (typeof fp === "object") ? (fp.PPR || fp.halfPPR || fp.standard) : fp;
+    const n = Number(val);
+    if(!isNaN(n) && n > 0) return Math.round(n * 10) / 10;
+  }
+  return null;
 }
 function liveLine(stats){
   if(!stats || !stats.teams) return "";
@@ -337,6 +349,16 @@ function findApiId(name){
 let boxCache = {};
 const TEAM_ABV = {"arizona cardinals":"ARI","atlanta falcons":"ATL","baltimore ravens":"BAL","buffalo bills":"BUF","carolina panthers":"CAR","chicago bears":"CHI","cincinnati bengals":"CIN","cleveland browns":"CLE","dallas cowboys":"DAL","denver broncos":"DEN","detroit lions":"DET","green bay packers":"GB","houston texans":"HOU","indianapolis colts":"IND","jacksonville jaguars":"JAX","kansas city chiefs":"KC","las vegas raiders":"LV","los angeles chargers":"LAC","los angeles rams":"LAR","miami dolphins":"MIA","minnesota vikings":"MIN","new england patriots":"NE","new orleans saints":"NO","new york giants":"NYG","new york jets":"NYJ","philadelphia eagles":"PHI","pittsburgh steelers":"PIT","san francisco 49ers":"SF","seattle seahawks":"SEA","tampa bay buccaneers":"TB","tennessee titans":"TEN","washington commanders":"WAS"};
 let livePts = {}; // survives re-renders
+let scoringRules = null;
+function loadScoringRules(){
+  if(scoringRules) return Promise.resolve(scoringRules);
+  return new Promise(resolve => {
+    dataRef("config/scoring").once("value", snap => {
+      scoringRules = snap.val() || {};
+      resolve(scoringRules);
+    });
+  });
+}
 function loadBoxCache(){
   return fetchNflGames(false).then(games => {
     const done = (games||[]).filter(g => g.game && (g.game.status.short === "Completed" || g.game.status.short === "Live - In Progress"));
@@ -2151,6 +2173,7 @@ function renderInjuries(){
   });
 }
 
+loadScoringRules();
 function route(){const page=(location.hash.replace("#","").split("/")[0]||"lobby"); const st=load(); if(!st.email && page!=="login"){ location.hash="#login"; return renderLogin(); } if(page==="login"){ return renderLogin(); } if(page!=="lobby"&&!leagueCode()&&page!=="draft"&&page!=="board"&&page!=="trade"){location.hash="#lobby"; return renderLobby();}if(page==="pay")renderPay();else if(page==="draft")renderDraft();else if(page==="board")renderBoard();else if(page==="wall")renderWall();else if(page==="payout"){ if(!unlocked(load())){ alert("Commissioner code required."); location.hash="#home"; return;} renderPayout(); }else if(page==="scores")renderScores();else if(page==="scoreboard")renderScoreboard();else if(page==="bracket")renderBracket();else if(page==="talk")renderTalk();else if(page==="waiver")renderWaiver();else if(page==="roster")renderRoster();else if(page==="history")renderHistory();else if(page==="scoring")renderScoring();else if(page==="matchup")renderMatchup();else if(page==="trade")renderTrade();else if(page==="dash")renderDash();else if(page==="nfl")renderNflScoreboard();else if(page==="injuries")renderInjuries();else if(page==="lobby"||page==="")renderLobby();else renderHome();
   setTimeout(loadWeekTicker, 50);
   setTimeout(loadNflTicker, 80);
