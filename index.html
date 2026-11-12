@@ -515,7 +515,7 @@ function playerOpp(p){
     const away = ((gm.teams && gm.teams.away && (gm.teams.away.name || gm.teams.away.id)) || "").toUpperCase();
     return home === team || away === team || home.includes(team) || away.includes(team);
   });
-  if(!g) return "";
+  if(!g) return "BYE";
   const home = ((g.teams && g.teams.home && g.teams.home.name) || "").toUpperCase();
   const away = ((g.teams && g.teams.away && g.teams.away.name) || "").toUpperCase();
   return (home === team) ? ("vs "+away) : ("@"+home);
