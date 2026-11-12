@@ -754,8 +754,8 @@ function showPlayerModal(p){
   card.className = "card";
   card.style.cssText = "max-width:360px;width:90%;max-height:80vh;overflow:auto";
   card.onclick = ev=>ev.stopPropagation();
-  const opp = playerOpp(p);
-  card.innerHTML = '<h2>'+name+injuryBadge(name)+'</h2><p>'+pos+' · '+team+(opp?' · '+opp:'')+'</p><p>Season proj: '+(e.proj||"—")+' · Week '+week+' proj: '+(e.projWeek||"—")+'</p><div id="live-card-stats" style="margin-top:10px;font-size:13px;color:#7cc8ff">Loading live stats…</div><button class="btn btn-lime" style="margin-top:12px;margin-right:8px" onclick="dropPlayer('+p.id+')">Drop</button><button class="btn" style="margin-top:12px" onclick="this.closest(\'div\').parentElement.remove()">Close</button>';
+  const opp = playerOpp(p) || "—";
+  card.innerHTML = '<h2>'+name+injuryBadge(name)+'</h2><p style="font-size:15px;margin:4px 0"><strong>'+pos+' · '+team+'</strong> · <span style="color:#69be28">'+opp+'</span></p><p style="opacity:.8;margin:4px 0">Season proj: '+(e.proj||"—")+' · Week '+week+' proj: '+(e.projWeek||"—")+'</p><div id="live-card-stats" style="margin-top:10px;font-size:13px;color:#7cc8ff;min-height:40px">Loading stats…</div><button class="btn btn-lime" style="margin-top:12px;margin-right:8px" onclick="dropPlayer('+p.id+')">Drop</button><button class="btn" style="margin-top:12px" onclick="this.closest(\'div\').parentElement.remove()">Close</button>';
   modal.appendChild(card);
   document.body.appendChild(modal);
   const box = card.querySelector("#live-card-stats");
@@ -764,12 +764,12 @@ function showPlayerModal(p){
     fetchPlayerStats(apiId, week).then(stats => {
       const pts = fantasyPoints(stats);
       const line = liveLine(stats);
-      if(pts != null){
-        box.innerHTML = '<strong>Week '+week+': '+pts+' pts</strong>'+(line ? '<div style="margin-top:4px">'+line+'</div>' : '');
+      if(pts != null && pts > 0){
+        box.innerHTML = '<strong style="color:#69be28">Week '+week+': '+pts+' pts</strong>'+(line ? '<div style="margin-top:4px;font-size:12px">'+line+'</div>' : '');
       } else {
-        box.textContent = "No live stats this week";
+        box.innerHTML = '<span style="opacity:.7">No live stats yet · Proj: '+(e.projWeek||"—")+'</span>';
       }
-    }).catch(()=>{ box.textContent = "Could not load live stats"; });
+    }).catch(()=>{ box.textContent = "Could not load stats"; });
   }).catch(()=>{ box.textContent = "Could not look up player"; });
 }
 
