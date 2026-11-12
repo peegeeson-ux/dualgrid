@@ -525,18 +525,18 @@ function updateRosterTotal(){
     let total = 0;
     const card = sum.closest(".card");
     if(!card) return;
-    card.querySelectorAll(".log-item .live-pts").forEach(el => {
+    card.querySelectorAll(".log-item .live-pts[data-live='1']").forEach(el => {
       const n = Number(el.textContent);
       if(!isNaN(n)) total += n;
     });
-    sum.textContent = total.toFixed(1);
+    sum.textContent = total > 0 ? total.toFixed(1) : "—";
   });
 }
 
 function updateMatchupTotals(){
   document.querySelectorAll("details.card").forEach(card => {
     let home = 0, away = 0, homeN = 0, awayN = 0;
-    card.querySelectorAll(".live-pts").forEach(el => {
+    card.querySelectorAll(".live-pts[data-live='1']").forEach(el => {
       const v = parseFloat(el.textContent);
       if(isNaN(v)) return;
       const row = el.closest("div[style*='grid-template-columns']");
