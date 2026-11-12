@@ -562,9 +562,18 @@ function fetchNflGames(force){
     .then(r => r.json()).then(d => {
       if(d.errors && (d.errors.rateLimit || d.errors.requests)) throw new Error("rate");
       const games = d.response || [];
-      const week = currentNflWeek();
-      const label = "Week " + week;
-      let filtered = games.filter(g => g.game && String(g.game.week||"") === label);
+      // Prefer games from the current calendar week (Sun-Mon window)
+      const now = new Date();
+      const day = now.getDay();
+      const startOfWeek = new Date(now); startOfWeek.setDate(now.getDate() - day);
+      const endOfWeek = new Date(startOfWeek); endOfWeek.setDate(startOfWeek.getDate() + 7);
+      let filtered = games.filter(g => {
+        const id = (g.game && g.game.id) || "";
+        const m = id.match(/(\d{4})(\d{2})(\d{2})/);
+        if(!m) return false;
+        const gd = new Date(m[1]+"-"+m[2]+"-"+m[3]);
+        return gd >= startOfWeek && gd < endOfWeek;
+      });
       if(!filtered.length) filtered = games.filter(g => g.game && String(g.game.week||"").startsWith("Week "));
       if(filtered.length){
         nflGamesCache = filtered.slice(0, 16); fillGameScores();
@@ -665,7 +674,8 @@ function renderNflTicker(games){
   } catch(e){ /* silent */ }
 }
 function currentNflWeek(){
-  const start = new Date("2026-09-09"); // 2026 kickoff (Wed Sep 9)
+  // 2026 season: Week 10 is the week of Nov 11
+  const start = new Date("2026-09-02");
   const now = new Date();
   const diff = Math.floor((now - start) / (7*24*60*60*1000));
   return Math.max(1, Math.min(18, diff+1));
