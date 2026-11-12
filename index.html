@@ -503,6 +503,20 @@ function fillGameScores(){
   });
 }
 
+function playerOpp(p){
+  if(!p || !p.team) return "";
+  const games = nflGamesCache || [];
+  const team = (p.team||"").toUpperCase();
+  const g = games.find(gm => {
+    const home = ((gm.teams && gm.teams.home && (gm.teams.home.name || gm.teams.home.id)) || "").toUpperCase();
+    const away = ((gm.teams && gm.teams.away && (gm.teams.away.name || gm.teams.away.id)) || "").toUpperCase();
+    return home === team || away === team || home.includes(team) || away.includes(team);
+  });
+  if(!g) return "";
+  const home = ((g.teams && g.teams.home && g.teams.home.name) || "").toUpperCase();
+  const away = ((g.teams && g.teams.away && g.teams.away.name) || "").toUpperCase();
+  return (home === team) ? ("vs "+away) : ("@"+home);
+}
 function updateRosterTotal(){
   document.querySelectorAll(".live-sum:not([data-side])").forEach(sum => {
     let total = 0;
@@ -753,7 +767,8 @@ function showPlayerModal(p){
   card.className = "card";
   card.style.cssText = "max-width:360px;width:90%;max-height:80vh;overflow:auto";
   card.onclick = ev=>ev.stopPropagation();
-  card.innerHTML = '<h2>'+name+injuryBadge(name)+'</h2><p>'+pos+' · '+team+'</p><p>Season proj: '+(e.proj||"—")+' · Week '+week+' proj: '+(e.projWeek||"—")+'</p><div id="live-card-stats" style="margin-top:10px;font-size:13px;color:#7cc8ff">Loading live stats…</div><button class="btn btn-lime" style="margin-top:12px;margin-right:8px" onclick="dropPlayer('+p.id+')">Drop</button><button class="btn" style="margin-top:12px" onclick="this.closest(\'div\').parentElement.remove()">Close</button>';
+  const opp = playerOpp(p);
+  card.innerHTML = '<h2>'+name+injuryBadge(name)+'</h2><p>'+pos+' · '+team+(opp?' · '+opp:'')+'</p><p>Season proj: '+(e.proj||"—")+' · Week '+week+' proj: '+(e.projWeek||"—")+'</p><div id="live-card-stats" style="margin-top:10px;font-size:13px;color:#7cc8ff">Loading live stats…</div><button class="btn btn-lime" style="margin-top:12px;margin-right:8px" onclick="dropPlayer('+p.id+')">Drop</button><button class="btn" style="margin-top:12px" onclick="this.closest(\'div\').parentElement.remove()">Close</button>';
   modal.appendChild(card);
   document.body.appendChild(modal);
   const box = card.querySelector("#live-card-stats");
@@ -1863,7 +1878,8 @@ if(added) save(s);
       html+='<div class="card"><h3>Starters</h3><div class="log-item" style="opacity:.6;font-size:11px;border-bottom:1px solid #333"><span>POS</span><span>PLAYER</span><span>SZN</span><span>WK</span><span>PTS</span><span></span></div>'+slots.map((slot,i)=>{
         const pl = assigned[i];
         const e = pl ? enrich(pl) : null;
-        return '<div class="log-item" data-player-id="'+(pl?pl.id:'')+'" style="border-left:6px solid '+(pl?colors[pl.pos]||"#999":"#444")+'"><b>'+slot.label+'</b><span class="name" data-player-id="'+(pl?pl.id:'')+'">'+(e?e.name+injuryBadge(e.name):"empty")+'</span><span style="opacity:.7">'+(e&&e.proj?e.proj:"")+'</span><span style="opacity:.7">'+(e&&e.projWeek?e.projWeek:"")+'</span><span style="color:#69be28;font-weight:700" class="live-pts" data-id="'+(pl?pl.id:'')+'">—</span><span class="game-score" data-id="'+(pl?pl.id:'')+'" style="font-size:10px;color:#aaa;margin-left:6px"></span>'+(pl && (mineHere || override)?'<button class="btn" data-move="bench" data-pod="'+pod+'" data-team="'+team.id+'" data-id="'+pl.id+'">Bench</button>':'<span></span>')+'</div>';
+        const opp = pl ? playerOpp(pl) : "";
+      return '<div class="log-item" data-player-id="'+(pl?pl.id:'')+'" style="border-left:6px solid '+(pl?colors[pl.pos]||"#999":"#444")+'"><b>'+slot.label+'</b><span class="name" data-player-id="'+(pl?pl.id:'')+'">'+(e?e.name+injuryBadge(e.name):"empty")+(opp?' <span style="opacity:.6;font-size:11px">'+opp+'</span>':"")+'</span><span style="opacity:.7">'+(e&&e.proj?e.proj:"")+'</span><span style="opacity:.7">'+(e&&e.projWeek?e.projWeek:"")+'</span><span style="color:#69be28;font-weight:700" class="live-pts" data-id="'+(pl?pl.id:'')+'">—</span><span class="game-score" data-id="'+(pl?pl.id:'')+'" style="font-size:10px;color:#aaa;margin-left:6px"></span>'+(pl && (mineHere || override)?'<button class="btn" data-move="bench" data-pod="'+pod+'" data-team="'+team.id+'" data-id="'+pl.id+'">Bench</button>':'<span></span>')+'</div>';
       }).join("")+'<div style="margin-top:8px;font-size:13px;color:#7cc8ff"><strong>Starters</strong> Proj <span class="proj-sum">'+(assigned.reduce((s,p)=>s+((enrich(p)||{}).projWeek||0),0).toFixed(1))+'</span> · Live <span class="live-sum">—</span></div></div>';
       html+='<div class="card"><h3>Bench</h3>'+bench.map(pl=>{
         const e = enrich(pl);
@@ -2021,7 +2037,8 @@ games.forEach(g=>{
     const bLabel = (slots[i] && slots[i].pos === "FLEX") ? "FLEX" : (slotLabel(b) || b.pos || "");
     const aLive = livePts[a.id];
     const bLive = livePts[b.id];
-    rows+='<div style="display:grid;grid-template-columns:1fr auto 1fr;gap:8px;align-items:center;padding:4px 0;border-bottom:1px solid #1a3a5c"><div><div class="name" data-player-id="'+(a.id||'')+'">'+a.name+injuryBadge(a.name)+'</div><div class="sub">'+aLabel+(a.projWeek?' · '+a.projWeek:'')+'</div><div class="sub live-line" data-id="'+(a.id||'')+'" style="font-size:11px;color:#7cc8ff"></div><div class="sub game-score" data-id="'+(a.id||'')+'" style="font-size:10px;color:#aaa"></div><div class="live-pts" data-id="'+(a.id||'')+'" style="font-size:12px;color:#69be28;font-weight:700">'+(aLive!=null?aLive:"—")+'</div></div><div class="pos '+(a.pos||"")+'" style="min-width:36px;text-align:center">'+(aLabel||"")+'</div><div style="text-align:right"><div class="name" data-player-id="'+(b.id||'')+'">'+b.name+injuryBadge(b.name)+'</div><div class="sub">'+bLabel+(b.projWeek?' · '+b.projWeek:'')+'</div><div class="sub live-line" data-id="'+(b.id||'')+'" style="font-size:11px;color:#7cc8ff"></div><div class="sub game-score" data-id="'+(b.id||'')+'" style="font-size:10px;color:#aaa"></div><div class="live-pts" data-id="'+(b.id||'')+'" style="font-size:12px;color:#69be28;font-weight:700">'+(bLive!=null?bLive:"—")+'</div></div></div>';
+    const aOpp = playerOpp(a); const bOpp = playerOpp(b);
+    rows+='<div style="display:grid;grid-template-columns:1fr auto 1fr;gap:8px;align-items:center;padding:4px 0;border-bottom:1px solid #1a3a5c"><div><div class="name" data-player-id="'+(a.id||'')+'">'+a.name+injuryBadge(a.name)+(aOpp?' <span style="opacity:.6;font-size:11px">'+aOpp+'</span>':"")+'</div><div class="sub">'+aLabel+(a.projWeek?' · '+a.projWeek:'')+'</div><div class="sub live-line" data-id="'+(a.id||'')+'" style="font-size:11px;color:#7cc8ff"></div><div class="sub game-score" data-id="'+(a.id||'')+'" style="font-size:10px;color:#aaa"></div><div class="live-pts" data-id="'+(a.id||'')+'" style="font-size:12px;color:#69be28;font-weight:700">'+(aLive!=null?aLive:"—")+'</div></div><div class="pos '+(a.pos||"")+'" style="min-width:36px;text-align:center">'+(aLabel||"")+'</div><div style="text-align:right"><div class="name" data-player-id="'+(b.id||'')+'">'+b.name+injuryBadge(b.name)+(bOpp?' <span style="opacity:.6;font-size:11px">'+bOpp+'</span>':"")+'</div><div class="sub">'+bLabel+(b.projWeek?' · '+b.projWeek:'')+'</div><div class="sub live-line" data-id="'+(b.id||'')+'" style="font-size:11px;color:#7cc8ff"></div><div class="sub game-score" data-id="'+(b.id||'')+'" style="font-size:10px;color:#aaa"></div><div class="live-pts" data-id="'+(b.id||'')+'" style="font-size:12px;color:#69be28;font-weight:700">'+(bLive!=null?bLive:"—")+'</div></div></div>';
   }
   const homeProj = homeLine.reduce((s,p)=>s+((enrich(p)||{}).projWeek||0),0);
   const awayProj = awayLine.reduce((s,p)=>s+((enrich(p)||{}).projWeek||0),0);
