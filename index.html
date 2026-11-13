@@ -279,49 +279,39 @@ function fetchPlayerStats(playerId, week){
 function fantasyPoints(stats){
   if(!stats || !stats.teams || !stats.teams.length) return null;
   const s = stats.teams[0] && stats.teams[0].statistics && stats.teams[0].statistics[0];
+  if(!s) return null;
   const rules = scoringRules || {};
   const r = (k, d) => Number(rules[k]) || d;
-  const grab = (group, name) => {
-    const g = (stats.teams[0] && stats.teams[0].groups || []).find(x => x.name === group);
-    if(!g) return 0;
-    const st = (g.statistics || []).find(x => x.name === name);
-    return st ? Number(st.value) || 0 : 0;
-  };
   let pts = 0;
   // Passing
-  const pYd = grab("Passing", "yards");
-  const pTD = grab("Passing", "passing touchdowns");
+  const pYd = Number(s.pass && s.pass.yards) || 0;
+  const pTD = Number(s.pass && s.pass.touchdowns) || 0;
+  const pInt = Number(s.pass && s.pass.interceptions) || 0;
   pts += pTD * r("ptd", 4);
   pts += pYd * r("pyd", 0.04);
-  pts += grab("Passing", "interceptions") * r("int", -2);
+  pts += pInt * r("int", -2);
   if(pYd >= 400) pts += r("pass400", 4);
   else if(pYd >= 300) pts += r("pass300", 3);
   // Rushing
-  const rYd = grab("Rushing", "yards");
-  const rTD = grab("Rushing", "rushing touchdowns");
+  const rYd = Number(s.rush && s.rush.yards) || 0;
+  const rTD = Number(s.rush && s.rush.touchdowns) || 0;
   pts += rTD * r("rtd", 6);
   pts += rYd * r("ryd", 0.1);
   if(rYd >= 200) pts += r("rush200", 4);
   else if(rYd >= 100) pts += r("rush100", 2);
   // Receiving
-  const recYd = grab("Receiving", "yards");
-  const recTD = grab("Receiving", "receiving touchdowns");
-  const recs = grab("Receiving", "receptions");
+  const recYd = Number(s.rec && s.rec.yards) || 0;
+  const recTD = Number(s.rec && s.rec.touchdowns) || 0;
+  const recs = Number(s.rec && s.rec.receptions) || 0;
   pts += recTD * r("rectd", 6);
   pts += recYd * r("recyd", 0.1);
   pts += recs * r("rec", 1);
   if(recYd >= 200) pts += r("rec200", 4);
   else if(recYd >= 100) pts += r("rec100", 2);
-  // Misc
-  pts += grab("Fumbles", "fumbles lost") * r("fumLost", -2);
-  if(pts > 0) return Math.round(pts * 10) / 10;
-  // Fallback
-  if(s && s.fantasy && s.fantasy.points){
-    const fp = s.fantasy.points;
-    const val = (typeof fp === "object") ? (fp.PPR || fp.halfPPR || fp.standard) : fp;
-    const n = Number(val);
-    if(!isNaN(n) && n > 0) return Math.round(n * 10) / 10;
-  }
+  // Fumbles
+  const fum = Number(s.fumbles && s.fumbles.lost) || 0;
+  pts += fum * r("fumLost", -2);
+  if(pts !== 0) return Math.round(pts * 10) / 10;
   return null;
 }
 function liveLine(stats){
