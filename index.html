@@ -370,6 +370,7 @@ function loadScoringRules(){
   });
 }
 function loadBoxCache(){
+  boxCache = {};
   return fetchNflGames(false).then(games => {
     const done = (games||[]).filter(g => g.game && (g.game.status.short === "Completed" || g.game.status.short === "Live - In Progress"));
     return Promise.all(done.map(g => {
@@ -508,7 +509,7 @@ function fillGameScores(){
 
 function playerOpp(p){
   if(!p || !p.team) return "";
-  const games = nflGamesCache || [];
+  const games = (nflGamesCache || []).filter(g => isCurrentWeekGame(g));
   if(!games.length) return "";
   const team = (p.team||"").toUpperCase();
   const g = games.find(gm => {
