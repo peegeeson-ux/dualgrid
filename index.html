@@ -681,6 +681,13 @@ function currentNflWeek(){
   if(day > 2) week += 1;
   if(week < 1) week = 1;
   if(week > 18) week = 18;
+  // Clear old caches when the week changes
+  if(window._lastWeek && window._lastWeek !== week){
+    boxCache = {};
+    Object.keys(livePts).forEach(k => delete livePts[k]);
+    nflGamesCache = null;
+  }
+  window._lastWeek = week;
   return week;
 }
 function applyWeekResults(s){
