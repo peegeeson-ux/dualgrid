@@ -666,7 +666,22 @@ function renderNflTicker(games){
   } catch(e){ /* silent */ }
 }
 function currentNflWeek(){
-  return 10;
+  // Flip to next week every Tuesday at 2pm ET
+  // Week 1 starts Thursday Sept 10, 2026
+  const now = new Date();
+  const et = new Date(now.toLocaleString("en-US", {timeZone:"America/New_York"}));
+  const seasonStart = new Date("2026-09-10T00:00:00-04:00");
+  const ms = et - seasonStart;
+  const days = Math.floor(ms / 86400000);
+  let week = Math.floor(days / 7) + 1;
+  // After Tuesday 2pm, show the next week
+  const day = et.getDay(); // 0=Sun, 2=Tue
+  const hour = et.getHours();
+  if(day === 2 && hour >= 14) week += 1;
+  if(day > 2) week += 1;
+  if(week < 1) week = 1;
+  if(week > 18) week = 18;
+  return week;
 }
 function applyWeekResults(s){
   if(!s.records) s.records = {week:1, rows:{}};
@@ -681,8 +696,15 @@ function applyWeekResults(s){
     if(!g.home||!g.away||g.home.name==="BYE"||g.away.name==="BYE") return;
     const homeKey = g.pod+"-"+g.home.id;
     const awayKey = g.pod+"-"+g.away.id;
-    const homePts = (g.home.lineup&&g.home.lineup.starters||[]).reduce((sum,p)=>sum+(livePts[p.id]!=null?Number(livePts[p.id]):(enrich(p).projWeek||0)),0);
-    const awayPts = (g.away.lineup&&g.away.lineup.starters||[]).reduce((sum,p)=>sum+(livePts[p.id]!=null?Number(livePts[p.id]):(enrich(p).projWeek||0)),0);
+    const nflWeek = String(currentNflWeek());
+    const homePts = (g.home.lineup&&g.home.lineup.starters||[]).reduce((sum,p)=>{
+      const live = (livePts[p.id]!=null && livePts[p.id+"_wk"]==nflWeek) ? Number(livePts[p.id]) : null;
+      return sum + (live!=null ? live : (enrich(p).projWeek||0));
+    },0);
+    const awayPts = (g.away.lineup&&g.away.lineup.starters||[]).reduce((sum,p)=>{
+      const live = (livePts[p.id]!=null && livePts[p.id+"_wk"]==nflWeek) ? Number(livePts[p.id]) : null;
+      return sum + (live!=null ? live : (enrich(p).projWeek||0));
+    },0);
     if(!s.records.rows[homeKey]) s.records.rows[homeKey]={w:0,l:0,pf:0,pa:0};
     if(!s.records.rows[awayKey]) s.records.rows[awayKey]={w:0,l:0,pf:0,pa:0};
     const hr = s.records.rows[homeKey], ar = s.records.rows[awayKey];
