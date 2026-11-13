@@ -445,11 +445,15 @@ function fillLiveStats(){
         }
       }
       if(!cached){
-        const last = key.split(" ").pop();
-        const first = key.split(" ")[0];
+        const parts = key.split(" ");
+        const last = parts.pop();
+        const first = parts[0] || "";
         for(const k in boxCache){
-          const kLast = k.split(" ").pop();
-          if(k === last || kLast === last || k.includes(last) || (first.length > 2 && k.includes(first) && k.includes(last))){
+          const kParts = k.split(" ");
+          const kLast = kParts.pop();
+          const kFirst = kParts[0] || "";
+          // Require both first and last name to match
+          if(kLast === last && kFirst === first){
             cached = boxCache[k];
             break;
           }
@@ -517,7 +521,7 @@ function playerOpp(p){
     const away = ((gm.teams && gm.teams.away && (gm.teams.away.name || gm.teams.away.id)) || "").toUpperCase();
     return home === team || away === team || home.includes(team) || away.includes(team);
   });
-  if(!g) return "BYE";
+  if(!g) return "";
   const home = ((g.teams && g.teams.home && g.teams.home.name) || "").toUpperCase();
   const away = ((g.teams && g.teams.away && g.teams.away.name) || "").toUpperCase();
   return (home === team) ? ("vs "+away) : ("@"+home);
