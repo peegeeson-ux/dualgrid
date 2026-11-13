@@ -510,8 +510,11 @@ function playerOpp(p){
   if(!p || !p.team) return "";
   const games = nflGamesCache || [];
   if(!games.length) return "";
+  const week = String(currentNflWeek());
   const team = (p.team||"").toUpperCase();
   const g = games.find(gm => {
+    const gw = String((gm.game && gm.game.week) || "");
+    if(gw && gw !== week && !gw.includes(week)) return false;
     const home = ((gm.teams && gm.teams.home && (gm.teams.home.name || gm.teams.home.id)) || "").toUpperCase();
     const away = ((gm.teams && gm.teams.away && (gm.teams.away.name || gm.teams.away.id)) || "").toUpperCase();
     return home === team || away === team || home.includes(team) || away.includes(team);
@@ -566,10 +569,17 @@ function fetchNflGames(force){
     .then(r => r.json()).then(d => {
       if(d.errors && (d.errors.rateLimit || d.errors.requests)) throw new Error("rate");
       const games = d.response || [];
-      if(games.length){
-        nflGamesCache = games.slice(0, 16);
+      const week = String(currentNflWeek());
+      const filtered = games.filter(g => {
+        const gw = String((g.game && g.game.week) || "");
+        return !gw || gw === week || gw.includes(week);
+      });
+      if(filtered.length){
+        nflGamesCache = filtered.slice(0, 16);
         fillGameScores();
         nflCacheTime = Date.now();
+      } else if(games.length){
+        nflGamesCache = [];
       }
       return nflGamesCache || [];
     }).catch(()=>nflGamesCache || []);
