@@ -674,19 +674,21 @@ function gameDate(g){
   return new Date(s.slice(0,4)+"-"+s.slice(4,6)+"-"+s.slice(6,8)+"T12:00:00");
 }
 function isCurrentWeekGame(g){
-  const d = gameDate(g);
-  if(!d) return false;
+  const id = (g && g.game && g.game.id) || "";
+  const m = id.match(/^(\d{8})/);
+  if(!m) return false;
+  const gameDay = m[1]; // YYYYMMDD
   const now = new Date();
   const et = new Date(now.toLocaleString("en-US", {timeZone:"America/New_York"}));
-  // NFL week runs Thursday to Wednesday
-  const day = et.getDay(); // 0=Sun, 4=Thu
+  const day = et.getDay();
+  const daysSinceThu = (day + 3) % 7;
   const start = new Date(et);
-  const daysSinceThu = (day + 3) % 7; // days since last Thursday
   start.setDate(start.getDate() - daysSinceThu);
-  start.setHours(0,0,0,0);
+  const startStr = start.getFullYear() + String(start.getMonth()+1).padStart(2,"0") + String(start.getDate()).padStart(2,"0");
   const end = new Date(start);
   end.setDate(end.getDate() + 7);
-  return d >= start && d < end;
+  const endStr = end.getFullYear() + String(end.getMonth()+1).padStart(2,"0") + String(end.getDate()).padStart(2,"0");
+  return gameDay >= startStr && gameDay < endStr;
 }
 function currentNflWeek(){
   // Flip to next week every Tuesday at 2pm ET
