@@ -567,15 +567,11 @@ function fetchNflGames(force){
       if(d.errors && (d.errors.rateLimit || d.errors.requests)) throw new Error("rate");
       const games = d.response || [];
       const current = games.filter(g => isCurrentWeekGame(g));
-      if(current.length){
-        nflGamesCache = current.slice(0, 16);
-        fillGameScores();
-        nflCacheTime = Date.now();
-      } else if(games.length){
-        nflGamesCache = games.slice(0, 16);
-        fillGameScores();
-        nflCacheTime = Date.now();
-      }
+      nflGamesCache = current.slice(0, 16);
+      fillGameScores();
+      nflCacheTime = Date.now();
+      // Clear box cache so old week stats don't stick
+      boxCache = {};
       return nflGamesCache || [];
     }).catch(()=>nflGamesCache || []);
 }
