@@ -679,15 +679,15 @@ function gameDate(g){
 }
 function isCurrentWeekGame(g){
   const d = gameDate(g);
-  if(!d) return true;
+  if(!d) return false;
   const now = new Date();
   const et = new Date(now.toLocaleString("en-US", {timeZone:"America/New_York"}));
-  const day = et.getDay();
+  // NFL week runs Thursday to Wednesday
+  const day = et.getDay(); // 0=Sun, 4=Thu
   const start = new Date(et);
-  // Week starts Tuesday 2pm
-  const daysBack = (day === 0) ? 5 : (day === 1) ? 6 : (day - 2);
-  start.setDate(start.getDate() - daysBack);
-  start.setHours(14,0,0,0);
+  const daysSinceThu = (day + 3) % 7; // days since last Thursday
+  start.setDate(start.getDate() - daysSinceThu);
+  start.setHours(0,0,0,0);
   const end = new Date(start);
   end.setDate(end.getDate() + 7);
   return d >= start && d < end;
