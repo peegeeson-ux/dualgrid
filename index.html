@@ -510,11 +510,8 @@ function playerOpp(p){
   if(!p || !p.team) return "";
   const games = nflGamesCache || [];
   if(!games.length) return "";
-  const week = String(currentNflWeek());
   const team = (p.team||"").toUpperCase();
   const g = games.find(gm => {
-    const gw = String((gm.game && gm.game.week) || "");
-    if(gw && gw !== week && !gw.includes(week)) return false;
     const home = ((gm.teams && gm.teams.home && (gm.teams.home.name || gm.teams.home.id)) || "").toUpperCase();
     const away = ((gm.teams && gm.teams.away && (gm.teams.away.name || gm.teams.away.id)) || "").toUpperCase();
     return home === team || away === team || home.includes(team) || away.includes(team);
@@ -569,17 +566,15 @@ function fetchNflGames(force){
     .then(r => r.json()).then(d => {
       if(d.errors && (d.errors.rateLimit || d.errors.requests)) throw new Error("rate");
       const games = d.response || [];
-      const week = String(currentNflWeek());
-      const filtered = games.filter(g => {
-        const gw = String((g.game && g.game.week) || "");
-        return !gw || gw === week || gw.includes(week);
-      });
-      if(filtered.length){
-        nflGamesCache = filtered.slice(0, 16);
+      const current = games.filter(g => isCurrentWeekGame(g));
+      if(current.length){
+        nflGamesCache = current.slice(0, 16);
         fillGameScores();
         nflCacheTime = Date.now();
       } else if(games.length){
-        nflGamesCache = [];
+        nflGamesCache = games.slice(0, 16);
+        fillGameScores();
+        nflCacheTime = Date.now();
       }
       return nflGamesCache || [];
     }).catch(()=>nflGamesCache || []);
@@ -674,6 +669,28 @@ function renderNflTicker(games){
     }).join("   ·   ");
     ticker.innerHTML = '<span>' + text + '</span>';
   } catch(e){ /* silent */ }
+}
+function gameDate(g){
+  const id = (g && g.game && g.game.id) || "";
+  const m = id.match(/^(\d{8})/);
+  if(!m) return null;
+  const s = m[1];
+  return new Date(s.slice(0,4)+"-"+s.slice(4,6)+"-"+s.slice(6,8)+"T12:00:00");
+}
+function isCurrentWeekGame(g){
+  const d = gameDate(g);
+  if(!d) return true;
+  const now = new Date();
+  const et = new Date(now.toLocaleString("en-US", {timeZone:"America/New_York"}));
+  const day = et.getDay();
+  const start = new Date(et);
+  // Week starts Tuesday 2pm
+  const daysBack = (day === 0) ? 5 : (day === 1) ? 6 : (day - 2);
+  start.setDate(start.getDate() - daysBack);
+  start.setHours(14,0,0,0);
+  const end = new Date(start);
+  end.setDate(end.getDate() + 7);
+  return d >= start && d < end;
 }
 function currentNflWeek(){
   // Flip to next week every Tuesday at 2pm ET
