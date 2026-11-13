@@ -464,13 +464,14 @@ function fillLiveStats(){
     }
     if(cached){
       const pts = fantasyPoints(cached);
+      const line = liveLine(cached);
       if(pts != null && pts > 0){
         ptsEls.forEach(el => { el.textContent = pts; el.setAttribute("data-live","1"); });
-        lineEls.forEach(el => el.textContent = liveLine(cached) || "Live");
         livePts[id] = pts;
         livePts[id+"_wk"] = week;
         updateMatchupTotals();
       }
+      if(line) lineEls.forEach(el => el.textContent = line);
     }
     // Live stats are optional — only replace if real data arrives and we don't already have a live number
     if(livePts[id] != null) return;
