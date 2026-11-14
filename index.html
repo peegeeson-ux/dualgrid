@@ -462,8 +462,9 @@ function fillLiveStats(){
       const pts = fantasyPoints(cached);
       const line = liveLine(cached);
       if(line){
-        ptsEls.forEach(el => { el.textContent = (pts != null ? pts : 0); el.setAttribute("data-live","1"); });
-        livePts[id] = pts != null ? pts : 0;
+        const show = pts != null ? pts : 0;
+        ptsEls.forEach(el => { el.textContent = show; el.setAttribute("data-live","1"); });
+        livePts[id] = show;
         livePts[id+"_wk"] = week;
         lineEls.forEach(el => el.textContent = line);
         updateMatchupTotals();
@@ -539,12 +540,15 @@ function updateRosterTotal(){
 function updateMatchupTotals(){
   document.querySelectorAll("details.card").forEach(card => {
     let home = 0, away = 0, homeN = 0, awayN = 0;
-    card.querySelectorAll(".live-pts[data-live='1']").forEach(el => {
+    card.querySelectorAll(".live-pts").forEach(el => {
       const id = el.getAttribute("data-id");
       if(!id) return;
+      const lineEl = el.parentElement && el.parentElement.querySelector(".live-line");
+      const hasLine = lineEl && lineEl.textContent.trim().length > 2;
+      if(!hasLine && el.getAttribute("data-live") !== "1") return;
       const txt = el.textContent.trim();
       const v = parseFloat(txt);
-      if(isNaN(v) || v === 0) return;
+      if(isNaN(v)) return;
       const row = el.closest("div[style*='grid-template-columns']");
       if(!row) return;
       const isHome = row.children[0] && row.children[0].contains(el);
