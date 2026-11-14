@@ -835,7 +835,7 @@ function showPlayerModal(p){
   if(schedBox && team){
     const abv = {"WAS":"WSH","WSH":"WSH"}[team] || team;
     fetch("https://dualgrid-players.peegeeson.workers.dev/schedule").then(r=>r.json()).then(d=>{
-      const sched = (d.response && d.response[abv]) || {};
+      const sched = (d.response && (d.response[abv] || d.response[team] || d.response["WSH"])) || {};
       const weeks = Object.keys(sched).sort((a,b)=>Number(a)-Number(b));
       if(weeks.length){
         schedBox.innerHTML = weeks.map(w=>'<span style="margin-right:8px">Wk '+w+': '+(sched[w].opponent||"—")+'</span>').join("");
