@@ -539,7 +539,7 @@ function updateRosterTotal(){
 function updateMatchupTotals(){
   document.querySelectorAll("details.card").forEach(card => {
     let home = 0, away = 0, homeN = 0, awayN = 0;
-    card.querySelectorAll(".live-pts").forEach(el => {
+    card.querySelectorAll(".live-pts[data-live='1']").forEach(el => {
       const v = parseFloat(el.textContent);
       if(isNaN(v)) return;
       const row = el.closest("div[style*='grid-template-columns']");
@@ -1572,6 +1572,7 @@ pods.forEach(pod=>{
 const out=[]; for(let i=0;i<seasonGames;i++)out.push(weeks[i%Math.max(1,weeks.length)]||[]); return out;
 }
 function renderScoreboard(){
+loadBoxCache().then(()=>{
 const s=load(); if(!s.records)s.records={week:1,rows:{}};
 const rec=s.records; if(!rec.board)rec.board={style:"standard"};
 const pods=podsOf(s); const can=!!s.owner;
@@ -1586,12 +1587,18 @@ weekGames.forEach(g=>{
   const saved=(rec.board.games||[]).find(x=>x.key===key)||{};
   const nflWeek = String(currentNflWeek());
   const homePts = (g.home.lineup&&g.home.lineup.starters||[]).reduce((sum,p)=>{
-    const live = (livePts[p.id]!=null && livePts[p.id+"_wk"]==nflWeek) ? Number(livePts[p.id]) : 0;
-    return sum + live;
+    const e = enrich(p);
+    const key = (e.name||"").toLowerCase().trim();
+    const cached = boxCache[key];
+    const live = cached ? fantasyPoints(cached) : null;
+    return sum + (live != null ? live : 0);
   },0);
   const awayPts = (g.away.lineup&&g.away.lineup.starters||[]).reduce((sum,p)=>{
-    const live = (livePts[p.id]!=null && livePts[p.id+"_wk"]==nflWeek) ? Number(livePts[p.id]) : 0;
-    return sum + live;
+    const e = enrich(p);
+    const key = (e.name||"").toLowerCase().trim();
+    const cached = boxCache[key];
+    const live = cached ? fantasyPoints(cached) : null;
+    return sum + (live != null ? live : 0);
   },0);
   games.push({key,pod:g.pod,home:g.home,away:g.away,hs:homePts||saved.hs||0,as:awayPts||saved.as||0,teams:ensureDraft(s,g.pod).teams});
 });
@@ -1634,6 +1641,7 @@ const slg=document.getElementById("scope-league"); if(slg) slg.onclick=()=>{cons
 const ss=document.getElementById("style-standard"); if(ss) ss.onclick=()=>{const st=load(); st.records.board=st.records.board||{}; st.records.board.style="standard"; save(st); publishRecords(); renderScoreboard();};
 const sr=document.getElementById("style-retro"); if(sr) sr.onclick=()=>{const st=load(); st.records.board=st.records.board||{}; st.records.board.style="retro"; save(st); publishRecords(); renderScoreboard();};
 const sb=document.getElementById("save-board"); if(sb) sb.onclick=()=>{const st=load(); st.records.board=st.records.board||{style:style}; const by={}; document.querySelectorAll("[data-game]").forEach(inp=>{by[inp.dataset.game]=by[inp.dataset.game]||{key:inp.dataset.game}; by[inp.dataset.game][inp.dataset.side]=Number(inp.value)||0;}); st.records.board.games=Object.values(by); const sched={}; document.querySelectorAll('[data-sched]').forEach(sel=>{sched[sel.dataset.sched]=sched[sel.dataset.sched]||{}; const slot=sched[sel.dataset.sched][sel.dataset.slot]=sched[sel.dataset.sched][sel.dataset.slot]||[null,null]; slot[sel.dataset.side==='home'?0:1]=Number(sel.value);}); Object.keys(sched).forEach(pod=>sched[pod]=Object.values(sched[pod])); st.records.board.schedule=sched; save(st); publishRecords(); renderScoreboard();};
+});
 }
 
 function renderBracket(){
