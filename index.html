@@ -539,9 +539,15 @@ function updateRosterTotal(){
 function updateMatchupTotals(){
   document.querySelectorAll("details.card").forEach(card => {
     let home = 0, away = 0, homeN = 0, awayN = 0;
-    card.querySelectorAll(".live-pts[data-live='1']").forEach(el => {
-      const v = parseFloat(el.textContent);
-      if(isNaN(v)) return;
+    card.querySelectorAll(".live-pts").forEach(el => {
+      const id = el.getAttribute("data-id");
+      if(!id) return;
+      const p = enrich({id:Number(id)});
+      if(!p || !p.name) return;
+      const key = p.name.toLowerCase().trim();
+      const cached = boxCache[key];
+      const v = cached ? fantasyPoints(cached) : null;
+      if(v == null) return;
       const row = el.closest("div[style*='grid-template-columns']");
       if(!row) return;
       const isHome = row.children[0] && row.children[0].contains(el);
