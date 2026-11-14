@@ -1584,7 +1584,16 @@ weekGames.forEach(g=>{
   if(!g.home||!g.away||g.home.name==="BYE"||g.away.name==="BYE") return;
   const key=(g.pod||"")+"-"+g.home.id+"-"+g.away.id;
   const saved=(rec.board.games||[]).find(x=>x.key===key)||{};
-  games.push({key,pod:g.pod,home:g.home,away:g.away,hs:saved.hs||0,as:saved.as||0,teams:ensureDraft(s,g.pod).teams});
+  const nflWeek = String(currentNflWeek());
+  const homePts = (g.home.lineup&&g.home.lineup.starters||[]).reduce((sum,p)=>{
+    const live = (livePts[p.id]!=null && livePts[p.id+"_wk"]==nflWeek) ? Number(livePts[p.id]) : 0;
+    return sum + live;
+  },0);
+  const awayPts = (g.away.lineup&&g.away.lineup.starters||[]).reduce((sum,p)=>{
+    const live = (livePts[p.id]!=null && livePts[p.id+"_wk"]==nflWeek) ? Number(livePts[p.id]) : 0;
+    return sum + live;
+  },0);
+  games.push({key,pod:g.pod,home:g.home,away:g.away,hs:homePts||saved.hs||0,as:awayPts||saved.as||0,teams:ensureDraft(s,g.pod).teams});
 });
 const retro=style==="retro";
 const card=games.map(g=>{
