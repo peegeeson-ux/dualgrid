@@ -43,7 +43,7 @@ h1{font-size:clamp(28px,6vw,52px);line-height:1.05;margin:8px 0 12px;color:#fff}
 .live{font-size:12px;color:var(--lime);font-weight:800}
 label{display:block;margin:8px 0 4px}
 .bulb{display:inline-block;min-width:.72em;text-align:center;color:#3a2a10;text-shadow:0 0 2px #000}.bulb.on{color:#ffe08a;text-shadow:0 0 6px #ffb000,0 0 2px #fff4c2}.bulbs{background:#16110c;background-image:radial-gradient(circle,#4a3418 1.1px,transparent 1.5px);background-size:7px 7px;border:5px solid #5c3d16;border-radius:8px;padding:12px;font-family:ui-monospace,monospace}
-.ticker{position:fixed;left:0;right:0;bottom:0;background:#051428;border-top:1px solid #2a3228;color:#69be28;font-weight:800;font-size:13px;padding:8px 0;overflow:hidden;z-index:8}.ticker span{display:inline-block;padding-left:100%;animation:tick 110s linear infinite;white-space:nowrap}@media(max-width:700px){.ticker span{animation-duration:60s;font-size:11px}}@keyframes tick{0%{transform:translateX(0)}100%{transform:translateX(-100%)}}
+.ticker{position:fixed;left:0;right:0;bottom:0;background:#051428;border-top:1px solid #2a3228;color:#69be28;font-weight:800;font-size:13px;padding:8px 0;overflow:hidden;z-index:8}.ticker span{display:inline-block;padding-left:100%;animation:tick 110s linear infinite;white-space:nowrap}@media(max-width:700px){.ticker{font-size:10px}.ticker span{animation-duration:40s;white-space:nowrap}}@keyframes tick{0%{transform:translateX(0)}100%{transform:translateX(-100%)}}
 #nfl-ticker{top:0;bottom:auto;background:#001122;color:#7cc8ff;border-bottom:1px solid #1a3a5c;z-index:9}
 @media print{body{background:#fff;color:#111;-webkit-print-color-adjust:exact;print-color-adjust:exact}.app-header,.ticker,.btn,.no-print{display:none!important}.page{max-width:none;padding:12px}.card{break-inside:avoid;background:#fff!important;color:#111;border:1px solid #ccc}h1,h2,.eyebrow{color:#111}.lede{color:#333}img{opacity:1!important}}
 .brand{letter-spacing:.14em}
@@ -1057,7 +1057,7 @@ root.innerHTML=header('<a class="btn" href="#lobby">League</a><a class="btn" hre
 '</div>'+
 '<h1 style="margin:0 0 8px;color:#c6f25a">Command Center</h1>'+
 '<div style="display:flex;gap:12px;flex-wrap:wrap;margin:12px 0"><span class="btn btn-ghost">Draft ready</span><span class="btn btn-ghost">Your seat locked</span><span class="btn btn-ghost">Board live</span></div><p class="lede" style="margin-top:0">League code: <strong>'+((s.league&&s.league.code)||'')+'</strong></p>'+
-'<div style="display:flex;flex-direction:column;gap:6px;margin-top:8px;max-width:420px">'+
+'<div style="display:flex;flex-direction:column;gap:4px;margin-top:6px;max-width:360px;border:1px solid #2a3228;border-radius:8px;padding:8px">'+
 '<details class="card" style="border-top:3px solid var(--lime)"><summary style="font-weight:700;cursor:pointer;font-size:14px;padding:6px 0">Your team</summary>'+(mine&&mine.teamId!=null?'<p>You are locked to '+((ensureDraft(s,mine.pod).teams.find(team=>team.id===Number(mine.teamId))||{}).name||"your team")+'.</p><input id="home-rename" class="search" placeholder="New team name"><button class="btn btn-lime" id="home-rename-btn" style="margin-top:8px">Rename team</button><label style="margin-top:8px">Team logo</label><input id="home-photo" type="file" accept="image/*"><button class="btn" id="home-photo-clear" style="margin-top:8px">Clear logo</button><input id="link-name" class="search" placeholder="Already claimed? Type your name" style="margin-top:8px"><button class="btn" id="link-seat" style="margin-top:8px">Link this phone</button>':'<p>Claim a seat here. You only get one.</p><input id="link-name" class="search" placeholder="Already claimed? Type your name"><button class="btn" id="link-seat" style="margin-top:8px">Link this phone</button><label>Division</label><select id="home-pod" class="search">'+pods.map(p=>'<option value="'+p+'">'+podName(p)+'</option>').join("")+'</select><label>Team</label><select id="home-team" class="search"></select><input id="home-seat-name" class="search" placeholder="Your name" style="margin-top:8px"><button class="btn btn-lime" id="home-claim" style="margin-top:8px">Claim this team</button><input id="home-rename" class="search" placeholder="New team name" style="margin-top:8px"><button class="btn" id="home-rename-btn" style="margin-top:8px">Rename team</button><label style="margin-top:8px">Team logo</label><input id="home-photo" type="file" accept="image/*"><button class="btn" id="home-photo-clear" style="margin-top:8px">Clear logo</button>')+'</div>'+
 '<div class="command-center">'+
 '<details class="card" open><summary>Draft <span class="flag">🇺🇸</span></summary><p>Join a room or watch the board.</p><div class="join-row"><input id="join-code" placeholder="EAST-7K2"/><button class="btn btn-lime" id="join-btn">Join</button></div><div style="margin-top:10px">'+rooms+'</div></details>'+
@@ -2290,6 +2290,10 @@ function loadWeekTicker(){
       return a + live + " vs " + h;
     }).join("   ·   ");
     ticker.innerHTML = '<span>Week ' + week + ': ' + text + '</span>';
+    if(!window._tickerLoaded && typeof loadBoxCache === "function"){
+      window._tickerLoaded = true;
+      loadBoxCache().then(()=>setTimeout(loadWeekTicker, 800)).catch(()=>{});
+    }
   } catch(e){
     ticker.innerHTML = '<span>Matchups loading…</span>';
   }
