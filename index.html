@@ -373,9 +373,6 @@ function loadBoxCache(){
             if(name){
               const k = name.toLowerCase();
               boxCache[k] = p;
-              // Store by last name too
-              const last = k.split(" ").pop();
-              if(last && last.length > 2) boxCache[last] = p;
               // Defenses by abbreviation
               if(k.includes(" defense")){
                 const abv = k.split(" ")[0];
@@ -822,7 +819,7 @@ function showPlayerModal(p){
   const box = card.querySelector("#live-card-stats");
   const showStats = () => {
     const key = name.toLowerCase().trim();
-    const cached = boxCache[key] || boxCache[key.split(" ").pop()];
+    const cached = boxCache[key];
   if(cached){
     const pts = fantasyPoints(cached);
     const line = liveLine(cached);
