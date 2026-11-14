@@ -542,21 +542,9 @@ function updateMatchupTotals(){
     card.querySelectorAll(".live-pts").forEach(el => {
       const id = el.getAttribute("data-id");
       if(!id) return;
-      const p = enrich({id:Number(id)});
-      if(!p || !p.name) return;
-      const key = p.name.toLowerCase().trim();
-      let cached = boxCache[key];
-      if(!cached){
-        const last = key.split(" ").pop();
-        for(const k in boxCache){
-          if(k.split(" ").pop() === last && k.split(" ")[0] === key.split(" ")[0]){
-            cached = boxCache[k];
-            break;
-          }
-        }
-      }
-      const v = cached ? fantasyPoints(cached) : null;
-      if(v == null) return;
+      const txt = el.textContent.trim();
+      const v = parseFloat(txt);
+      if(isNaN(v) || v === 0) return;
       const row = el.closest("div[style*='grid-template-columns']");
       if(!row) return;
       const isHome = row.children[0] && row.children[0].contains(el);
