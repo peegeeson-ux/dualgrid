@@ -811,9 +811,9 @@ function showPlayerModal(p){
   modal.appendChild(card);
   document.body.appendChild(modal);
   const box = card.querySelector("#live-card-stats");
-  if(!Object.keys(boxCache).length) loadBoxCache();
-  const key = name.toLowerCase().trim();
-  const cached = boxCache[key] || boxCache[key.split(" ").pop()];
+  const showStats = () => {
+    const key = name.toLowerCase().trim();
+    const cached = boxCache[key] || boxCache[key.split(" ").pop()];
   if(cached){
     const pts = fantasyPoints(cached);
     const line = liveLine(cached);
@@ -827,11 +827,15 @@ function showPlayerModal(p){
   } else {
     box.innerHTML = '<span style="opacity:.7">No live stats yet · Proj: '+(e.projWeek||"—")+'</span>';
   }
+  };
+  if(Object.keys(boxCache).length) showStats();
+  else loadBoxCache().then(showStats);
   // Schedule
   const schedBox = card.querySelector("#card-schedule");
   if(schedBox && team){
+    const abv = {"WAS":"WSH","WSH":"WSH"}[team] || team;
     fetch("https://dualgrid-players.peegeeson.workers.dev/schedule").then(r=>r.json()).then(d=>{
-      const sched = (d.response && d.response[team]) || {};
+      const sched = (d.response && d.response[abv]) || {};
       const weeks = Object.keys(sched).sort((a,b)=>Number(a)-Number(b));
       if(weeks.length){
         schedBox.innerHTML = weeks.map(w=>'<span style="margin-right:8px">Wk '+w+': '+(sched[w].opponent||"—")+'</span>').join("");
