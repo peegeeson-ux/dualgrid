@@ -704,11 +704,11 @@ function currentNflWeek(){
   const ms = et - seasonStart;
   const days = Math.floor(ms / 86400000);
   let week = Math.floor(days / 7) + 1;
-  // After Tuesday 2pm, show the next week
+  // Stay on the current week until Tuesday 2pm after the Monday night game
   const day = et.getDay(); // 0=Sun, 2=Tue
   const hour = et.getHours();
   if(day === 2 && hour >= 14) week += 1;
-  if(day > 2) week += 1;
+  if(day > 2 && day < 5) week += 1; // Wed/Thu only
   if(week < 1) week = 1;
   if(week > 18) week = 18;
   // Clear old caches when the week changes
