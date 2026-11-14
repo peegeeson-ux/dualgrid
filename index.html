@@ -545,7 +545,16 @@ function updateMatchupTotals(){
       const p = enrich({id:Number(id)});
       if(!p || !p.name) return;
       const key = p.name.toLowerCase().trim();
-      const cached = boxCache[key];
+      let cached = boxCache[key];
+      if(!cached){
+        const last = key.split(" ").pop();
+        for(const k in boxCache){
+          if(k.split(" ").pop() === last && k.split(" ")[0] === key.split(" ")[0]){
+            cached = boxCache[k];
+            break;
+          }
+        }
+      }
       const v = cached ? fantasyPoints(cached) : null;
       if(v == null) return;
       const row = el.closest("div[style*='grid-template-columns']");
