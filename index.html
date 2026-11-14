@@ -382,6 +382,15 @@ function loadBoxCache(){
                 boxCache[abv] = p;
                 boxCache[abv + " defense"] = p;
               }
+              // Save points history
+              const pts = fantasyPoints(p);
+              if(pts != null){
+                const hist = JSON.parse(localStorage.getItem("playerHistory")||"{}");
+                const wk = String(currentNflWeek());
+                if(!hist[k]) hist[k] = {};
+                hist[k][wk] = pts;
+                localStorage.setItem("playerHistory", JSON.stringify(hist));
+              }
             }
           });
         }).catch(()=>{});
@@ -807,7 +816,7 @@ function showPlayerModal(p){
   card.onclick = ev=>ev.stopPropagation();
   const opp = playerOpp(p) || "—";
   const past = e.weeks ? Object.keys(e.weeks).sort((a,b)=>Number(a)-Number(b)).map(w=>'<span style="margin-right:8px">Wk '+w+': '+(e.weeks[w]||"—")+'</span>').join("") : "";
-  card.innerHTML = '<h2>'+name+injuryBadge(name)+'</h2><p style="font-size:15px;margin:4px 0"><strong>'+pos+' · '+team+'</strong> · <span style="color:#69be28">'+opp+'</span></p><p style="opacity:.8;margin:4px 0">Season proj: '+(e.proj||"—")+' · Week '+week+' proj: '+(e.projWeek||"—")+'</p>'+(past?'<p style="font-size:12px;opacity:.7;margin:4px 0">'+past+'</p>':'')+'<div id="live-card-stats" style="margin-top:10px;font-size:13px;color:#7cc8ff;min-height:40px">Loading stats…</div><div id="card-schedule" style="margin-top:10px;font-size:12px;opacity:.8">Loading schedule…</div><button class="btn btn-lime" style="margin-top:12px;margin-right:8px" onclick="dropPlayer('+p.id+')">Drop</button><button class="btn" style="margin-top:12px" onclick="this.closest(\'div\').parentElement.remove()">Close</button>';
+  card.innerHTML = '<h2>'+name+injuryBadge(name)+'</h2><p style="font-size:15px;margin:4px 0"><strong>'+pos+' · '+team+'</strong> · <span style="color:#69be28">'+opp+'</span></p><p style="opacity:.8;margin:4px 0">Season proj: '+(e.proj||"—")+' · Week '+week+' proj: '+(e.projWeek||"—")+'</p>'+(past?'<p style="font-size:12px;opacity:.7;margin:4px 0">'+past+'</p>':'')+'<div id="live-card-stats" style="margin-top:10px;font-size:13px;color:#7cc8ff;min-height:40px">Loading stats…</div><div id="card-history" style="margin-top:10px;font-size:12px;opacity:.8"></div><div id="card-schedule" style="margin-top:10px;font-size:12px;opacity:.8">Loading schedule…</div><button class="btn btn-lime" style="margin-top:12px;margin-right:8px" onclick="dropPlayer('+p.id+')">Drop</button><button class="btn" style="margin-top:12px" onclick="this.closest(\'div\').parentElement.remove()">Close</button>';
   modal.appendChild(card);
   document.body.appendChild(modal);
   const box = card.querySelector("#live-card-stats");
@@ -831,6 +840,16 @@ function showPlayerModal(p){
   if(Object.keys(boxCache).length) showStats();
   else loadBoxCache().then(showStats);
   // Schedule
+  const histBox = card.querySelector("#card-history");
+  if(histBox){
+    const hist = JSON.parse(localStorage.getItem("playerHistory")||"{}");
+    const key = name.toLowerCase().trim();
+    const weeks = hist[key] || hist[key.split(" ").pop()] || {};
+    const keys = Object.keys(weeks).sort((a,b)=>Number(a)-Number(b));
+    if(keys.length){
+      histBox.innerHTML = '<strong>Past weeks:</strong> ' + keys.map(w=>'<span style="margin-right:8px">Wk '+w+': '+weeks[w]+'</span>').join("");
+    }
+  }
   const schedBox = card.querySelector("#card-schedule");
   if(schedBox && team){
     const abv = {"WAS":"WSH","WSH":"WSH"}[team] || team;
