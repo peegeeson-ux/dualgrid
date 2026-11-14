@@ -811,20 +811,22 @@ function showPlayerModal(p){
   modal.appendChild(card);
   document.body.appendChild(modal);
   const box = card.querySelector("#live-card-stats");
-  findApiId(name).then(apiId => {
-    if(!apiId){ box.textContent = "No live stats available"; return; }
-    fetchPlayerStats(apiId, week).then(stats => {
-      const pts = fantasyPoints(stats);
-      const line = liveLine(stats);
-      if(line){
-        box.innerHTML = '<strong style="color:#69be28">Week '+week+': '+(pts!=null?pts+' pts':'—')+'</strong><div style="margin-top:4px;font-size:12px">'+line+'</div>';
-      } else if(pts != null && pts > 0){
-        box.innerHTML = '<strong style="color:#69be28">Week '+week+': '+pts+' pts</strong>';
-      } else {
-        box.innerHTML = '<span style="opacity:.7">No live stats yet · Proj: '+(e.projWeek||"—")+'</span>';
-      }
-    }).catch(()=>{ box.textContent = "Could not load stats"; });
-  }).catch(()=>{ box.textContent = "Could not look up player"; });
+  if(!Object.keys(boxCache).length) loadBoxCache();
+  const key = name.toLowerCase().trim();
+  const cached = boxCache[key] || boxCache[key.split(" ").pop()];
+  if(cached){
+    const pts = fantasyPoints(cached);
+    const line = liveLine(cached);
+    if(line){
+      box.innerHTML = '<strong style="color:#69be28">Week '+week+': '+(pts!=null?pts+' pts':'—')+'</strong><div style="margin-top:4px;font-size:12px">'+line+'</div>';
+    } else if(pts != null && pts > 0){
+      box.innerHTML = '<strong style="color:#69be28">Week '+week+': '+pts+' pts</strong>';
+    } else {
+      box.innerHTML = '<span style="opacity:.7">No live stats yet · Proj: '+(e.projWeek||"—")+'</span>';
+    }
+  } else {
+    box.innerHTML = '<span style="opacity:.7">No live stats yet · Proj: '+(e.projWeek||"—")+'</span>';
+  }
   // Schedule
   const schedBox = card.querySelector("#card-schedule");
   if(schedBox && team){
