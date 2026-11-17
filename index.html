@@ -410,10 +410,12 @@ function loadBoxCache(){
               const k = name.toLowerCase();
               boxCache[k] = p;
               // Defenses by abbreviation
-              if(k.includes(" defense")){
-                const abv = k.split(" ")[0];
+              if(k.includes(" defense") || k.includes(" dst")){
+                const parts = k.replace(" defense","").replace(" dst","").trim().split(" ");
+                const abv = parts[0];
                 boxCache[abv] = p;
                 boxCache[abv + " defense"] = p;
+                boxCache[abv + " dst"] = p;
               }
               // Save points history
               const pts = fantasyPoints(p);
@@ -467,12 +469,12 @@ function fillLiveStats(){
     const key = (p.name||"").toLowerCase().trim();
     let cached = boxCache[key];
     if(!cached){
-      const isDef = /def|dst|defense/i.test(p.pos||"") || /def|dst|defense/i.test(p.name||"") || /def|dst|defense/i.test(p.name||"");
+      const isDef = /def|dst|defense/i.test(p.pos||"") || /def|dst|defense/i.test(p.name||"");
       if(isDef){
-        const clean = key.replace(/ defense| dst| def/g,"").trim();
+        const clean = key.replace(/ dst| defense| def/g,"").trim();
         const abv = (TEAM_ABV[clean] || TEAM_ABV[key] || "").toLowerCase();
         if(abv){
-          cached = boxCache[abv] || boxCache[abv + " defense"] || boxCache[abv + " def"];
+          cached = boxCache[abv] || boxCache[abv + " defense"] || boxCache[abv + " def"] || boxCache[abv + " dst"];
           console.log("def match", key, "->", abv, cached ? "HIT" : "miss");
         }
       }
