@@ -498,6 +498,7 @@ function fillLiveStats(){
     }
     if(cached){
       const pts = fantasyPoints(cached);
+      console.log("pts for", key, pts);
       const line = liveLine(cached);
       if(line){
         const show = pts != null ? pts : 0;
