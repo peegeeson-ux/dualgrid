@@ -1131,31 +1131,71 @@ const homePod=document.getElementById("home-pod"); if(homePod){}
 const cb=document.getElementById("commish-btn"); if(cb) cb.onclick=()=>{ if(grantCommish(document.getElementById("commish-code").value)) renderHome(); }; const easy=document.getElementById("easy-unlock"); if(easy) easy.onclick=()=>{ const s=load(); s.owner=true; s.commish=s.commish||{}; s.commish[leagueCode()||"default"]=true; save(s); try{localStorage.setItem("dualgrid_owner","1");}catch(e){} alert("Unlocked as commissioner."); renderHome(); };
 return;}
 root.innerHTML=header('<a class="btn btn-lime" href="#home">Home</a><a class="btn" href="#lobby">Leagues</a><a class="btn" href="#scores">Standings</a><a class="btn" href="#scoreboard">Scoreboard</a><a class="btn" href="#bracket">Bracket</a><a class="btn" href="#talk">Talk</a><a class="btn" href="#waiver">Waiver</a><a class="btn" href="#roster">Roster</a><a class="btn" href="#history">History</a><a class="btn" href="#matchup">Matchup</a><a class="btn" href="#payout">Payouts</a><a class="btn" href="#wall">Quad wall</a>')+
-'<div class="page" style="background:#5a5a5a;color:#fff;border:3px solid #c6f25a;border-radius:12px;padding:16px;max-width:1100px;margin:0 auto">'+
+'<div class="page" style="background:#5a5a5a;color:#fff;border:3px solid #c6f25a;border-radius:12px;padding:16px;max-width:1200px;margin:0 auto">'+
 '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">'+
 '<div><img class="hero-mark" src="mark.png" alt="Dualgrid" style="width:48px"><img src="wordmark.png" alt="DUALGRID" style="height:32px;margin-left:8px;vertical-align:middle"></div>'+
 '<div class="eyebrow">'+((s.league&&s.league.name)||'COMMISSIONER')+' <span class="flag">🇺🇸</span></div>'+
 '</div>'+
-'<h1 style="margin:0 0 8px;color:#c6f25a">Commissioner Desk</h1>'+
-'<div style="display:flex;gap:12px;flex-wrap:wrap;margin:12px 0"><span class="btn btn-ghost">Code: '+((s.commishCodes&&s.commishCodes[leagueCode()])||commishCode)+'</span><span class="btn btn-ghost">'+((s.league&&s.league.code)||'No league')+'</span></div>'+
-'<div style="display:grid;grid-template-columns:1fr 1.4fr 1fr;gap:12px;margin-top:12px"><div>'+
-'<details class="card" style="margin-top:8px"><summary style="font-weight:800;cursor:pointer;font-size:18px">League name & logo</summary><input id="league-name" class="search" value="'+leagueName+'"><button class="btn btn-lime" id="save-league" style="margin-top:8px">Save name</button><label>League logo</label><input id="league-logo" type="file" accept="image/*"><button class="btn" id="clear-logo" style="margin-top:8px">Clear logo</button>'+(leagueLogo?'<img src="'+leagueLogo+'" alt="League" style="max-height:72px;margin-top:8px;border-radius:8px">':'')+'</details><details class="card" style="margin-top:8px"><summary style="font-weight:800;cursor:pointer;font-size:18px">Division names</summary>'+pods.map(p=>'<label>'+CODES[p]+'</label><input class="search" data-podname="'+p+'" value="'+podName(p)+'">').join("")+'<button class="btn btn-lime" id="save-names" style="margin-top:8px">Save names</button> <button class="btn" id="reset-names" style="margin-top:8px">Reset to East West</button></details></div><div><details class="card" style="border-top:3px solid var(--lime)"><summary style="font-weight:700;cursor:pointer;font-size:14px;padding:6px 0">Your team</summary><label>Division</label><select id="desk-pod" class="search">'+pods.map(p=>'<option value="'+p+'">'+podName(p)+'</option>').join("")+'</select><label>Team</label><select id="desk-team" class="search"></select><input id="desk-seat-name" class="search" placeholder="Your name" style="margin-top:8px"><button class="btn btn-lime" id="desk-claim" style="margin-top:8px">Claim this team</button><input id="desk-link-name" class="search" placeholder="Already claimed? Type your name" style="margin-top:8px"><button class="btn" id="desk-link" style="margin-top:8px">Link this phone</button><input id="desk-rename" class="search" placeholder="New team name" style="margin-top:8px"><button class="btn" id="desk-rename-btn" style="margin-top:8px">Rename selected team</button><label style="margin-top:8px">Team logo</label><input id="desk-photo" type="file" accept="image/*"><button class="btn" id="desk-photo-clear" style="margin-top:8px">Clear logo</button><button class="btn" id="desk-clear" style="margin-top:8px">Clear the selected team</button><p id="claimed-names" class="lede"></p></div>'+
-'<details class="card" style="border-top:3px solid var(--east)"><summary style="font-weight:700;cursor:pointer;font-size:14px;padding:6px 0">Rooms</summary><p>Join or watch a draft.</p>'+pods.map(p=>'<div class="team-row"><span class="pod-chip '+p+'">'+podName(p)+'</span><span><a class="btn" href="#draft/'+p+'">War Room</a> <a class="btn" href="#board/'+p+'">Board</a></span></div>').join("")+'</div>'+
-'</div><div>'+
-'<div class="card" style="border-top:3px solid var(--west)"><h2>Quick links</h2><div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px"><a class="btn" href="#scores">Standings</a><a class="btn" href="#scoreboard">Scoreboard</a><a class="btn" href="#bracket">Bracket</a><a class="btn" href="#waiver">Waiver</a><a class="btn" href="#talk">Talk</a><a class="btn" href="#roster">Roster</a></div></div>'+
-'</details>'+
-'<details class="card" style="margin-top:8px"><summary style="font-weight:800;cursor:pointer;font-size:18px">League Settings</summary><details class="card" style="margin-top:8px"><summary style="font-weight:800;cursor:pointer">Draft format</summary><button class="btn '+(s.format!=="auction"?"btn-lime":"")+'" data-format="snake">Snake</button> <button class="btn '+(s.format==="auction"?"btn-lime":"")+'" data-format="auction">Auction · $200</button></details>'+
-'<div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:12px"><a class="btn" href="#scoring">Scoring</a><a class="btn" href="#roster">Roster rules</a><a class="btn" href="#trade">Trade settings</a><a class="btn" href="#payout">Payouts</a><a class="btn" href="#history">History</a></div>'+
-'<div class="card" style="margin:12px 0"><h2>Teams per division</h2><input id="div-size" class="search" value="'+teamCount()+'" style="max-width:120px"><button class="btn btn-lime" id="save-size" style="margin-top:8px">Save size</button></div>'+
-'<div class="card" style="margin:12px 0"><h2>Tie breakers</h2><select id="tie-rule" class="search"><option value="split"'+(tieRule==="split"?" selected":"")+'>Two teams: head to head. More than two: points for</option><option value="pf"'+(tieRule==="pf"?" selected":"")+'>Always points for</option><option value="h2h"'+(tieRule==="h2h"?" selected":"")+'>Always head to head</option></select><button class="btn btn-lime" id="save-tie" style="margin-top:8px">Save tie rule</button></div>'+
-'<div class="card" style="margin:12px 0"><h2>Rivals</h2><input id="rival-a" class="search" placeholder="Team A"><input id="rival-b" class="search" placeholder="Team B" style="margin-top:8px"><button class="btn btn-lime" id="save-rival" style="margin-top:8px">Add rival</button><div id="rival-list"></div></div>'+
-'<details class="card"><summary style="font-weight:800;cursor:pointer">Draft dates</summary>'+pods.map(p=>'<div class="team-row"><span>'+podName(p)+'</span><span><input type="date" id="date-'+p+'"><input type="time" id="time-'+p+'"></span></div>').join("")+'<button class="btn btn-lime" id="save-times" style="margin-top:8px">Save draft times</button></details>'+
-'</details>'+
-''+
-''+
-'<details class="card" style="margin-top:8px"><summary style="font-weight:800;cursor:pointer">Circuit</summary><div class="grid-2"><div class="card"><h2>Dual circuit</h2><button class="btn '+(s.circuit==="dual"?"btn-lime":"")+'" data-circuit="dual">Use Dual</button></div><div class="card"><h2>Quad circuit</h2><button class="btn '+(s.circuit==="quad"?"btn-lime":"")+'" data-circuit="quad">Use Quad</button></div></div>'+
-'</div></details></div>'+
-'</div></div></div>';
+'<div style="display:grid;grid-template-columns:200px 1fr 200px;gap:16px;align-items:start">'+
+
+// LEFT: League Settings
+'<div class="card" style="border-top:3px solid var(--lime);padding:12px">'+
+'<h2 style="margin:0 0 12px;color:#c6f25a;font-size:16px">League Settings</h2>'+
+'<details open><summary style="font-weight:700;cursor:pointer;margin-bottom:8px">Draft format</summary><button class="btn '+(s.format!=="auction"?"btn-lime":"")+'" data-format="snake" style="width:100%;margin-bottom:4px">Snake</button><button class="btn '+(s.format==="auction"?"btn-lime":"")+'" data-format="auction" style="width:100%">Auction · $200</button></details>'+
+'<div style="margin-top:12px"><h3 style="margin:0 0 6px;font-size:14px">Teams per division</h3><input id="div-size" class="search" value="'+teamCount()+'" style="width:100%;margin-bottom:6px"><button class="btn btn-lime" id="save-size" style="width:100%">Save size</button></div>'+
+'<div style="margin-top:12px"><h3 style="margin:0 0 6px;font-size:14px">Tie breakers</h3><select id="tie-rule" class="search" style="width:100%;margin-bottom:6px"><option value="split"'+(tieRule==="split"?" selected":"")+'>Two teams: H2H. More: PF</option><option value="pf"'+(tieRule==="pf"?" selected":"")+'>Always points for</option><option value="h2h"'+(tieRule==="h2h"?" selected":"")+'>Always head to head</option></select><button class="btn btn-lime" id="save-tie" style="width:100%">Save</button></div>'+
+'<div style="margin-top:12px"><a class="btn" href="#scoring" style="width:100%;display:block;text-align:center;margin-bottom:4px">Scoring</a><a class="btn" href="#roster" style="width:100%;display:block;text-align:center;margin-bottom:4px">Roster rules</a><a class="btn" href="#payout" style="width:100%;display:block;text-align:center">Payouts</a></div>'+
+'</div>'+
+
+// CENTER: Commissioner Desk
+'<div class="card" style="border:3px solid #c6f25a;border-radius:16px;padding:16px;background:#4a4a4a">'+
+'<h1 style="margin:0 0 16px;color:#c6f25a;text-align:center">Commissioner Desk</h1>'+
+'<div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:16px;justify-content:center"><span class="btn btn-ghost">Code: '+((s.commishCodes&&s.commishCodes[leagueCode()])||commishCode)+'</span><span class="btn btn-ghost">'+((s.league&&s.league.code)||'No league')+'</span></div>'+
+'<div style="display:grid;grid-template-columns:1fr 1.2fr 1fr;gap:12px">'+
+
+// Your team
+'<div class="card" style="border:2px solid #888;border-radius:12px;padding:12px">'+
+'<h3 style="margin:0 0 8px;color:#c6f25a">Your team</h3>'+
+'<label>Division</label><select id="desk-pod" class="search" style="width:100%;margin-bottom:6px">'+pods.map(p=>'<option value="'+p+'">'+podName(p)+'</option>').join("")+'</select>'+
+'<label>Team</label><select id="desk-team" class="search" style="width:100%;margin-bottom:6px"></select>'+
+'<input id="desk-seat-name" class="search" placeholder="Your name" style="width:100%;margin-bottom:6px">'+
+'<button class="btn btn-lime" id="desk-claim" style="width:100%;margin-bottom:6px">Claim this team</button>'+
+'<input id="desk-link-name" class="search" placeholder="Already claimed? Type your name" style="width:100%;margin-bottom:6px">'+
+'<button class="btn" id="desk-link" style="width:100%">Link this phone</button>'+
+'</div>'+
+
+// League name + logo
+'<div class="card" style="border:2px solid #888;border-radius:12px;padding:12px;text-align:center">'+
+'<h3 style="margin:0 0 8px;color:#c6f25a">League name + logo</h3>'+
+'<input id="league-name" class="search" value="'+leagueName+'" style="width:100%;margin-bottom:6px">'+
+'<button class="btn btn-lime" id="save-league" style="width:100%;margin-bottom:8px">Save name</button>'+
+'<label>League logo</label><input id="league-logo" type="file" accept="image/*" style="width:100%;margin-bottom:6px">'+
+'<button class="btn" id="clear-logo" style="width:100%;margin-bottom:8px">Clear logo</button>'+
+(leagueLogo?'<img src="'+leagueLogo+'" alt="League" style="max-height:80px;border-radius:8px">':'')+
+'</div>'+
+
+// Quick links
+'<div class="card" style="border:2px solid #888;border-radius:12px;padding:12px">'+
+'<h3 style="margin:0 0 8px;color:#c6f25a">Quick links</h3>'+
+'<div style="display:flex;flex-direction:column;gap:6px">'+
+'<a class="btn" href="#scores" style="text-align:center">Standings</a>'+
+'<a class="btn" href="#scoreboard" style="text-align:center">Scoreboard</a>'+
+'<a class="btn" href="#bracket" style="text-align:center">Bracket</a>'+
+'<a class="btn" href="#waiver" style="text-align:center">Waiver</a>'+
+'<a class="btn" href="#talk" style="text-align:center">Talk</a>'+
+'<a class="btn" href="#roster" style="text-align:center">Roster</a>'+
+'</div></div>'+
+
+'</div></div>'+
+
+// RIGHT: Rooms / Circuit
+'<div class="card" style="border-top:3px solid var(--west);padding:12px">'+
+'<h2 style="margin:0 0 12px;color:#c6f25a;font-size:16px">Rooms / Circuit</h2>'+
+'<details open><summary style="font-weight:700;cursor:pointer;margin-bottom:8px">Circuit</summary><button class="btn '+(s.circuit==="dual"?"btn-lime":"")+'" data-circuit="dual" style="width:100%;margin-bottom:4px">Dual</button><button class="btn '+(s.circuit==="quad"?"btn-lime":"")+'" data-circuit="quad" style="width:100%">Quad</button></details>'+
+'<div style="margin-top:12px"><h3 style="margin:0 0 6px;font-size:14px">Rooms</h3>'+pods.map(p=>'<a class="btn" href="#draft/'+p+'" style="width:100%;display:block;text-align:center;margin-bottom:4px">'+podName(p)+' Room</a>').join("")+'</div>'+
+'</div>'+
+
+'</div></div>';
 document.querySelectorAll("[data-circuit]").forEach(b=>b.onclick=()=>{const st=load();st.circuit=b.dataset.circuit;save(st);renderHome();});
 document.querySelectorAll("[data-format]").forEach(b=>b.onclick=()=>{const st=load();st.format=b.dataset.format;save(st);renderHome();});
 const joinBtn=document.getElementById("join-btn"); if(joinBtn) joinBtn.onclick=()=>{/* players can draft */const raw=(document.getElementById("join-code").value||"").toUpperCase().trim();const hit=Object.keys(CODES).find(k=>CODES[k]===raw||k.toUpperCase()===raw);if(hit)location.hash="#draft/"+hit;else alert("Unknown code. Try EAST-7K2");};
