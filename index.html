@@ -498,14 +498,13 @@ function fillLiveStats(){
     }
     if(cached){
       const pts = fantasyPoints(cached);
-      console.log("pts for", key, pts);
       const line = liveLine(cached);
-      if(line){
-        const show = pts != null ? pts : 0;
+      if(pts != null){
+        const show = pts;
         ptsEls.forEach(el => { el.textContent = show; el.setAttribute("data-live","1"); });
         livePts[id] = show;
         livePts[id+"_wk"] = week;
-        lineEls.forEach(el => el.textContent = line);
+        if(line) lineEls.forEach(el => el.textContent = line);
         updateMatchupTotals();
       }
     }
