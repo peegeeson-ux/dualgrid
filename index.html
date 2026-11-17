@@ -280,6 +280,11 @@ function fantasyPoints(stats){
   if(!stats || !stats.teams || !stats.teams.length) return null;
   const s = stats.teams[0] && stats.teams[0].statistics && stats.teams[0].statistics[0];
   if(!s) return null;
+  // Use pre-calculated fantasy points when available (kickers, defenses)
+  if(s.fantasy && s.fantasy.points && s.fantasy.points.standard != null){
+    const pre = Number(s.fantasy.points.standard);
+    if(!isNaN(pre) && pre !== 0) return pre;
+  }
   const rules = scoringRules || {};
   const r = (k, d) => Number(rules[k]) || d;
   let pts = 0;
