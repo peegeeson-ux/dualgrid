@@ -368,6 +368,20 @@ function liveLine(stats){
     const y = Number(s.rec.yards)||0; if(y) parts.push(y+" rec yds");
     const t = Number(s.rec.touchdowns)||0; if(t) parts.push(t+" rec TD");
   }
+  // Kickers
+  if(s.fieldGoals){
+    const fg = Number(s.fieldGoals.made)||0; if(fg) parts.push(fg+" FG");
+  }
+  if(s.extraPoints){
+    const xp = Number(s.extraPoints.made)||0; if(xp) parts.push(xp+" XP");
+  }
+  // Defense
+  if(s.sacks || s.interceptions || s.fumblesRecovered || s.defense){
+    const sacks = Number(s.sacks)||Number(s.defense&&s.defense.sacks)||0; if(sacks) parts.push(sacks+" sack");
+    const ints = Number(s.interceptions)||Number(s.defense&&s.defense.interceptions)||0; if(ints) parts.push(ints+" INT");
+    const fr = Number(s.fumblesRecovered)||Number(s.defense&&s.defense.fumblesRecovered)||0; if(fr) parts.push(fr+" FR");
+    const td = Number(s.defensiveTouchdowns)||Number(s.defense&&s.defense.touchdowns)||0; if(td) parts.push(td+" TD");
+  }
   return parts.length ? parts.join(" · ") : "";
 }
 let apiIdCache = {};
