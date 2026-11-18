@@ -739,16 +739,26 @@ function isCurrentWeekGame(g){
   const m = id.match(/^(\d{8})/);
   if(!m) return false;
   const gameDay = m[1]; // YYYYMMDD
+  // Use the same Tuesday-2pm week boundary as currentNflWeek()
   const now = new Date();
   const et = new Date(now.toLocaleString("en-US", {timeZone:"America/New_York"}));
+  const seasonStart = new Date("2026-09-10T00:00:00-04:00");
+  const ms = et - seasonStart;
+  const days = Math.floor(ms / 86400000);
+  let week = Math.floor(days / 7) + 1;
   const day = et.getDay();
-  const daysSinceThu = (day + 3) % 7;
-  const start = new Date(et);
-  start.setDate(start.getDate() - daysSinceThu);
-  const startStr = start.getFullYear() + String(start.getMonth()+1).padStart(2,"0") + String(start.getDate()).padStart(2,"0");
-  const end = new Date(start);
-  end.setDate(end.getDate() + 7);
-  const endStr = end.getFullYear() + String(end.getMonth()+1).padStart(2,"0") + String(end.getDate()).padStart(2,"0");
+  const hour = et.getHours();
+  if(day === 2 && hour >= 14) week += 1;
+  if(day > 2 && day < 5) week += 1;
+  if(week < 1) week = 1;
+  if(week > 18) week = 18;
+  // Week N starts the Thursday of that week
+  const weekStart = new Date(seasonStart);
+  weekStart.setDate(weekStart.getDate() + (week-1)*7);
+  const startStr = weekStart.getFullYear() + String(weekStart.getMonth()+1).padStart(2,"0") + String(weekStart.getDate()).padStart(2,"0");
+  const weekEnd = new Date(weekStart);
+  weekEnd.setDate(weekEnd.getDate() + 7);
+  const endStr = weekEnd.getFullYear() + String(weekEnd.getMonth()+1).padStart(2,"0") + String(weekEnd.getDate()).padStart(2,"0");
   return gameDay >= startStr && gameDay < endStr;
 }
 function currentNflWeek(){
@@ -817,14 +827,15 @@ function autoAdvanceWeek(){
   const stored = Number(s.records.week) || 1;
   const live = currentNflWeek();
   if(stored < live){
-    // Apply previous week results before advancing
+    // Snapshot current (previous week) results before moving forward
     try{ applyWeekResults(s); }catch(e){}
     s.records.week = live;
-    // Hard clear all live caches so old week numbers don't leak
+    // Hard clear so old week numbers cannot appear as live
     Object.keys(livePts).forEach(k => delete livePts[k]);
     boxCache = {};
     playerStatsCache = {};
     nflGamesCache = null;
+    nflCacheTime = 0;
     save(s);
     publishRecords();
   }
