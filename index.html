@@ -811,8 +811,16 @@ function applyWeekResults(s){
   });
 }
 function autoAdvanceWeek(){
-  // disabled for now — week stays where the commissioner sets it
-  return;
+  const s = load();
+  if(!s.records) s.records = {week:1, rows:{}};
+  const stored = Number(s.records.week) || 1;
+  const live = currentNflWeek();
+  if(stored < live){
+    s.records.week = live;
+    Object.keys(livePts).forEach(k => delete livePts[k]);
+    save(s);
+    publishRecords();
+  }
 }
 const FANTASYPROS_KEY = "JYVWx9pdAQ1tdIimRT0wPaIaHpi3t9jJ75oKlj3h";
 let PLAYERS = [];
@@ -979,8 +987,7 @@ const ROUNDS = 8; // fallback
 function defaultState(){return{circuit:"dual",format:"snake",actingAs:{},drafts:{},paid:false,plan:null,season:"2026",paidAt:null,owner:false,payout:{buyIn:50,commishPct:0,useCommish:false,weeklyHigh:20,divRecord:40,first:200,second:100,third:50}};}
 function load(){
   const s = _loadRaw();
-  if(s.records && Number(s.records.week) > 10){ s.records.week = 10; save(s); }
-Object.keys(livePts).forEach(k=>delete livePts[k]);
+  Object.keys(livePts).forEach(k=>delete livePts[k]);
   return s;
 }
 function _loadRaw(){try{const raw=localStorage.getItem(STORE);if(raw)return syncOwner(Object.assign(defaultState(),JSON.parse(raw)));}catch(e){}return syncOwner(defaultState());}
