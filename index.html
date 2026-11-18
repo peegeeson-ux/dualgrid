@@ -481,9 +481,10 @@ function fillLiveStats(){
       lineEls.forEach(el => { if(!el.textContent) el.textContent = (proj != null ? "Proj" : ""); });
     }
     updateMatchupTotals(); updateRosterTotal(); fillGameScores();
-    // Prefer live box score data if we already have it
+    // Prefer live box score data only if it matches the current week
     const key = (p.name||"").toLowerCase().trim();
     let cached = boxCache[key];
+    if(cached && livePts[id+"_wk"] != null && livePts[id+"_wk"] != week) cached = null;
     if(!cached){
       const isDef = /def|dst|defense/i.test(p.pos||"") || /def|dst|defense/i.test(p.name||"");
       if(isDef){
@@ -816,8 +817,14 @@ function autoAdvanceWeek(){
   const stored = Number(s.records.week) || 1;
   const live = currentNflWeek();
   if(stored < live){
+    // Apply previous week results before advancing
+    try{ applyWeekResults(s); }catch(e){}
     s.records.week = live;
+    // Hard clear all live caches so old week numbers don't leak
     Object.keys(livePts).forEach(k => delete livePts[k]);
+    boxCache = {};
+    playerStatsCache = {};
+    nflGamesCache = null;
     save(s);
     publishRecords();
   }
