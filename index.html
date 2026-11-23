@@ -1765,12 +1765,12 @@ weekGames.forEach(g=>{
     const live = (cached) ? fantasyPoints(cached) : ((livePts[p.id] != null) ? Number(livePts[p.id]) : 0);
     return sum + (live || 0);
   },0);
-  games.push({key,pod:g.pod,home:g.home,away:g.away,hs:homePts||saved.hs||0,as:awayPts||saved.as||0,teams:ensureDraft(s,g.pod).teams});
+  games.push({key,pod:g.pod,home:g.home,away:g.away,hs:Number(homePts||saved.hs||0).toFixed(1),as:Number(awayPts||saved.as||0).toFixed(1),teams:ensureDraft(s,g.pod).teams});
 });
 const retro=style==="retro";
 const card=games.map(g=>{
-  const face=retro?'<div style="background:#1a1408;color:#f0c14a;border:3px solid #f0c14a;border-radius:8px;padding:10px;font-family:ui-monospace,monospace;letter-spacing:.04em"><div style="font-size:11px;opacity:.7">'+podName(g.pod).toUpperCase()+'</div><div style="display:flex;justify-content:space-between;font-size:20px;font-weight:900"><span>'+g.home.name.slice(0,14)+'</span><span>'+g.hs+'</span></div><div style="display:flex;justify-content:space-between;font-size:20px;font-weight:900"><span>'+g.away.name.slice(0,14)+'</span><span>'+g.as+'</span></div></div>'
-  :'<div class="card" style="background:transparent;border:1px solid #c6f25a55"><div class="pod-chip '+g.pod+'">'+podName(g.pod)+'</div><div class="team-row"><span>'+(g.home.photo?'<img src="'+g.home.photo+'" alt="" style="width:28px;height:28px;object-fit:cover;border-radius:6px;vertical-align:middle;margin-right:6px">':'')+g.home.name+'</span><strong>'+g.hs+'</strong></div><div class="team-row"><span>'+(g.away.photo?'<img src="'+g.away.photo+'" alt="" style="width:28px;height:28px;object-fit:cover;border-radius:6px;vertical-align:middle;margin-right:6px">':'')+g.away.name+'</span><strong>'+g.as+'</strong></div></div>';
+  const face=retro?'<div style="background:#1a1408;color:#f0c14a;border:3px solid #f0c14a;border-radius:8px;padding:10px;font-family:ui-monospace,monospace;letter-spacing:.04em"><div style="font-size:11px;opacity:.7">'+podName(g.pod).toUpperCase()+'</div><div style="display:flex;justify-content:space-between;font-size:20px;font-weight:900"><span>'+g.home.name.slice(0,14)+'</span><span>'+Number(g.hs).toFixed(1)+'</span></div><div style="display:flex;justify-content:space-between;font-size:20px;font-weight:900"><span>'+g.away.name.slice(0,14)+'</span><span>'+Number(g.as).toFixed(1)+'</span></div></div>'
+  :'<div class="card" style="background:transparent;border:1px solid #c6f25a55"><div class="pod-chip '+g.pod+'">'+podName(g.pod)+'</div><div class="team-row"><span>'+(g.home.photo?'<img src="'+g.home.photo+'" alt="" style="width:28px;height:28px;object-fit:cover;border-radius:6px;vertical-align:middle;margin-right:6px">':'')+g.home.name+'</span><strong>'+Number(g.hs).toFixed(1)+'</strong></div><div class="team-row"><span>'+(g.away.photo?'<img src="'+g.away.photo+'" alt="" style="width:28px;height:28px;object-fit:cover;border-radius:6px;vertical-align:middle;margin-right:6px">':'')+g.away.name+'</span><strong>'+Number(g.as).toFixed(1)+'</strong></div></div>';
   const edit=can?'<div style="display:flex;gap:6px;margin-top:6px"><input data-game="'+g.key+'" data-side="hs" value="'+g.hs+'" style="width:70px"><input data-game="'+g.key+'" data-side="as" value="'+g.as+'" style="width:70px"></div>':'';
   return '<div style="margin-bottom:10px">'+face+edit+'</div>';
 }).join("");
@@ -1795,7 +1795,7 @@ seasonSchedule(s).map((week,i)=>{
     const hit=list.some(r=>names.includes(String(r.a||"").toLowerCase())&&names.includes(String(r.b||"").toLowerCase()));
     const homeKey = g.pod+"-"+g.home.id;
     const sc = wkScores[homeKey];
-    const scoreTxt = (isPast && sc) ? ' <strong>'+sc.pf.toFixed(1)+' - '+sc.pa.toFixed(1)+'</strong>' : '';
+    const scoreTxt = (sc && sc.pf > 0) ? ' <strong>'+sc.pf.toFixed(1)+' - '+sc.pa.toFixed(1)+'</strong>' : (wk === (Number(rec.week)||1)) ? ' <strong>'+(games.find(gg=>gg.pod===g.pod && gg.home.id===g.home.id)||{}).hs+' - '+((games.find(gg=>gg.pod===g.pod && gg.home.id===g.home.id)||{}).as||0)+'</strong>' : '';
     return '<div class="team-row" style="'+(hit?"background:#69be2822;border-radius:8px;padding:6px":"")+'"><span>'+(hit?"<strong>Rival Week</strong> · ":"")+(g.pod&&g.pod!=="league"?podName(g.pod)+" · ":"")+g.home.name+' vs '+g.away.name+scoreTxt+'</span></div>';
   }).join("")+'</div>';
 }).join("")+
