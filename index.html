@@ -640,40 +640,23 @@ function updateRosterTotal(){
 }
 
 function updateMatchupTotals(){
+  const week = String(currentNflWeek());
   document.querySelectorAll("details.card").forEach(card => {
-    let home = 0, away = 0, homeN = 0, awayN = 0;
-    const week = String(currentNflWeek());
+    let home = 0, away = 0;
     card.querySelectorAll(".live-pts").forEach(el => {
       const id = el.getAttribute("data-id");
       if(!id) return;
-      // Prefer livePts cache if available for this week
-      let v = null;
-      if(livePts[id] != null && livePts[id+"_wk"] == week){
-        v = Number(livePts[id]);
-      } else {
-        const txt = el.textContent.trim();
-        const parsed = parseFloat(txt);
-        if(!isNaN(parsed) && parsed > 0 && el.getAttribute("data-live") === "1") v = parsed;
-      }
-      if(v == null || isNaN(v) || v === 0) return;
+      const v = (livePts[id] != null && livePts[id+"_wk"] == week) ? Number(livePts[id]) : null;
+      if(v == null || isNaN(v)) return;
       const row = el.closest("div[style*='grid-template-columns']");
       if(!row) return;
       const isHome = row.children[0] && row.children[0].contains(el);
-      if(isHome){ home += v; homeN++; } else { away += v; awayN++; }
+      if(isHome) home += v; else away += v;
     });
     const homeSum = card.querySelector('.live-sum[data-side="home"]');
     const awaySum = card.querySelector('.live-sum[data-side="away"]');
-    if(homeSum) homeSum.textContent = homeN ? home.toFixed(1) : "—";
-    if(awaySum) awaySum.textContent = awayN ? away.toFixed(1) : "—";
-    const odds = card.querySelector(".odds-line");
-    if(odds && (homeN || awayN)){
-      const total = home + away || 1;
-      const hp = Math.round(home / total * 100);
-      const ap = 100 - hp;
-      const hn = odds.getAttribute("data-home") || "Home";
-      const an = odds.getAttribute("data-away") || "Away";
-      odds.textContent = "Odds · "+hn+" "+hp+"% · "+an+" "+ap+"%";
-    }
+    if(homeSum) homeSum.textContent = home > 0 ? home.toFixed(1) : "—";
+    if(awaySum) awaySum.textContent = away > 0 ? away.toFixed(1) : "—";
   });
 }
 function fetchNflGames(force){
@@ -1770,12 +1753,10 @@ weekGames.forEach(g=>{
   const storedHome = stored[homeKey] && stored[homeKey].pf;
   const storedAway = stored[awayKey] && stored[awayKey].pf;
   const homePts = (storedHome != null) ? storedHome : (g.home.lineup&&g.home.lineup.starters||[]).reduce((sum,p)=>{
-    const live = (livePts[p.id] != null && livePts[p.id+"_wk"]==nflWeek) ? livePts[p.id] : null;
-    return sum + (live != null ? live : 0);
+    return sum + ((livePts[p.id] != null) ? Number(livePts[p.id]) : 0);
   },0);
   const awayPts = (storedAway != null) ? storedAway : (g.away.lineup&&g.away.lineup.starters||[]).reduce((sum,p)=>{
-    const live = (livePts[p.id] != null && livePts[p.id+"_wk"]==nflWeek) ? livePts[p.id] : null;
-    return sum + (live != null ? live : 0);
+    return sum + ((livePts[p.id] != null) ? Number(livePts[p.id]) : 0);
   },0);
   games.push({key,pod:g.pod,home:g.home,away:g.away,hs:homePts||saved.hs||0,as:awayPts||saved.as||0,teams:ensureDraft(s,g.pod).teams});
 });
@@ -2174,7 +2155,7 @@ if(added) save(s);
     setTimeout(fillLiveStats, 100); 
     setTimeout(fillLiveStats, 800); 
     setTimeout(fillLiveStats, 2000); 
-    setTimeout(()=>{ fillLiveStats(); updateMatchupTotals(); }, 2500); 
+    setTimeout(()=>{ fillLiveStats(); updateMatchupTotals(); if(location.hash.startsWith("#scoreboard")) renderScoreboard(); }, 2500); 
     setTimeout(updateMatchupTotals, 4000);
   }).catch(()=>setTimeout(fillLiveStats, 100));
   loadInjuries().then(()=>{ const app = document.getElementById("app"); if(app) app.querySelectorAll(".name").forEach(el=>{ const id = el.getAttribute("data-player-id"); if(!id) return; const p = PLAYERS.find(x=>String(x.id)===id); if(p){ const badge = injuryBadge(p.name); if(badge && !el.querySelector(".injury-badge")) el.insertAdjacentHTML("beforeend", badge); } }); });
@@ -2337,7 +2318,7 @@ document.getElementById("app").innerHTML=header('<a class="btn" href="#home">Hom
     setTimeout(fillLiveStats, 100); 
     setTimeout(fillLiveStats, 800); 
     setTimeout(fillLiveStats, 2000); 
-    setTimeout(()=>{ fillLiveStats(); updateMatchupTotals(); }, 2500); 
+    setTimeout(()=>{ fillLiveStats(); updateMatchupTotals(); if(location.hash.startsWith("#scoreboard")) renderScoreboard(); }, 2500); 
     setTimeout(updateMatchupTotals, 4000);
   }).catch(()=>setTimeout(fillLiveStats, 100));
   loadInjuries().then(()=>{ const app = document.getElementById("app"); if(app) app.querySelectorAll(".name").forEach(el=>{ const id = el.getAttribute("data-player-id"); if(!id) return; const p = PLAYERS.find(x=>String(x.id)===id); if(p){ const badge = injuryBadge(p.name); if(badge && !el.querySelector(".injury-badge")) el.insertAdjacentHTML("beforeend", badge); } }); });
