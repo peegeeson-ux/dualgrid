@@ -659,6 +659,10 @@ function updateMatchupTotals(){
     if(key && (home > 0 || away > 0)){
       window._matchTotals = window._matchTotals || {};
       window._matchTotals[key] = {home:home, away:away};
+      // Also store by individual team name for easier lookup
+      const parts = key.split("|");
+      if(parts[0]) window._matchTotals[parts[0]] = home;
+      if(parts[1]) window._matchTotals[parts[1]] = away;
       try{ localStorage.setItem("dualgrid-match-totals", JSON.stringify(window._matchTotals)); }catch(e){}
     }
   });
@@ -1787,6 +1791,9 @@ weekGames.forEach(g=>{
     if(t){ 
       homePts = t.home || homePts; 
       awayPts = t.away || awayPts; 
+    } else {
+      if(window._matchTotals[g.home.name] != null) homePts = window._matchTotals[g.home.name];
+      if(window._matchTotals[g.away.name] != null) awayPts = window._matchTotals[g.away.name];
     }
   } else if(!isCurrent && storedHome != null && storedHome > 0){
     homePts = storedHome; awayPts = storedAway || 0;
@@ -2486,6 +2493,10 @@ function loadWeekTicker(){
         const key = h + "|" + a;
         const t = window._matchTotals[key];
         if(t){ hPts = t.home || 0; aPts = t.away || 0; }
+        else {
+          if(window._matchTotals[h] != null) hPts = window._matchTotals[h];
+          if(window._matchTotals[a] != null) aPts = window._matchTotals[a];
+        }
       }
       if(!hPts && !aPts){
         const sumLive = (starters) => (starters||[]).reduce((sum,pl)=>{
