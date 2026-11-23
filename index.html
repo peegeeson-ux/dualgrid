@@ -660,6 +660,7 @@ function updateMatchupTotals(){
       window._matchTotals = window._matchTotals || {};
       const names = (summary.textContent || "").replace(/\s+/g," ").trim();
       window._matchTotals[names] = {home:home, away:away};
+      try{ localStorage.setItem("dualgrid-match-totals", JSON.stringify(window._matchTotals)); }catch(e){}
     }
   });
 }
@@ -1749,6 +1750,7 @@ pods.forEach(pod=>{
 const out=[]; for(let i=0;i<seasonGames;i++)out.push(weeks[i%Math.max(1,weeks.length)]||[]); return out;
 }
 function renderScoreboard(){
+try{ window._matchTotals = JSON.parse(localStorage.getItem("dualgrid-match-totals")||"{}"); }catch(e){}
 loadBoxCache().then(()=>{
   fillLiveStats();
   setTimeout(()=>{
@@ -2456,6 +2458,7 @@ function rejectTrade(i){
 function loadWeekTicker(){
   const ticker = document.getElementById("week-ticker");
   if(!ticker) return;
+  try{ window._matchTotals = JSON.parse(localStorage.getItem("dualgrid-match-totals")||"{}"); }catch(e){}
   const hash = location.hash.replace("#","") || "";
   const page = hash.split("/")[0] || "";
   const inLeague = !!leagueCode();
