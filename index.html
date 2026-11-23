@@ -488,6 +488,12 @@ function fillLiveStats(){
       if(nm) p = enrich({name:nm});
     }
     if(!p || !p.name || p.name === "—") return;
+    const opp = playerOpp(p);
+    if(opp === "BYE"){
+      ptsEls.forEach(el => el.textContent = "BYE");
+      lineEls.forEach(el => el.textContent = "");
+      return;
+    }
     const ptsEls = document.querySelectorAll('.live-pts[data-id="'+id+'"]');
     const lineEls = document.querySelectorAll('.live-line[data-id="'+id+'"]');
     // Always show projection as fallback, then live if available
@@ -1845,7 +1851,6 @@ const sr=document.getElementById("style-retro"); if(sr) sr.onclick=()=>{const st
 const sb=document.getElementById("save-board"); if(sb) sb.onclick=()=>{const st=load(); st.records.board=st.records.board||{style:style}; const by={}; document.querySelectorAll("[data-game]").forEach(inp=>{by[inp.dataset.game]=by[inp.dataset.game]||{key:inp.dataset.game}; by[inp.dataset.game][inp.dataset.side]=Number(inp.value)||0;}); st.records.board.games=Object.values(by); const sched={}; document.querySelectorAll('[data-sched]').forEach(sel=>{sched[sel.dataset.sched]=sched[sel.dataset.sched]||{}; const slot=sched[sel.dataset.sched][sel.dataset.slot]=sched[sel.dataset.sched][sel.dataset.slot]||[null,null]; slot[sel.dataset.side==='home'?0:1]=Number(sel.value);}); Object.keys(sched).forEach(pod=>sched[pod]=Object.values(sched[pod])); st.records.board.schedule=sched; save(st); publishRecords(); renderScoreboard();};
 const cw=document.getElementById("close-week"); if(cw) cw.onclick=()=>{ if(!load().owner)return; if(!confirm("Close Week "+((load().records&&load().records.week)||1)+" and snapshot the current totals?"))return; cw.textContent="Closing…"; loadBoxCache().then(()=>{ fillLiveStats(); setTimeout(()=>{ const st=load(); try{ applyWeekResults(st); }catch(e){} save(st); publishRecords(); alert("Week closed. Totals saved."); cw.textContent="Close Week "+((load().records&&load().records.week)||1); renderScoreboard(); }, 3000); }); };
   }, 2500);
-  setTimeout(()=>{ if(!window._sbRefresh){ window._sbRefresh = true; renderScoreboard(); setTimeout(()=>{ window._sbRefresh = false; }, 3000); } }, 8000);
 });
 });
 }
