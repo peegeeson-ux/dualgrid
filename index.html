@@ -654,6 +654,13 @@ function updateMatchupTotals(){
     });
     card.querySelectorAll('.live-sum[data-side="home"]').forEach(el => el.textContent = home > 0 ? home.toFixed(1) : "—");
     card.querySelectorAll('.live-sum[data-side="away"]').forEach(el => el.textContent = away > 0 ? away.toFixed(1) : "—");
+    // Store for scoreboard/ticker by team id
+    const summary = card.querySelector("summary");
+    if(summary && (home > 0 || away > 0)){
+      window._matchTotals = window._matchTotals || {};
+      const names = summary.textContent || "";
+      window._matchTotals[names.slice(0,40)] = {home:home, away:away, text:names};
+    }
   });
 }
 function fetchNflGames(force){
@@ -1765,16 +1772,18 @@ weekGames.forEach(g=>{
   const storedHome = stored[homeKey] && stored[homeKey].pf;
   const storedAway = stored[awayKey] && stored[awayKey].pf;
   const isCurrent = (Number(week) === Number(currentNflWeek()));
-  const homePts = (isCurrent && livePts) ? (g.home.lineup&&g.home.lineup.starters||[]).reduce((sum,p)=>{
+  let homePts = (g.home.lineup&&g.home.lineup.starters||[]).reduce((sum,p)=>{
     return sum + ((livePts[p.id] != null) ? Number(livePts[p.id]) : 0);
-  },0) : ((storedHome != null && storedHome > 0) ? storedHome : (g.home.lineup&&g.home.lineup.starters||[]).reduce((sum,p)=>{
+  },0);
+  let awayPts = (g.away.lineup&&g.away.lineup.starters||[]).reduce((sum,p)=>{
     return sum + ((livePts[p.id] != null) ? Number(livePts[p.id]) : 0);
-  },0));
-  const awayPts = (isCurrent && livePts) ? (g.away.lineup&&g.away.lineup.starters||[]).reduce((sum,p)=>{
-    return sum + ((livePts[p.id] != null) ? Number(livePts[p.id]) : 0);
-  },0) : ((storedAway != null && storedAway > 0) ? storedAway : (g.away.lineup&&g.away.lineup.starters||[]).reduce((sum,p)=>{
-    return sum + ((livePts[p.id] != null) ? Number(livePts[p.id]) : 0);
-  },0));
+  },0);
+  if(isCurrent && window._matchTotals){
+    const key = Object.keys(window._matchTotals).find(k => k.includes(g.home.name) && k.includes(g.away.name));
+    if(key){ homePts = window._matchTotals[key].home || homePts; awayPts = window._matchTotals[key].away || awayPts; }
+  } else if(storedHome != null && storedHome > 0){
+    homePts = storedHome; awayPts = storedAway || 0;
+  }
   games.push({key,pod:g.pod,home:g.home,away:g.away,hs:Number(homePts||saved.hs||0).toFixed(1),as:Number(awayPts||saved.as||0).toFixed(1),teams:ensureDraft(s,g.pod).teams});
 });
 const retro=style==="retro";
@@ -2464,14 +2473,20 @@ function loadWeekTicker(){
     const text = games.map(g => {
       const h = (g.home && g.home.name) || "Home";
       const a = (g.away && g.away.name) || "Away";
-      const sumLive = (starters) => (starters||[]).reduce((sum,pl)=>{
-        const e = enrich(pl); const id = e.id;
-        if(id && livePts[id] != null) return sum + livePts[id];
-        const key = (e.name||"").toLowerCase().trim();
-        const c = boxCache[key]; return sum + (c ? (fantasyPoints(c)||0) : 0);
-      },0);
-      const hPts = sumLive(g.home && g.home.lineup && g.home.lineup.starters);
-      const aPts = sumLive(g.away && g.away.lineup && g.away.lineup.starters);
+      let hPts = 0, aPts = 0;
+      if(window._matchTotals){
+        const key = Object.keys(window._matchTotals).find(k => k.includes(h) && k.includes(a));
+        if(key){ hPts = window._matchTotals[key].home || 0; aPts = window._matchTotals[key].away || 0; }
+      }
+      if(!hPts && !aPts){
+        const sumLive = (starters) => (starters||[]).reduce((sum,pl)=>{
+          const e = enrich(pl); const id = e.id;
+          if(id && livePts[id] != null) return sum + livePts[id];
+          return sum;
+        },0);
+        hPts = sumLive(g.home && g.home.lineup && g.home.lineup.starters);
+        aPts = sumLive(g.away && g.away.lineup && g.away.lineup.starters);
+      }
       const live = (hPts || aPts) ? " " + aPts.toFixed(1) + "-" + hPts.toFixed(1) : "";
       return a + " vs " + h + live;
     }).join("   ·   ");
