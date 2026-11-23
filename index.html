@@ -655,13 +655,9 @@ function updateMatchupTotals(){
     card.querySelectorAll('.live-sum[data-side="home"]').forEach(el => el.textContent = home > 0 ? home.toFixed(1) : "—");
     card.querySelectorAll('.live-sum[data-side="away"]').forEach(el => el.textContent = away > 0 ? away.toFixed(1) : "—");
     // Store for scoreboard/ticker by team names
-    const summary = card.querySelector("summary");
-    if(summary && (home > 0 || away > 0)){
+    const key = card.getAttribute("data-key");
+    if(key && (home > 0 || away > 0)){
       window._matchTotals = window._matchTotals || {};
-      const txt = (summary.textContent || "").replace(/\s+/g," ").trim();
-      const homeName = (txt.split(" vs ")[0]||"").trim();
-      const awayName = (txt.split(" vs ")[1]||"").split(" ")[0]||"";
-      const key = homeName + "|" + awayName;
       window._matchTotals[key] = {home:home, away:away};
       try{ localStorage.setItem("dualgrid-match-totals", JSON.stringify(window._matchTotals)); }catch(e){}
     }
@@ -2349,7 +2345,7 @@ games.forEach(g=>{
   const totalProj = homeProj + awayProj || 1;
   const homeOdds = Math.round(homeProj / totalProj * 100);
   const awayOdds = 100 - homeOdds;
-  list+='<details class="card" style="margin:10px 0;'+highlight+'"><summary style="font-weight:800;cursor:pointer;padding:4px 0">'+g.home.name+' <span class="proj-sum" data-side="home">'+homeProj.toFixed(1)+'</span> / <span class="live-sum" data-side="home">—</span> vs '+g.away.name+' <span class="proj-sum" data-side="away">'+awayProj.toFixed(1)+'</span> / <span class="live-sum" data-side="away">—</span>'+(isMine?' <span style="color:#69be28">· YOU</span>':'')+'</summary><div style="margin-top:8px"><div style="display:flex;justify-content:space-between;margin-bottom:8px"><strong>'+g.home.name+'</strong><span>vs</span><strong>'+g.away.name+'</strong></div>'+rows+'<div style="margin-top:8px;font-size:13px;color:#7cc8ff"><strong>'+g.home.name+'</strong> Proj <span class="proj-sum" data-side="home">'+homeProj.toFixed(1)+'</span> · Live <span class="live-sum" data-side="home">—</span><br><strong>'+g.away.name+'</strong> Proj <span class="proj-sum" data-side="away">'+awayProj.toFixed(1)+'</span> · Live <span class="live-sum" data-side="away">—</span><div class="odds-line" style="margin-top:6px;font-size:12px;opacity:.85" data-home="'+g.home.name+'" data-away="'+g.away.name+'">Odds · '+g.home.name+' '+homeOdds+'% · '+g.away.name+' '+awayOdds+'%</div></div></div></details>';
+  list+='<details class="card" data-key="'+g.home.name+'|'+g.away.name+'" style="margin:10px 0;'+highlight+'"><summary style="font-weight:800;cursor:pointer;padding:4px 0">'+g.home.name+' <span class="proj-sum" data-side="home">'+homeProj.toFixed(1)+'</span> / <span class="live-sum" data-side="home">—</span> vs '+g.away.name+' <span class="proj-sum" data-side="away">'+awayProj.toFixed(1)+'</span> / <span class="live-sum" data-side="away">—</span>'+(isMine?' <span style="color:#69be28">· YOU</span>':'')+'</summary><div style="margin-top:8px"><div style="display:flex;justify-content:space-between;margin-bottom:8px"><strong>'+g.home.name+'</strong><span>vs</span><strong>'+g.away.name+'</strong></div>'+rows+'<div style="margin-top:8px;font-size:13px;color:#7cc8ff"><strong>'+g.home.name+'</strong> Proj <span class="proj-sum" data-side="home">'+homeProj.toFixed(1)+'</span> · Live <span class="live-sum" data-side="home">—</span><br><strong>'+g.away.name+'</strong> Proj <span class="proj-sum" data-side="away">'+awayProj.toFixed(1)+'</span> · Live <span class="live-sum" data-side="away">—</span><div class="odds-line" style="margin-top:6px;font-size:12px;opacity:.85" data-home="'+g.home.name+'" data-away="'+g.away.name+'">Odds · '+g.home.name+' '+homeOdds+'% · '+g.away.name+' '+awayOdds+'%</div></div></div></details>';
 });
 document.getElementById("app").innerHTML=header('<a class="btn" href="#home">Home</a><a class="btn" href="#scoreboard">Scoreboard</a>')+
 '<div class="page"><div class="eyebrow">WEEK '+week+' MATCHUPS</div><h1>All games</h1><p class="lede">Your team is highlighted. Tap a game to see the lineup.</p>'+list+'</div>';
