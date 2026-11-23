@@ -570,6 +570,7 @@ function fillLiveStats(){
     // Force override projection if we have live data
     if(livePts[id] != null){
       ptsEls.forEach(el => { el.textContent = livePts[id]; el.setAttribute("data-live","1"); });
+      updateMatchupTotals();
     }
     // Live stats are optional — only replace if real data arrives and we don't already have a live number
     if(livePts[id] != null) return;
@@ -647,7 +648,8 @@ function updateMatchupTotals(){
       const txt = el.textContent.trim();
       const v = parseFloat(txt);
       if(isNaN(v) || v === 0) return;
-      const isLive = el.getAttribute("data-live") === "1";
+      // Count if it has data-live OR if we have a livePts entry for this id this week
+      const isLive = el.getAttribute("data-live") === "1" || (livePts[id] != null && livePts[id+"_wk"] == String(currentNflWeek()));
       if(!isLive) return;
       const row = el.closest("div[style*='grid-template-columns']");
       if(!row) return;
