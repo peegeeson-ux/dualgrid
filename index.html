@@ -659,7 +659,10 @@ function updateMatchupTotals(){
     if(summary && (home > 0 || away > 0)){
       window._matchTotals = window._matchTotals || {};
       const txt = (summary.textContent || "").replace(/\s+/g," ").trim();
-      window._matchTotals[txt] = {home:home, away:away};
+      const homeName = (txt.split(" vs ")[0]||"").trim();
+      const awayName = (txt.split(" vs ")[1]||"").split(" ")[0]||"";
+      const key = homeName + "|" + awayName;
+      window._matchTotals[key] = {home:home, away:away};
       try{ localStorage.setItem("dualgrid-match-totals", JSON.stringify(window._matchTotals)); }catch(e){}
     }
   });
@@ -1783,9 +1786,9 @@ weekGames.forEach(g=>{
     return sum + ((livePts[p.id] != null && livePts[p.id+"_wk"] == String(week)) ? Number(livePts[p.id]) : 0);
   },0);
   if(isCurrent && window._matchTotals && Object.keys(window._matchTotals).length){
-    const key = Object.keys(window._matchTotals).find(k => k.includes(g.home.name) && k.includes(g.away.name));
-    if(key){ 
-      const t = window._matchTotals[key];
+    const key = g.home.name + "|" + g.away.name;
+    const t = window._matchTotals[key];
+    if(t){ 
       homePts = t.home || homePts; 
       awayPts = t.away || awayPts; 
     }
@@ -2484,8 +2487,9 @@ function loadWeekTicker(){
       const a = (g.away && g.away.name) || "Away";
       let hPts = 0, aPts = 0;
       if(window._matchTotals){
-        const key = Object.keys(window._matchTotals).find(k => k.includes(h) && k.includes(a));
-        if(key){ hPts = window._matchTotals[key].home || 0; aPts = window._matchTotals[key].away || 0; }
+        const key = h + "|" + a;
+        const t = window._matchTotals[key];
+        if(t){ hPts = t.home || 0; aPts = t.away || 0; }
       }
       if(!hPts && !aPts){
         const sumLive = (starters) => (starters||[]).reduce((sum,pl)=>{
