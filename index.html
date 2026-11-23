@@ -1776,10 +1776,10 @@ weekGames.forEach(g=>{
   const storedAway = stored[awayKey] && stored[awayKey].pf;
   const isCurrent = (Number(week) === Number(currentNflWeek()));
   let homePts = (g.home.lineup&&g.home.lineup.starters||[]).reduce((sum,p)=>{
-    return sum + ((livePts[p.id] != null && livePts[p.id+"_wk"] == String(week)) ? Number(livePts[p.id]) : 0);
+    return sum + ((livePts[p.id] != null) ? Number(livePts[p.id]) : 0);
   },0);
   let awayPts = (g.away.lineup&&g.away.lineup.starters||[]).reduce((sum,p)=>{
-    return sum + ((livePts[p.id] != null && livePts[p.id+"_wk"] == String(week)) ? Number(livePts[p.id]) : 0);
+    return sum + ((livePts[p.id] != null) ? Number(livePts[p.id]) : 0);
   },0);
   if(isCurrent && window._matchTotals && Object.keys(window._matchTotals).length){
     const key = g.home.name + "|" + g.away.name;
@@ -2490,7 +2490,7 @@ function loadWeekTicker(){
       if(!hPts && !aPts){
         const sumLive = (starters) => (starters||[]).reduce((sum,pl)=>{
           const e = enrich(pl); const id = e.id;
-          if(id && livePts[id] != null) return sum + livePts[id];
+          if(id && livePts[id] != null) return sum + Number(livePts[id]);
           return sum;
         },0);
         hPts = sumLive(g.home && g.home.lineup && g.home.lineup.starters);
