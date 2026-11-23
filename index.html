@@ -1179,7 +1179,7 @@ root.innerHTML=header('<a class="btn btn-lime" href="#home">Home</a><a class="bt
 '<details open><summary style="font-weight:700;cursor:pointer;margin-bottom:8px">Draft format</summary><button class="btn '+(s.format!=="auction"?"btn-lime":"")+'" data-format="snake" style="width:100%;margin-bottom:4px">Snake</button><button class="btn '+(s.format==="auction"?"btn-lime":"")+'" data-format="auction" style="width:100%">Auction · $200</button></details>'+
 '<div style="margin-top:12px"><h3 style="margin:0 0 6px;font-size:14px">Teams per division</h3><input id="div-size" class="search" value="'+teamCount()+'" style="width:100%;margin-bottom:6px"><button class="btn btn-lime" id="save-size" style="width:100%">Save size</button></div>'+
 '<div style="margin-top:12px"><h3 style="margin:0 0 6px;font-size:14px">Tie breakers</h3><select id="tie-rule" class="search" style="width:100%;margin-bottom:6px"><option value="split"'+(tieRule==="split"?" selected":"")+'>Two teams: H2H. More: PF</option><option value="pf"'+(tieRule==="pf"?" selected":"")+'>Always points for</option><option value="h2h"'+(tieRule==="h2h"?" selected":"")+'>Always head to head</option></select><button class="btn btn-lime" id="save-tie" style="width:100%">Save</button></div>'+
-'<div style="margin-top:12px"><a class="btn" href="#scoring" style="width:100%;display:block;text-align:center;margin-bottom:4px">Scoring</a><a class="btn" href="#roster" style="width:100%;display:block;text-align:center;margin-bottom:4px">Roster rules</a><a class="btn" href="#payout" style="width:100%;display:block;text-align:center">Payouts</a></div>'+
+'<div style="margin-top:12px"><a class="btn" href="#settings" style="width:100%;display:block;text-align:center;margin-bottom:4px">League Settings</a><a class="btn" href="#scoring" style="width:100%;display:block;text-align:center;margin-bottom:4px">Scoring</a><a class="btn" href="#roster" style="width:100%;display:block;text-align:center;margin-bottom:4px">Roster rules</a><a class="btn" href="#payout" style="width:100%;display:block;text-align:center">Payouts</a></div>'+
 '</div>'+
 
 // CENTER: Commissioner Desk
@@ -2479,7 +2479,77 @@ function renderInjuries(){
 }
 
 loadScoringRules();
-function route(){const page=(location.hash.replace("#","").split("/")[0]||"lobby"); const st=load(); if(!st.email && page!=="login"){ location.hash="#login"; return renderLogin(); } if(page==="login"){ return renderLogin(); } if(page!=="lobby"&&!leagueCode()&&page!=="draft"&&page!=="board"&&page!=="trade"){location.hash="#lobby"; return renderLobby();}if(page==="pay")renderPay();else if(page==="draft")renderDraft();else if(page==="board")renderBoard();else if(page==="wall")renderWall();else if(page==="payout"){ if(!unlocked(load())){ alert("Commissioner code required."); location.hash="#home"; return;} renderPayout(); }else if(page==="scores")renderScores();else if(page==="scoreboard")renderScoreboard();else if(page==="bracket")renderBracket();else if(page==="talk")renderTalk();else if(page==="waiver")renderWaiver();else if(page==="roster")renderRoster();else if(page==="history")renderHistory();else if(page==="scoring")renderScoring();else if(page==="matchup")renderMatchup();else if(page==="trade")renderTrade();else if(page==="dash")renderDash();else if(page==="nfl")renderNflScoreboard();else if(page==="injuries")renderInjuries();else if(page==="lobby"||page==="")renderLobby();else renderHome();
+
+function renderSettings(){
+  const s = load();
+  if(!s.owner){ alert("Commissioner only."); location.hash="#home"; return renderHome(); }
+  const rs = window.rosterSettings || {qb:1,rb:2,wr:2,te:1,flex:1,bench:6,ir:1,teamDef:0,defPlayers:0,k:1};
+  document.getElementById("app").innerHTML = header('<a class="btn" href="#home">Home</a>')+
+  '<div class="page"><div class="eyebrow">'+leagueName+'</div><h1>League Settings</h1><p class="lede">All commissioner options in one place. Changes save to this league.</p>'+
+  '<div class="card"><h2>League</h2>'+
+    '<label>League name</label><input id="set-name" value="'+leagueName+'">'+
+    '<label>Division size (8–12)</label><input id="set-size" type="number" min="8" max="12" value="'+divisionSize+'">'+
+    '<label>Season games (1–18)</label><input id="set-games" type="number" min="1" max="18" value="'+seasonGames+'">'+
+    '<label>Playoff spots per division</label><input id="set-spots" type="number" min="2" max="6" value="'+playoffSpots+'">'+
+    '<label>Tie breakers</label><select id="set-tie"><option value="split"'+(tieRule==="split"?" selected":"")+'>Two teams: H2H. More: PF</option><option value="pf"'+(tieRule==="pf"?" selected":"")+'>Always points for</option><option value="h2h"'+(tieRule==="h2h"?" selected":"")+'>Always head to head</option></select>'+
+    '<label>Playoff seeding</label><select id="set-seed"><option value="division"'+(seedMode==="division"?" selected":"")+'>Division only</option><option value="league"'+(seedMode==="league"?" selected":"")+'>Full league</option></select>'+
+  '</div>'+
+  '<div class="card" style="margin-top:12px"><h2>Roster</h2>'+
+    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">'+
+    '<label>QB</label><input id="rs-qb" type="number" value="'+rs.qb+'">'+
+    '<label>RB</label><input id="rs-rb" type="number" value="'+rs.rb+'">'+
+    '<label>WR</label><input id="rs-wr" type="number" value="'+rs.wr+'">'+
+    '<label>TE</label><input id="rs-te" type="number" value="'+rs.te+'">'+
+    '<label>Flex</label><input id="rs-flex" type="number" value="'+rs.flex+'">'+
+    '<label>Bench</label><input id="rs-bench" type="number" value="'+rs.bench+'">'+
+    '<label>IR</label><input id="rs-ir" type="number" value="'+rs.ir+'">'+
+    '<label>Team DEF</label><input id="rs-teamDef" type="number" value="'+(rs.teamDef||0)+'">'+
+    '<label>IDP</label><input id="rs-defPlayers" type="number" value="'+(rs.defPlayers||0)+'">'+
+    '<label>K</label><input id="rs-k" type="number" value="'+(rs.k||1)+'">'+
+    '</div>'+
+  '</div>'+
+  '<div class="card" style="margin-top:12px"><h2>Deadlines</h2>'+
+    '<label>Waiver deadline</label><input id="set-waiver" type="datetime-local" value="'+(s.records&&s.records.waiverDeadline?s.records.waiverDeadline.slice(0,16):"")+'">'+
+    '<label>Trade deadline</label><input id="set-trade" type="datetime-local" value="'+(s.records&&s.records.tradeDeadline?s.records.tradeDeadline.slice(0,16):"")+'">'+
+  '</div>'+
+  '<div style="margin-top:16px"><button class="btn btn-lime" id="save-settings">Save all settings</button> <a class="btn" href="#scoring">Full scoring rules</a></div>'+
+  '</div>';
+
+  document.getElementById("save-settings").onclick = ()=>{
+    if(!load().owner) return;
+    leagueName = document.getElementById("set-name").value.trim() || leagueName;
+    divisionSize = Math.max(8, Math.min(12, Number(document.getElementById("set-size").value)||10));
+    seasonGames = Math.max(1, Math.min(18, Number(document.getElementById("set-games").value)||14));
+    playoffSpots = Math.max(2, Math.min(6, Number(document.getElementById("set-spots").value)||4));
+    tieRule = document.getElementById("set-tie").value;
+    seedMode = document.getElementById("set-seed").value;
+    window.rosterSettings = {
+      qb: Number(document.getElementById("rs-qb").value)||1,
+      rb: Number(document.getElementById("rs-rb").value)||2,
+      wr: Number(document.getElementById("rs-wr").value)||2,
+      te: Number(document.getElementById("rs-te").value)||1,
+      flex: Number(document.getElementById("rs-flex").value)||1,
+      bench: Number(document.getElementById("rs-bench").value)||6,
+      ir: Number(document.getElementById("rs-ir").value)||1,
+      teamDef: Number(document.getElementById("rs-teamDef").value)||0,
+      defPlayers: Number(document.getElementById("rs-defPlayers").value)||0,
+      k: Number(document.getElementById("rs-k").value)||1
+    };
+    const wd = document.getElementById("set-waiver").value;
+    const td = document.getElementById("set-trade").value;
+    const st = load();
+    if(!st.records) st.records = {};
+    if(wd) st.records.waiverDeadline = new Date(wd).toISOString();
+    if(td) st.records.tradeDeadline = new Date(td).toISOString();
+    save(st);
+    publishLeague(); publishSize(); publishGames(); publishSpots(); publishTie(); publishSeed(); publishRoster();
+    if(wd || td) publishRecords();
+    alert("Settings saved.");
+    renderSettings();
+  };
+}
+
+function route(){const page=(location.hash.replace("#","").split("/")[0]||"lobby"); const st=load(); if(!st.email && page!=="login"){ location.hash="#login"; return renderLogin(); } if(page==="login"){ return renderLogin(); } if(page!=="lobby"&&!leagueCode()&&page!=="draft"&&page!=="board"&&page!=="trade"){location.hash="#lobby"; return renderLobby();}if(page==="pay")renderPay();else if(page==="draft")renderDraft();else if(page==="board")renderBoard();else if(page==="wall")renderWall();else if(page==="payout"){ if(!unlocked(load())){ alert("Commissioner code required."); location.hash="#home"; return;} renderPayout(); }else if(page==="scores")renderScores();else if(page==="scoreboard")renderScoreboard();else if(page==="bracket")renderBracket();else if(page==="talk")renderTalk();else if(page==="waiver")renderWaiver();else if(page==="roster")renderRoster();else if(page==="history")renderHistory();else if(page==="scoring")renderScoring();else if(page==="settings")renderSettings();else if(page==="matchup")renderMatchup();else if(page==="trade")renderTrade();else if(page==="dash")renderDash();else if(page==="nfl")renderNflScoreboard();else if(page==="injuries")renderInjuries();else if(page==="lobby"||page==="")renderLobby();else renderHome();
   setTimeout(loadWeekTicker, 50);
   setTimeout(loadNflTicker, 80);
   setTimeout(loadWeekTicker, 400); // extra refresh after league switch
