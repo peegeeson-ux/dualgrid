@@ -1764,12 +1764,17 @@ weekGames.forEach(g=>{
   const awayKey = g.pod+"-"+g.away.id;
   const storedHome = stored[homeKey] && stored[homeKey].pf;
   const storedAway = stored[awayKey] && stored[awayKey].pf;
-  const homePts = (storedHome != null && storedHome > 0) ? storedHome : (g.home.lineup&&g.home.lineup.starters||[]).reduce((sum,p)=>{
+  const isCurrent = (Number(week) === Number(currentNflWeek()));
+  const homePts = (isCurrent && livePts) ? (g.home.lineup&&g.home.lineup.starters||[]).reduce((sum,p)=>{
     return sum + ((livePts[p.id] != null) ? Number(livePts[p.id]) : 0);
-  },0);
-  const awayPts = (storedAway != null && storedAway > 0) ? storedAway : (g.away.lineup&&g.away.lineup.starters||[]).reduce((sum,p)=>{
+  },0) : ((storedHome != null && storedHome > 0) ? storedHome : (g.home.lineup&&g.home.lineup.starters||[]).reduce((sum,p)=>{
     return sum + ((livePts[p.id] != null) ? Number(livePts[p.id]) : 0);
-  },0);
+  },0));
+  const awayPts = (isCurrent && livePts) ? (g.away.lineup&&g.away.lineup.starters||[]).reduce((sum,p)=>{
+    return sum + ((livePts[p.id] != null) ? Number(livePts[p.id]) : 0);
+  },0) : ((storedAway != null && storedAway > 0) ? storedAway : (g.away.lineup&&g.away.lineup.starters||[]).reduce((sum,p)=>{
+    return sum + ((livePts[p.id] != null) ? Number(livePts[p.id]) : 0);
+  },0));
   games.push({key,pod:g.pod,home:g.home,away:g.away,hs:Number(homePts||saved.hs||0).toFixed(1),as:Number(awayPts||saved.as||0).toFixed(1),teams:ensureDraft(s,g.pod).teams});
 });
 const retro=style==="retro";
@@ -1811,7 +1816,7 @@ const slg=document.getElementById("scope-league"); if(slg) slg.onclick=()=>{cons
 const ss=document.getElementById("style-standard"); if(ss) ss.onclick=()=>{const st=load(); st.records.board=st.records.board||{}; st.records.board.style="standard"; save(st); publishRecords(); renderScoreboard();};
 const sr=document.getElementById("style-retro"); if(sr) sr.onclick=()=>{const st=load(); st.records.board=st.records.board||{}; st.records.board.style="retro"; save(st); publishRecords(); renderScoreboard();};
 const sb=document.getElementById("save-board"); if(sb) sb.onclick=()=>{const st=load(); st.records.board=st.records.board||{style:style}; const by={}; document.querySelectorAll("[data-game]").forEach(inp=>{by[inp.dataset.game]=by[inp.dataset.game]||{key:inp.dataset.game}; by[inp.dataset.game][inp.dataset.side]=Number(inp.value)||0;}); st.records.board.games=Object.values(by); const sched={}; document.querySelectorAll('[data-sched]').forEach(sel=>{sched[sel.dataset.sched]=sched[sel.dataset.sched]||{}; const slot=sched[sel.dataset.sched][sel.dataset.slot]=sched[sel.dataset.sched][sel.dataset.slot]||[null,null]; slot[sel.dataset.side==='home'?0:1]=Number(sel.value);}); Object.keys(sched).forEach(pod=>sched[pod]=Object.values(sched[pod])); st.records.board.schedule=sched; save(st); publishRecords(); renderScoreboard();};
-const cw=document.getElementById("close-week"); if(cw) cw.onclick=()=>{ if(!load().owner)return; if(!confirm("Close Week "+((load().records&&load().records.week)||1)+" and snapshot the current totals?"))return; const st=load(); try{ applyWeekResults(st); }catch(e){} save(st); publishRecords(); alert("Week closed. Totals saved."); renderScoreboard(); };
+const cw=document.getElementById("close-week"); if(cw) cw.onclick=()=>{ if(!load().owner)return; if(!confirm("Close Week "+((load().records&&load().records.week)||1)+" and snapshot the current totals?"))return; cw.textContent="Closing…"; loadBoxCache().then(()=>{ fillLiveStats(); setTimeout(()=>{ const st=load(); try{ applyWeekResults(st); }catch(e){} save(st); publishRecords(); alert("Week closed. Totals saved."); cw.textContent="Close Week "+((load().records&&load().records.week)||1); renderScoreboard(); }, 3000); }); };
 });
 }
 
@@ -2168,7 +2173,7 @@ if(added) save(s);
     setTimeout(fillLiveStats, 100); 
     setTimeout(fillLiveStats, 800); 
     setTimeout(fillLiveStats, 2000); 
-    setTimeout(()=>{ fillLiveStats(); updateMatchupTotals(); try{ const s=load(); applyWeekResults(s); save(s); publishRecords(); }catch(e){} loadWeekTicker(); if(location.hash.startsWith("#scoreboard")) setTimeout(renderScoreboard, 2000); }, 2500); 
+    setTimeout(()=>{ fillLiveStats(); updateMatchupTotals(); try{ const s=load(); applyWeekResults(s); save(s); publishRecords(); }catch(e){} loadWeekTicker(); if(location.hash.startsWith("#scoreboard")) setTimeout(renderScoreboard, 4000); }, 3000); 
     setTimeout(updateMatchupTotals, 500); setTimeout(updateMatchupTotals, 1500); setTimeout(updateMatchupTotals, 3000);
   }).catch(()=>setTimeout(fillLiveStats, 100));
   loadInjuries().then(()=>{ const app = document.getElementById("app"); if(app) app.querySelectorAll(".name").forEach(el=>{ const id = el.getAttribute("data-player-id"); if(!id) return; const p = PLAYERS.find(x=>String(x.id)===id); if(p){ const badge = injuryBadge(p.name); if(badge && !el.querySelector(".injury-badge")) el.insertAdjacentHTML("beforeend", badge); } }); });
@@ -2331,7 +2336,7 @@ document.getElementById("app").innerHTML=header('<a class="btn" href="#home">Hom
     setTimeout(fillLiveStats, 100); 
     setTimeout(fillLiveStats, 800); 
     setTimeout(fillLiveStats, 2000); 
-    setTimeout(()=>{ fillLiveStats(); updateMatchupTotals(); try{ const s=load(); applyWeekResults(s); save(s); publishRecords(); }catch(e){} loadWeekTicker(); if(location.hash.startsWith("#scoreboard")) setTimeout(renderScoreboard, 2000); }, 2500); 
+    setTimeout(()=>{ fillLiveStats(); updateMatchupTotals(); try{ const s=load(); applyWeekResults(s); save(s); publishRecords(); }catch(e){} loadWeekTicker(); if(location.hash.startsWith("#scoreboard")) setTimeout(renderScoreboard, 4000); }, 3000); 
     setTimeout(updateMatchupTotals, 500); setTimeout(updateMatchupTotals, 1500); setTimeout(updateMatchupTotals, 3000);
   }).catch(()=>setTimeout(fillLiveStats, 100));
   loadInjuries().then(()=>{ const app = document.getElementById("app"); if(app) app.querySelectorAll(".name").forEach(el=>{ const id = el.getAttribute("data-player-id"); if(!id) return; const p = PLAYERS.find(x=>String(x.id)===id); if(p){ const badge = injuryBadge(p.name); if(badge && !el.querySelector(".injury-badge")) el.insertAdjacentHTML("beforeend", badge); } }); });
