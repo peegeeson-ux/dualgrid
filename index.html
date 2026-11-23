@@ -2190,7 +2190,7 @@ if(added) save(s);
     setTimeout(fillLiveStats, 100); 
     setTimeout(fillLiveStats, 800); 
     setTimeout(fillLiveStats, 2000); 
-    setTimeout(()=>{ fillLiveStats(); updateMatchupTotals(); try{ const s=load(); applyWeekResults(s); save(s); publishRecords(); }catch(e){} loadWeekTicker(); if(location.hash.startsWith("#scoreboard")) setTimeout(renderScoreboard, 4000); }, 3000); 
+    setTimeout(()=>{ fillLiveStats(); updateMatchupTotals(); try{ const s=load(); applyWeekResults(s); save(s); publishRecords(); }catch(e){} loadWeekTicker(); }, 3000); 
     setTimeout(updateMatchupTotals, 500); setTimeout(updateMatchupTotals, 1500); setTimeout(updateMatchupTotals, 3000);
   }).catch(()=>setTimeout(fillLiveStats, 100));
   loadInjuries().then(()=>{ const app = document.getElementById("app"); if(app) app.querySelectorAll(".name").forEach(el=>{ const id = el.getAttribute("data-player-id"); if(!id) return; const p = PLAYERS.find(x=>String(x.id)===id); if(p){ const badge = injuryBadge(p.name); if(badge && !el.querySelector(".injury-badge")) el.insertAdjacentHTML("beforeend", badge); } }); });
@@ -2354,7 +2354,7 @@ document.getElementById("app").innerHTML=header('<a class="btn" href="#home">Hom
     setTimeout(fillLiveStats, 800); 
     setTimeout(fillLiveStats, 2000); 
     setTimeout(()=>{ fillLiveStats(); updateMatchupTotals(); }, 3500);
-    setTimeout(()=>{ fillLiveStats(); updateMatchupTotals(); try{ const s=load(); applyWeekResults(s); save(s); publishRecords(); }catch(e){} loadWeekTicker(); if(location.hash.startsWith("#scoreboard")) setTimeout(renderScoreboard, 4000); }, 3000); 
+    setTimeout(()=>{ fillLiveStats(); updateMatchupTotals(); try{ const s=load(); applyWeekResults(s); save(s); publishRecords(); }catch(e){} loadWeekTicker(); }, 3000); 
     setTimeout(updateMatchupTotals, 500); setTimeout(updateMatchupTotals, 1500); setTimeout(updateMatchupTotals, 3000);
   }).catch(()=>setTimeout(fillLiveStats, 100));
   loadInjuries().then(()=>{ const app = document.getElementById("app"); if(app) app.querySelectorAll(".name").forEach(el=>{ const id = el.getAttribute("data-player-id"); if(!id) return; const p = PLAYERS.find(x=>String(x.id)===id); if(p){ const badge = injuryBadge(p.name); if(badge && !el.querySelector(".injury-badge")) el.insertAdjacentHTML("beforeend", badge); } }); });
