@@ -640,13 +640,12 @@ function updateRosterTotal(){
 }
 
 function updateMatchupTotals(){
-  const week = String(currentNflWeek());
   document.querySelectorAll("details.card").forEach(card => {
     let home = 0, away = 0;
     card.querySelectorAll(".live-pts").forEach(el => {
       const id = el.getAttribute("data-id");
       if(!id) return;
-      const v = (livePts[id] != null && livePts[id+"_wk"] == week) ? Number(livePts[id]) : null;
+      const v = livePts[id] != null ? Number(livePts[id]) : null;
       if(v == null || isNaN(v)) return;
       const row = el.closest("div[style*='grid-template-columns']");
       if(!row) return;
@@ -2156,7 +2155,7 @@ if(added) save(s);
     setTimeout(fillLiveStats, 800); 
     setTimeout(fillLiveStats, 2000); 
     setTimeout(()=>{ fillLiveStats(); updateMatchupTotals(); if(location.hash.startsWith("#scoreboard")) renderScoreboard(); }, 2500); 
-    setTimeout(updateMatchupTotals, 4000);
+    setTimeout(updateMatchupTotals, 500); setTimeout(updateMatchupTotals, 1500); setTimeout(updateMatchupTotals, 3000);
   }).catch(()=>setTimeout(fillLiveStats, 100));
   loadInjuries().then(()=>{ const app = document.getElementById("app"); if(app) app.querySelectorAll(".name").forEach(el=>{ const id = el.getAttribute("data-player-id"); if(!id) return; const p = PLAYERS.find(x=>String(x.id)===id); if(p){ const badge = injuryBadge(p.name); if(badge && !el.querySelector(".injury-badge")) el.insertAdjacentHTML("beforeend", badge); } }); });
   const btn=document.getElementById("save-roster");
@@ -2319,7 +2318,7 @@ document.getElementById("app").innerHTML=header('<a class="btn" href="#home">Hom
     setTimeout(fillLiveStats, 800); 
     setTimeout(fillLiveStats, 2000); 
     setTimeout(()=>{ fillLiveStats(); updateMatchupTotals(); if(location.hash.startsWith("#scoreboard")) renderScoreboard(); }, 2500); 
-    setTimeout(updateMatchupTotals, 4000);
+    setTimeout(updateMatchupTotals, 500); setTimeout(updateMatchupTotals, 1500); setTimeout(updateMatchupTotals, 3000);
   }).catch(()=>setTimeout(fillLiveStats, 100));
   loadInjuries().then(()=>{ const app = document.getElementById("app"); if(app) app.querySelectorAll(".name").forEach(el=>{ const id = el.getAttribute("data-player-id"); if(!id) return; const p = PLAYERS.find(x=>String(x.id)===id); if(p){ const badge = injuryBadge(p.name); if(badge && !el.querySelector(".injury-badge")) el.insertAdjacentHTML("beforeend", badge); } }); });
 }
@@ -2676,6 +2675,7 @@ document.addEventListener("click",e=>{if(e.target&&e.target.id==="menu-btn"){con
 document.addEventListener("click",e=>{if(e.target&&e.target.id==="logout-btn"){e.preventDefault(); const st=load(); st.email=""; delete st.email; save(st); localStorage.removeItem("dualgrid-email"); location.href=location.pathname+"?out="+Date.now();}});
 document.addEventListener("click",e=>{const btn=e.target.closest&&e.target.closest("#logout-btn"); if(!btn)return; e.preventDefault(); const st=load(); delete st.email; st.email=""; save(st); location.replace(location.pathname+"#lobby");});
 window.addEventListener("hashchange", route);
+window.addEventListener("load", ()=>{ setTimeout(updateMatchupTotals, 1000); setTimeout(updateMatchupTotals, 3000); });
 // live pick clock tick
 if(!window._clockTick){
   window._clockTick = setInterval(()=>{
