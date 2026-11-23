@@ -654,12 +654,12 @@ function updateMatchupTotals(){
     });
     card.querySelectorAll('.live-sum[data-side="home"]').forEach(el => el.textContent = home > 0 ? home.toFixed(1) : "—");
     card.querySelectorAll('.live-sum[data-side="away"]').forEach(el => el.textContent = away > 0 ? away.toFixed(1) : "—");
-    // Store for scoreboard/ticker by team id
+    // Store for scoreboard/ticker by stable key
     const summary = card.querySelector("summary");
     if(summary && (home > 0 || away > 0)){
       window._matchTotals = window._matchTotals || {};
-      const names = summary.textContent || "";
-      window._matchTotals[names.slice(0,40)] = {home:home, away:away, text:names};
+      const names = (summary.textContent || "").replace(/\s+/g," ").trim();
+      window._matchTotals[names] = {home:home, away:away};
     }
   });
 }
@@ -1773,15 +1773,19 @@ weekGames.forEach(g=>{
   const storedAway = stored[awayKey] && stored[awayKey].pf;
   const isCurrent = (Number(week) === Number(currentNflWeek()));
   let homePts = (g.home.lineup&&g.home.lineup.starters||[]).reduce((sum,p)=>{
-    return sum + ((livePts[p.id] != null) ? Number(livePts[p.id]) : 0);
+    return sum + ((livePts[p.id] != null && livePts[p.id+"_wk"] == String(week)) ? Number(livePts[p.id]) : 0);
   },0);
   let awayPts = (g.away.lineup&&g.away.lineup.starters||[]).reduce((sum,p)=>{
-    return sum + ((livePts[p.id] != null) ? Number(livePts[p.id]) : 0);
+    return sum + ((livePts[p.id] != null && livePts[p.id+"_wk"] == String(week)) ? Number(livePts[p.id]) : 0);
   },0);
-  if(isCurrent && window._matchTotals){
+  if(isCurrent && window._matchTotals && (homePts === 0 && awayPts === 0)){
     const key = Object.keys(window._matchTotals).find(k => k.includes(g.home.name) && k.includes(g.away.name));
-    if(key){ homePts = window._matchTotals[key].home || homePts; awayPts = window._matchTotals[key].away || awayPts; }
-  } else if(storedHome != null && storedHome > 0){
+    if(key){ 
+      const t = window._matchTotals[key];
+      homePts = t.home || homePts; 
+      awayPts = t.away || awayPts; 
+    }
+  } else if(!isCurrent && storedHome != null && storedHome > 0){
     homePts = storedHome; awayPts = storedAway || 0;
   }
   games.push({key,pod:g.pod,home:g.home,away:g.away,hs:Number(homePts||saved.hs||0).toFixed(1),as:Number(awayPts||saved.as||0).toFixed(1),teams:ensureDraft(s,g.pod).teams});
@@ -1826,7 +1830,7 @@ const ss=document.getElementById("style-standard"); if(ss) ss.onclick=()=>{const
 const sr=document.getElementById("style-retro"); if(sr) sr.onclick=()=>{const st=load(); st.records.board=st.records.board||{}; st.records.board.style="retro"; save(st); publishRecords(); renderScoreboard();};
 const sb=document.getElementById("save-board"); if(sb) sb.onclick=()=>{const st=load(); st.records.board=st.records.board||{style:style}; const by={}; document.querySelectorAll("[data-game]").forEach(inp=>{by[inp.dataset.game]=by[inp.dataset.game]||{key:inp.dataset.game}; by[inp.dataset.game][inp.dataset.side]=Number(inp.value)||0;}); st.records.board.games=Object.values(by); const sched={}; document.querySelectorAll('[data-sched]').forEach(sel=>{sched[sel.dataset.sched]=sched[sel.dataset.sched]||{}; const slot=sched[sel.dataset.sched][sel.dataset.slot]=sched[sel.dataset.sched][sel.dataset.slot]||[null,null]; slot[sel.dataset.side==='home'?0:1]=Number(sel.value);}); Object.keys(sched).forEach(pod=>sched[pod]=Object.values(sched[pod])); st.records.board.schedule=sched; save(st); publishRecords(); renderScoreboard();};
 const cw=document.getElementById("close-week"); if(cw) cw.onclick=()=>{ if(!load().owner)return; if(!confirm("Close Week "+((load().records&&load().records.week)||1)+" and snapshot the current totals?"))return; cw.textContent="Closing…"; loadBoxCache().then(()=>{ fillLiveStats(); setTimeout(()=>{ const st=load(); try{ applyWeekResults(st); }catch(e){} save(st); publishRecords(); alert("Week closed. Totals saved."); cw.textContent="Close Week "+((load().records&&load().records.week)||1); renderScoreboard(); }, 3000); }); };
-  }, 1500);
+  }, 2500);
 });
 }
 
