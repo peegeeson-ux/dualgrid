@@ -505,7 +505,7 @@ function fillLiveStats(){
     }
     updateMatchupTotals(); updateRosterTotal(); fillGameScores();
     // Prefer live box score data only if it matches the current week
-    const key = (p.name||"").toLowerCase().trim().replace(/[^a-z ]/g,"");
+    const key = (p.name||"").toLowerCase().trim().replace(/[^a-z ]/g,"").replace(/\s+(ii|iii|iv|jr|sr)$/,"").trim();
     let cached = boxCache[key] || boxCache[(p.name||"").toLowerCase().trim()];
     if(cached && livePts[id+"_wk"] != null && livePts[id+"_wk"] != week) cached = null;
     if(!cached){
@@ -950,7 +950,7 @@ function showPlayerModal(p){
   document.body.appendChild(modal);
   const box = card.querySelector("#live-card-stats");
   const showStats = () => {
-    const key = name.toLowerCase().trim().replace(/[^a-z ]/g,"");
+    const key = name.toLowerCase().trim().replace(/[^a-z ]/g,"").replace(/\s+(ii|iii|iv|jr|sr)$/,"").trim();
     const cached = boxCache[key] || boxCache[name.toLowerCase().trim()];
     const currentWeek = String(currentNflWeek());
     if(cached){
