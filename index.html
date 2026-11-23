@@ -322,7 +322,6 @@ function fantasyPoints(stats){
   if(s.fieldGoals || s.extraPoints){
     const fg = Number(s.fieldGoals && s.fieldGoals.made) || 0;
     const xp = Number(s.extraPoints && s.extraPoints.made) || 0;
-    // Use the closest available scoring keys
     pts += fg * r("fg0", r("fg", 3));
     pts += xp * r("pat", r("xp", 1));
   }
@@ -338,7 +337,6 @@ function fantasyPoints(stats){
     pts += fr * r("tdFumRec", r("fr", 2));
     pts += defTD * r("tdTD", r("defTD", 6));
     pts += safety * r("tdSafety", r("safety", 2));
-    // Points allowed (if available)
     const pa = Number(s.pointsAllowed) || Number(s.defense && s.defense.pointsAllowed);
     if(pa != null && !isNaN(pa)){
       if(pa === 0) pts += r("td0", r("pa0", 10));
@@ -349,6 +347,12 @@ function fantasyPoints(stats){
       else if(pa <= 34) pts += r("td28_34", r("pa28", -1));
       else pts += r("td35_45", r("pa35", -4));
     }
+  }
+  // Fallback to Tank01 pre-calculated points when raw stats produce nothing
+  // (kickers and defenses often only have the fantasy.points number)
+  if(pts === 0 && s.fantasy && s.fantasy.points){
+    const fp = Number(s.fantasy.points.standard) || Number(s.fantasy.points.PPR) || Number(s.fantasy.points.halfPPR);
+    if(fp && !isNaN(fp)) pts = fp;
   }
   if(pts !== 0) return Math.round(pts * 10) / 10;
   return null;
@@ -384,6 +388,10 @@ function liveLine(stats){
     const ints = Number(s.interceptions)||Number(s.defense&&s.defense.interceptions)||0; if(ints) parts.push(ints+" INT");
     const fr = Number(s.fumblesRecovered)||Number(s.defense&&s.defense.fumblesRecovered)||0; if(fr) parts.push(fr+" FR");
     const td = Number(s.defensiveTouchdowns)||Number(s.defense&&s.defense.touchdowns)||0; if(td) parts.push(td+" TD");
+  }
+  // Fallback label when we used pre-calculated points
+  if(!parts.length && s.fantasy && s.fantasy.points){
+    parts.push("Live");
   }
   return parts.length ? parts.join(" · ") : "";
 }
@@ -427,12 +435,21 @@ function loadBoxCache(){
               const k = name.toLowerCase();
               boxCache[k] = p;
               // Defenses by abbreviation
-              if(k.includes(" defense") || k.includes(" dst")){
-                const parts = k.replace(" defense","").replace(" dst","").trim().split(" ");
-                const abv = parts[0];
+              if(k.includes(" defense") || k.includes(" dst") || k.includes(" def")){
+                const clean = k.replace(/ defense| dst| def/g,"").trim();
+                const abv = clean;
                 boxCache[abv] = p;
                 boxCache[abv + " defense"] = p;
                 boxCache[abv + " dst"] = p;
+                boxCache[abv + " def"] = p;
+                // also store under team abbreviation if we can map it
+                const mapped = TEAM_ABV[clean] || "";
+                if(mapped){
+                  const m = mapped.toLowerCase();
+                  boxCache[m] = p;
+                  boxCache[m + " defense"] = p;
+                  boxCache[m + " dst"] = p;
+                }
               }
               // Save points history only for the true current week
               const pts = fantasyPoints(p);
