@@ -322,31 +322,32 @@ function fantasyPoints(stats){
   if(s.fieldGoals || s.extraPoints){
     const fg = Number(s.fieldGoals && s.fieldGoals.made) || 0;
     const xp = Number(s.extraPoints && s.extraPoints.made) || 0;
-    pts += fg * r("fg", 3);
-    pts += xp * r("xp", 1);
+    // Use the closest available scoring keys
+    pts += fg * r("fg0", r("fg", 3));
+    pts += xp * r("pat", r("xp", 1));
   }
   // Team Defense
-  if(s.defense || s.sacks || s.interceptions || s.fumblesRecovered){
+  if(s.defense || s.sacks || s.interceptions || s.fumblesRecovered || s.defensiveTouchdowns){
     const sacks = Number(s.sacks) || Number(s.defense && s.defense.sacks) || 0;
     const ints = Number(s.interceptions) || Number(s.defense && s.defense.interceptions) || 0;
     const fr = Number(s.fumblesRecovered) || Number(s.defense && s.defense.fumblesRecovered) || 0;
     const defTD = Number(s.defensiveTouchdowns) || Number(s.defense && s.defense.touchdowns) || 0;
     const safety = Number(s.safeties) || Number(s.defense && s.defense.safeties) || 0;
-    pts += sacks * r("sack", 1);
-    pts += ints * r("defInt", 2);
-    pts += fr * r("fr", 2);
-    pts += defTD * r("defTD", 6);
-    pts += safety * r("safety", 2);
+    pts += sacks * r("tdSack", r("sack", 1));
+    pts += ints * r("tdInt", r("defInt", 2));
+    pts += fr * r("tdFumRec", r("fr", 2));
+    pts += defTD * r("tdTD", r("defTD", 6));
+    pts += safety * r("tdSafety", r("safety", 2));
     // Points allowed (if available)
     const pa = Number(s.pointsAllowed) || Number(s.defense && s.defense.pointsAllowed);
     if(pa != null && !isNaN(pa)){
-      if(pa === 0) pts += r("pa0", 10);
-      else if(pa <= 6) pts += r("pa1", 7);
-      else if(pa <= 13) pts += r("pa7", 4);
-      else if(pa <= 20) pts += r("pa14", 1);
-      else if(pa <= 27) pts += r("pa21", 0);
-      else if(pa <= 34) pts += r("pa28", -1);
-      else pts += r("pa35", -4);
+      if(pa === 0) pts += r("td0", r("pa0", 10));
+      else if(pa <= 6) pts += r("td1_6", r("pa1", 7));
+      else if(pa <= 13) pts += r("td7_13", r("pa7", 4));
+      else if(pa <= 17) pts += r("td14_17", r("pa14", 1));
+      else if(pa <= 27) pts += r("td18_27", r("pa21", 0));
+      else if(pa <= 34) pts += r("td28_34", r("pa28", -1));
+      else pts += r("td35_45", r("pa35", -4));
     }
   }
   if(pts !== 0) return Math.round(pts * 10) / 10;
@@ -493,10 +494,10 @@ function fillLiveStats(){
     if(!cached){
       const isDef = /def|dst|defense/i.test(p.pos||"") || /def|dst|defense/i.test(p.name||"");
       if(isDef){
-        const clean = key.replace(/ dst| defense| def/g,"").trim();
-        const abv = (TEAM_ABV[clean] || TEAM_ABV[key] || "").toLowerCase();
+        const clean = key.replace(/ dst| defense| def| d\/st/g,"").trim();
+        const abv = (TEAM_ABV[clean] || TEAM_ABV[key] || p.team || "").toLowerCase();
         if(abv){
-          cached = boxCache[abv] || boxCache[abv + " defense"] || boxCache[abv + " def"] || boxCache[abv + " dst"];
+          cached = boxCache[abv] || boxCache[abv + " defense"] || boxCache[abv + " def"] || boxCache[abv + " dst"] || boxCache[clean];
           console.log("def match", key, "->", abv, cached ? "HIT" : "miss");
         }
       }
@@ -504,18 +505,18 @@ function fillLiveStats(){
         const parts = key.split(" ");
         const last = parts.pop();
         const first = parts[0] || "";
+        const isKicker = /k$/i.test(p.pos||"") || /kicker/i.test(p.pos||"");
         for(const k in boxCache){
           const kParts = k.split(" ");
           const kLast = kParts.pop();
           const kFirst = kParts[0] || "";
-          // Require both first and last name to match
-          if(kLast === last && kFirst === first){
+          // Require both first and last name to match, or last name for kickers
+          if(kLast === last && (kFirst === first || isKicker)){
             cached = boxCache[k];
             break;
           }
         }
         if(!cached) console.log("no match for", key);
-        if(key.includes("maye")) console.log("MAYE check", key, "cached:", !!cached, "boxCache keys sample:", Object.keys(boxCache).filter(k=>k.includes("maye")));
       }
     }
     if(cached){
