@@ -2335,7 +2335,6 @@ document.getElementById("app").innerHTML=header('<a class="btn" href="#home">Hom
     setTimeout(fillLiveStats, 800); 
     setTimeout(fillLiveStats, 2000); 
     setTimeout(()=>{ fillLiveStats(); updateMatchupTotals(); }, 3500);
-  });
     setTimeout(()=>{ fillLiveStats(); updateMatchupTotals(); try{ const s=load(); applyWeekResults(s); save(s); publishRecords(); }catch(e){} loadWeekTicker(); if(location.hash.startsWith("#scoreboard")) setTimeout(renderScoreboard, 4000); }, 3000); 
     setTimeout(updateMatchupTotals, 500); setTimeout(updateMatchupTotals, 1500); setTimeout(updateMatchupTotals, 3000);
   }).catch(()=>setTimeout(fillLiveStats, 100));
