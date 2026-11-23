@@ -543,7 +543,7 @@ function fillLiveStats(){
         livePts[id] = show;
         livePts[id+"_wk"] = week;
         if(line) lineEls.forEach(el => el.textContent = line);
-        updateMatchupTotals(); updateRosterTotal();
+        updateMatchupTotals(); updateRosterTotal(); loadWeekTicker();
       }
     }
     // Stronger fallback: last-name search across boxCache
@@ -2154,7 +2154,7 @@ if(added) save(s);
     setTimeout(fillLiveStats, 100); 
     setTimeout(fillLiveStats, 800); 
     setTimeout(fillLiveStats, 2000); 
-    setTimeout(()=>{ fillLiveStats(); updateMatchupTotals(); if(location.hash.startsWith("#scoreboard")) setTimeout(renderScoreboard, 1500); }, 2500); 
+    setTimeout(()=>{ fillLiveStats(); updateMatchupTotals(); loadWeekTicker(); if(location.hash.startsWith("#scoreboard")) setTimeout(renderScoreboard, 2000); }, 2500); 
     setTimeout(updateMatchupTotals, 500); setTimeout(updateMatchupTotals, 1500); setTimeout(updateMatchupTotals, 3000);
   }).catch(()=>setTimeout(fillLiveStats, 100));
   loadInjuries().then(()=>{ const app = document.getElementById("app"); if(app) app.querySelectorAll(".name").forEach(el=>{ const id = el.getAttribute("data-player-id"); if(!id) return; const p = PLAYERS.find(x=>String(x.id)===id); if(p){ const badge = injuryBadge(p.name); if(badge && !el.querySelector(".injury-badge")) el.insertAdjacentHTML("beforeend", badge); } }); });
@@ -2317,7 +2317,7 @@ document.getElementById("app").innerHTML=header('<a class="btn" href="#home">Hom
     setTimeout(fillLiveStats, 100); 
     setTimeout(fillLiveStats, 800); 
     setTimeout(fillLiveStats, 2000); 
-    setTimeout(()=>{ fillLiveStats(); updateMatchupTotals(); if(location.hash.startsWith("#scoreboard")) setTimeout(renderScoreboard, 1500); }, 2500); 
+    setTimeout(()=>{ fillLiveStats(); updateMatchupTotals(); loadWeekTicker(); if(location.hash.startsWith("#scoreboard")) setTimeout(renderScoreboard, 2000); }, 2500); 
     setTimeout(updateMatchupTotals, 500); setTimeout(updateMatchupTotals, 1500); setTimeout(updateMatchupTotals, 3000);
   }).catch(()=>setTimeout(fillLiveStats, 100));
   loadInjuries().then(()=>{ const app = document.getElementById("app"); if(app) app.querySelectorAll(".name").forEach(el=>{ const id = el.getAttribute("data-player-id"); if(!id) return; const p = PLAYERS.find(x=>String(x.id)===id); if(p){ const badge = injuryBadge(p.name); if(badge && !el.querySelector(".injury-badge")) el.insertAdjacentHTML("beforeend", badge); } }); });
