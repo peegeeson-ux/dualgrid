@@ -1176,8 +1176,6 @@ root.innerHTML=header('<a class="btn btn-lime" href="#home">Home</a><a class="bt
 // LEFT: League Settings
 '<div class="card" style="border-top:3px solid var(--lime);padding:12px">'+
 '<h2 style="margin:0 0 12px;color:#c6f25a;font-size:16px">League Settings <svg viewBox="0 0 60 40" width="22" height="14" style="vertical-align:middle;margin:0 4px;border-radius:2px"><rect width="60" height="40" fill="#bf0a30"/><rect y="3" width="60" height="3" fill="#fff"/><rect y="9" width="60" height="3" fill="#fff"/><rect y="15" width="60" height="3" fill="#fff"/><rect y="21" width="60" height="3" fill="#fff"/><rect y="27" width="60" height="3" fill="#fff"/><rect y="33" width="60" height="3" fill="#fff"/><rect width="24" height="21" fill="#002868"/></svg></h2>'+
-'<details open><summary style="font-weight:700;cursor:pointer;margin-bottom:8px">Draft format</summary><button class="btn '+(s.format!=="auction"?"btn-lime":"")+'" data-format="snake" style="width:100%;margin-bottom:4px">Snake</button><button class="btn '+(s.format==="auction"?"btn-lime":"")+'" data-format="auction" style="width:100%">Auction · $200</button></details>'+
-'<div style="margin-top:12px"><h3 style="margin:0 0 6px;font-size:14px">Teams per division</h3><input id="div-size" class="search" value="'+teamCount()+'" style="width:100%;margin-bottom:6px"><button class="btn btn-lime" id="save-size" style="width:100%">Save size</button></div>'+
 '<div style="margin-top:12px"><h3 style="margin:0 0 6px;font-size:14px">Tie breakers</h3><select id="tie-rule" class="search" style="width:100%;margin-bottom:6px"><option value="split"'+(tieRule==="split"?" selected":"")+'>Two teams: H2H. More: PF</option><option value="pf"'+(tieRule==="pf"?" selected":"")+'>Always points for</option><option value="h2h"'+(tieRule==="h2h"?" selected":"")+'>Always head to head</option></select><button class="btn btn-lime" id="save-tie" style="width:100%">Save</button></div>'+
 '<div style="margin-top:12px"><a class="btn" href="#settings" style="width:100%;display:block;text-align:center;margin-bottom:4px">League Settings</a><a class="btn" href="#scoring" style="width:100%;display:block;text-align:center;margin-bottom:4px">Scoring</a><a class="btn" href="#roster" style="width:100%;display:block;text-align:center;margin-bottom:4px">Roster rules</a><a class="btn" href="#payout" style="width:100%;display:block;text-align:center">Payouts</a></div>'+
 '</div>'+
@@ -2491,8 +2489,10 @@ function renderSettings(){
     '<label>Division size (8–12)</label><input id="set-size" type="number" min="8" max="12" value="'+divisionSize+'">'+
     '<label>Season games (1–18)</label><input id="set-games" type="number" min="1" max="18" value="'+seasonGames+'">'+
     '<label>Playoff spots per division</label><input id="set-spots" type="number" min="2" max="6" value="'+playoffSpots+'">'+
+    '<label>Draft format</label><select id="set-format"><option value="snake"'+(s.format!=="auction"?" selected":"")+'>Snake</option><option value="auction"'+(s.format==="auction"?" selected":"")+'>Auction · $200</option></select>'+
     '<label>Tie breakers</label><select id="set-tie"><option value="split"'+(tieRule==="split"?" selected":"")+'>Two teams: H2H. More: PF</option><option value="pf"'+(tieRule==="pf"?" selected":"")+'>Always points for</option><option value="h2h"'+(tieRule==="h2h"?" selected":"")+'>Always head to head</option></select>'+
     '<label>Playoff seeding</label><select id="set-seed"><option value="division"'+(seedMode==="division"?" selected":"")+'>Division only</option><option value="league"'+(seedMode==="league"?" selected":"")+'>Full league</option></select>'+
+    '<div style="margin-top:16px"><button class="btn btn-lime" id="save-settings">Save all settings</button> <a class="btn" href="#scoring">Full scoring rules</a></div>'+
   '</div>'+
   '<div class="card" style="margin-top:12px"><h2>Roster</h2>'+
     '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">'+
@@ -2518,7 +2518,6 @@ function renderSettings(){
     '<label>Waiver deadline</label><input id="set-waiver" type="datetime-local" value="'+(s.records&&s.records.waiverDeadline?s.records.waiverDeadline.slice(0,16):"")+'">'+
     '<label>Trade deadline</label><input id="set-trade" type="datetime-local" value="'+(s.records&&s.records.tradeDeadline?s.records.tradeDeadline.slice(0,16):"")+'">'+
   '</div>'+
-  '<div style="margin-top:16px"><button class="btn btn-lime" id="save-settings">Save all settings</button> <a class="btn" href="#scoring">Full scoring rules</a></div>'+
   '</div>';
 
   document.getElementById("save-settings").onclick = ()=>{
@@ -2529,6 +2528,10 @@ function renderSettings(){
     playoffSpots = Math.max(2, Math.min(6, Number(document.getElementById("set-spots").value)||4));
     tieRule = document.getElementById("set-tie").value;
     seedMode = document.getElementById("set-seed").value;
+    const fmt = document.getElementById("set-format").value;
+    const st0 = load();
+    st0.format = fmt;
+    save(st0);
     window.rosterSettings = {
       qb: Number(document.getElementById("rs-qb").value)||1,
       rb: Number(document.getElementById("rs-rb").value)||2,
