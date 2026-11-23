@@ -1145,7 +1145,7 @@ root.innerHTML=header('<a class="btn" href="#lobby">League</a><a class="btn" hre
 '<h1 style="margin:0 0 8px;color:#c6f25a">Command Center</h1>'+
 '<div style="display:flex;gap:12px;flex-wrap:wrap;margin:12px 0"><span class="btn btn-ghost">Draft ready</span><span class="btn btn-ghost">Your seat locked</span><span class="btn btn-ghost">Board live</span></div><p class="lede" style="margin-top:0">League code: <strong>'+((s.league&&s.league.code)||'')+'</strong></p>'+
 '<div style="display:flex;flex-direction:column;gap:4px;margin-top:6px;max-width:360px;border:1px solid #2a3228;border-radius:8px;padding:8px">'+
-'<details class="card" style="border-top:3px solid var(--lime);max-width:380px"><summary style="font-weight:700;cursor:pointer;font-size:14px;padding:6px 0">Your team</summary>'+(mine&&mine.teamId!=null?'<p>You are locked to '+((ensureDraft(s,mine.pod).teams.find(team=>team.id===Number(mine.teamId))||{}).name||"your team")+'.</p><input id="home-rename" class="search" placeholder="New team name"><button class="btn btn-lime" id="home-rename-btn" style="margin-top:8px">Rename team</button><label style="margin-top:8px">Team logo</label><input id="home-photo" type="file" accept="image/*"><button class="btn" id="home-photo-clear" style="margin-top:8px">Clear logo</button><input id="link-name" class="search" placeholder="Already claimed? Type your name" style="margin-top:8px"><button class="btn" id="link-seat" style="margin-top:8px">Link this phone</button>':'<p>Claim a seat here. You only get one.</p><input id="link-name" class="search" placeholder="Already claimed? Type your name"><button class="btn" id="link-seat" style="margin-top:8px">Link this phone</button><label>Division</label><select id="home-pod" class="search">'+pods.map(p=>'<option value="'+p+'">'+podName(p)+'</option>').join("")+'</select><label>Team</label><select id="home-team" class="search"></select><input id="home-seat-name" class="search" placeholder="Your name" style="margin-top:8px"><button class="btn btn-lime" id="home-claim" style="margin-top:8px">Claim this team</button><input id="home-rename" class="search" placeholder="New team name" style="margin-top:8px"><button class="btn" id="home-rename-btn" style="margin-top:8px">Rename team</button><label style="margin-top:8px">Team logo</label><input id="home-photo" type="file" accept="image/*"><button class="btn" id="home-photo-clear" style="margin-top:8px">Clear logo</button>')+'</div>'+
+'<details class="card" open style="border-top:3px solid var(--lime);max-width:380px"><summary style="font-weight:700;cursor:pointer;font-size:14px;padding:6px 0">Your team</summary>'+(mine&&mine.teamId!=null?'<p>You are locked to '+((ensureDraft(s,mine.pod).teams.find(team=>team.id===Number(mine.teamId))||{}).name||"your team")+'.</p><input id="home-rename" class="search" placeholder="New team name"><button class="btn btn-lime" id="home-rename-btn" style="margin-top:8px">Rename team</button><label style="margin-top:8px">Team logo</label><input id="home-photo" type="file" accept="image/*"><button class="btn" id="home-photo-clear" style="margin-top:8px">Clear logo</button><input id="link-name" class="search" placeholder="Already claimed? Type your name" style="margin-top:8px"><button class="btn" id="link-seat" style="margin-top:8px">Link this phone</button>':'<p>Claim a seat here. You only get one.</p><input id="link-name" class="search" placeholder="Already claimed? Type your name"><button class="btn" id="link-seat" style="margin-top:8px">Link this phone</button><label>Division</label><select id="home-pod" class="search">'+pods.map(p=>'<option value="'+p+'">'+podName(p)+'</option>').join("")+'</select><label>Team</label><select id="home-team" class="search"></select><input id="home-seat-name" class="search" placeholder="Your name" style="margin-top:8px"><button class="btn btn-lime" id="home-claim" style="margin-top:8px">Claim this team</button><input id="home-rename" class="search" placeholder="New team name" style="margin-top:8px"><button class="btn" id="home-rename-btn" style="margin-top:8px">Rename team</button><label style="margin-top:8px">Team logo</label><input id="home-photo" type="file" accept="image/*"><button class="btn" id="home-photo-clear" style="margin-top:8px">Clear logo</button>')+'</div>'+
 '<div class="command-center">'+
 '<details class="card" open><summary>Draft <svg viewBox="0 0 60 40" width="22" height="14" style="vertical-align:middle;margin:0 4px;border-radius:2px"><rect width="60" height="40" fill="#bf0a30"/><rect y="3" width="60" height="3" fill="#fff"/><rect y="9" width="60" height="3" fill="#fff"/><rect y="15" width="60" height="3" fill="#fff"/><rect y="21" width="60" height="3" fill="#fff"/><rect y="27" width="60" height="3" fill="#fff"/><rect y="33" width="60" height="3" fill="#fff"/><rect width="24" height="21" fill="#002868"/></svg></summary><p>Join a room or watch the board.</p><div class="join-row"><input id="join-code" placeholder="EAST-7K2"/><button class="btn btn-lime" id="join-btn">Join</button></div><div style="margin-top:10px">'+rooms+'</div></details>'+
 '<details class="card"><summary>League</summary><div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px"><a class="btn" href="#scores">Standings</a><a class="btn" href="#scoreboard">Scoreboard</a><a class="btn" href="#bracket">Bracket</a><a class="btn" href="#talk">Talk</a><a class="btn" href="#waiver">Waiver</a><a class="btn" href="#roster">Roster</a><a class="btn" href="#history">History</a><a class="btn" href="#matchup">Matchup</a><a class="btn" href="#payout">Payouts</a></div>'+( (Array.isArray(rivals)?rivals:Object.values(rivals||{})).length ? '<h2 style="margin:12px 0 6px">Rival Week</h2>'+(Array.isArray(rivals)?rivals:Object.values(rivals||{})).map(r=>'<div class="team-row"><strong>'+r.a+'</strong><span>vs</span><strong>'+r.b+'</strong></div>').join('') : '' )+'</details>'+
@@ -2508,7 +2508,13 @@ function renderSettings(){
     '<label>K</label><input id="rs-k" type="number" value="'+(rs.k||1)+'">'+
     '</div>'+
   '</div>'+
-  '<div class="card" style="margin-top:12px"><h2>Deadlines</h2>'+
+  '<div class="card" style="margin-top:12px"><h2>Team logos</h2>'+
+    '<p style="font-size:13px;opacity:.8">Commissioner can set a logo for any team.</p>'+
+    '<label>Division</label><select id="logo-pod" class="search">'+podsOf(s).map(p=>'<option value="'+p+'">'+podName(p)+'</option>').join("")+'</select>'+
+    '<label>Team</label><select id="logo-team" class="search"></select>'+
+    '<label>Upload logo</label><input id="team-logo-file" type="file" accept="image/*">'+
+    '<button class="btn" id="clear-team-logo" style="margin-top:8px">Clear logo</button>'+
+  '</div>'+
     '<label>Waiver deadline</label><input id="set-waiver" type="datetime-local" value="'+(s.records&&s.records.waiverDeadline?s.records.waiverDeadline.slice(0,16):"")+'">'+
     '<label>Trade deadline</label><input id="set-trade" type="datetime-local" value="'+(s.records&&s.records.tradeDeadline?s.records.tradeDeadline.slice(0,16):"")+'">'+
   '</div>'+
@@ -2545,6 +2551,38 @@ function renderSettings(){
     publishLeague(); publishSize(); publishGames(); publishSpots(); publishTie(); publishSeed(); publishRoster();
     if(wd || td) publishRecords();
     alert("Settings saved.");
+    renderSettings();
+  };
+
+  // Team logo controls
+  const logoPod = document.getElementById("logo-pod");
+  const logoTeam = document.getElementById("logo-team");
+  function fillLogoTeams(){
+    const pod = logoPod.value;
+    const teams = ensureDraft(load(), pod).teams || [];
+    logoTeam.innerHTML = teams.map(t=>'<option value="'+t.id+'">'+t.name+'</option>').join("");
+  }
+  if(logoPod){ logoPod.onchange = fillLogoTeams; fillLogoTeams(); }
+  const tlf = document.getElementById("team-logo-file");
+  if(tlf) tlf.onchange = ()=>{
+    const f = tlf.files && tlf.files[0]; if(!f) return;
+    if(f.size > 350000){ alert("Use a smaller picture, under 350k."); return; }
+    const r = new FileReader();
+    r.onload = ()=>{
+      const pod = logoPod.value;
+      const teamId = Number(logoTeam.value);
+      setTeamPhoto(load(), pod, teamId, String(r.result||""));
+      alert("Team logo updated.");
+      renderSettings();
+    };
+    r.readAsDataURL(f);
+  };
+  const ctl = document.getElementById("clear-team-logo");
+  if(ctl) ctl.onclick = ()=>{
+    const pod = logoPod.value;
+    const teamId = Number(logoTeam.value);
+    setTeamPhoto(load(), pod, teamId, "");
+    alert("Team logo cleared.");
     renderSettings();
   };
 }
