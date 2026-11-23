@@ -654,12 +654,12 @@ function updateMatchupTotals(){
     });
     card.querySelectorAll('.live-sum[data-side="home"]').forEach(el => el.textContent = home > 0 ? home.toFixed(1) : "—");
     card.querySelectorAll('.live-sum[data-side="away"]').forEach(el => el.textContent = away > 0 ? away.toFixed(1) : "—");
-    // Store for scoreboard/ticker by stable key
+    // Store for scoreboard/ticker by team names
     const summary = card.querySelector("summary");
     if(summary && (home > 0 || away > 0)){
       window._matchTotals = window._matchTotals || {};
-      const names = (summary.textContent || "").replace(/\s+/g," ").trim();
-      window._matchTotals[names] = {home:home, away:away};
+      const txt = (summary.textContent || "").replace(/\s+/g," ").trim();
+      window._matchTotals[txt] = {home:home, away:away};
       try{ localStorage.setItem("dualgrid-match-totals", JSON.stringify(window._matchTotals)); }catch(e){}
     }
   });
@@ -1754,8 +1754,10 @@ try{ window._matchTotals = JSON.parse(localStorage.getItem("dualgrid-match-total
 loadBoxCache().then(()=>{
   fillLiveStats();
   setTimeout(()=>{
-try{ const s=load(); applyWeekResults(s); save(s); publishRecords(); }catch(e){}
-const s=load(); if(!s.records)s.records={week:1,rows:{}};
+    // Force matchup-style totals if we have a matchup open or stored
+    if(typeof updateMatchupTotals === "function") updateMatchupTotals();
+    try{ const s=load(); applyWeekResults(s); save(s); publishRecords(); }catch(e){}
+    const s=load(); if(!s.records)s.records={week:1,rows:{}};
 const rec=s.records; if(!rec.board)rec.board={style:"standard"};
 const pods=podsOf(s); const can=!!s.owner;
 const style=rec.board.style||"standard";
