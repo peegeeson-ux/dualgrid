@@ -659,11 +659,11 @@ function updateMatchupTotals(){
     if(key && (home > 0 || away > 0)){
       window._matchTotals = window._matchTotals || {};
       window._matchTotals[key] = {home:home, away:away};
-      // Also store by individual team name for easier lookup
       const parts = key.split("|");
       if(parts[0]) window._matchTotals[parts[0]] = home;
       if(parts[1]) window._matchTotals[parts[1]] = away;
       try{ localStorage.setItem("dualgrid-match-totals", JSON.stringify(window._matchTotals)); }catch(e){}
+      try{ dataRef("config/matchTotals").set(window._matchTotals); }catch(e){}
     }
   });
 }
@@ -1754,6 +1754,7 @@ const out=[]; for(let i=0;i<seasonGames;i++)out.push(weeks[i%Math.max(1,weeks.le
 }
 function renderScoreboard(){
 try{ window._matchTotals = JSON.parse(localStorage.getItem("dualgrid-match-totals")||"{}"); }catch(e){}
+dataRef("config/matchTotals").once("value", snap => { if(snap.val()) window._matchTotals = snap.val(); });
 loadBoxCache().then(()=>{
   fillLiveStats();
   setTimeout(()=>{
@@ -2467,6 +2468,7 @@ function loadWeekTicker(){
   const ticker = document.getElementById("week-ticker");
   if(!ticker) return;
   try{ window._matchTotals = JSON.parse(localStorage.getItem("dualgrid-match-totals")||"{}"); }catch(e){}
+  dataRef("config/matchTotals").once("value", snap => { if(snap.val()) window._matchTotals = snap.val(); });
   const hash = location.hash.replace("#","") || "";
   const page = hash.split("/")[0] || "";
   const inLeague = !!leagueCode();
