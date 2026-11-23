@@ -548,10 +548,11 @@ function fillLiveStats(){
     }
     // Stronger fallback: last-name search across boxCache
     if(livePts[id] == null){
-      const last = key.split(" ").pop();
+      const last = key.split(" ").filter(Boolean).pop() || "";
       if(last && last.length > 3){
         for(const k in boxCache){
-          if(k.endsWith(last) || k.includes(" "+last)){
+          const kClean = k.replace(/[^a-z ]/g,"");
+          if(kClean.endsWith(last) || kClean.includes(" "+last) || kClean === last){
             const pts = fantasyPoints(boxCache[k]);
             if(pts != null && pts > 0){
               ptsEls.forEach(el => { el.textContent = pts; el.setAttribute("data-live","1"); });
@@ -565,6 +566,10 @@ function fillLiveStats(){
           }
         }
       }
+    }
+    // Force override projection if we have live data
+    if(livePts[id] != null){
+      ptsEls.forEach(el => { el.textContent = livePts[id]; el.setAttribute("data-live","1"); });
     }
     // Live stats are optional — only replace if real data arrives and we don't already have a live number
     if(livePts[id] != null) return;
@@ -642,8 +647,7 @@ function updateMatchupTotals(){
       const txt = el.textContent.trim();
       const v = parseFloat(txt);
       if(isNaN(v) || v === 0) return;
-      // Count it if it has data-live or if it's not a projection placeholder
-      const isLive = el.getAttribute("data-live") === "1" || (livePts[id] != null && livePts[id+"_wk"] == String(currentNflWeek()));
+      const isLive = el.getAttribute("data-live") === "1";
       if(!isLive) return;
       const row = el.closest("div[style*='grid-template-columns']");
       if(!row) return;
@@ -652,8 +656,8 @@ function updateMatchupTotals(){
     });
     const homeSum = card.querySelector('.live-sum[data-side="home"]');
     const awaySum = card.querySelector('.live-sum[data-side="away"]');
-    if(homeSum && homeN) homeSum.textContent = home.toFixed(1);
-    if(awaySum && awayN) awaySum.textContent = away.toFixed(1);
+    if(homeSum) homeSum.textContent = homeN ? home.toFixed(1) : "—";
+    if(awaySum) awaySum.textContent = awayN ? away.toFixed(1) : "—";
     const odds = card.querySelector(".odds-line");
     if(odds && (homeN || awayN)){
       const total = home + away || 1;
