@@ -543,7 +543,8 @@ function fillLiveStats(){
     if(cached){
       const pts = fantasyPoints(cached);
       const line = liveLine(cached);
-      if(pts != null && pts > 0){
+      const opp = playerOpp(p);
+      if(pts != null && pts > 0 && opp !== "BYE"){
         const show = pts;
         ptsEls.forEach(el => { el.textContent = show; el.setAttribute("data-live","1"); });
         livePts[id] = show;
@@ -552,15 +553,14 @@ function fillLiveStats(){
         updateMatchupTotals(); updateRosterTotal(); loadWeekTicker();
       }
     }
-    // Stronger fallback: last-name search across boxCache
     if(livePts[id] == null){
       const last = key.split(" ").filter(Boolean).pop() || "";
       if(last && last.length > 3){
         for(const k in boxCache){
           const kClean = k.replace(/[^a-z ]/g,"");
-          if(kClean.endsWith(last) || kClean.includes(" "+last) || kClean === last){
+          if(kClean === key || (kClean.endsWith(" "+last) && kClean.startsWith(key.split(" ")[0]))){
             const pts = fantasyPoints(boxCache[k]);
-            if(pts != null && pts > 0){
+            if(pts != null && pts > 0 && playerOpp(p) !== "BYE"){
               ptsEls.forEach(el => { el.textContent = pts; el.setAttribute("data-live","1"); });
               livePts[id] = pts;
               livePts[id+"_wk"] = week;
