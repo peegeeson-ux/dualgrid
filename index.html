@@ -670,7 +670,6 @@ function updateMatchupTotals(){
       if(parts[1]) window._matchTotals[parts[1]] = away;
       try{ localStorage.setItem("dualgrid-match-totals", JSON.stringify(window._matchTotals)); }catch(e){}
       try{ dataRef("config/matchTotals").set(window._matchTotals); }catch(e){}
-      console.log("saved matchTotals", key, home, away);
     }
   });
 }
@@ -1787,23 +1786,27 @@ weekGames.forEach(g=>{
   const storedHome = stored[homeKey] && stored[homeKey].pf;
   const storedAway = stored[awayKey] && stored[awayKey].pf;
   const isCurrent = (Number(week) === Number(currentNflWeek()));
-  let homePts = (g.home.lineup&&g.home.lineup.starters||[]).reduce((sum,p)=>{
-    const pts = (livePts[p.id] != null) ? Number(livePts[p.id]) : 0;
-    return sum + pts;
-  },0);
-  let awayPts = (g.away.lineup&&g.away.lineup.starters||[]).reduce((sum,p)=>{
-    const pts = (livePts[p.id] != null) ? Number(livePts[p.id]) : 0;
-    return sum + pts;
-  },0);
+  let homePts = 0;
+  let awayPts = 0;
   // Prefer stored matchup totals if available
   if(window._matchTotals){
     const key = g.home.name + "|" + g.away.name;
     const t = window._matchTotals[key];
-    if(t){ homePts = t.home || homePts; awayPts = t.away || awayPts; }
+    if(t){ homePts = t.home || 0; awayPts = t.away || 0; }
     else {
-      if(window._matchTotals[g.home.name] != null) homePts = Number(window._matchTotals[g.home.name]) || homePts;
-      if(window._matchTotals[g.away.name] != null) awayPts = Number(window._matchTotals[g.away.name]) || awayPts;
+      if(window._matchTotals[g.home.name] != null) homePts = Number(window._matchTotals[g.home.name]) || 0;
+      if(window._matchTotals[g.away.name] != null) awayPts = Number(window._matchTotals[g.away.name]) || 0;
     }
+  }
+  if(homePts === 0 && awayPts === 0){
+    homePts = (g.home.lineup&&g.home.lineup.starters||[]).reduce((sum,p)=>{
+      const pts = (livePts[p.id] != null) ? Number(livePts[p.id]) : 0;
+      return sum + pts;
+    },0);
+    awayPts = (g.away.lineup&&g.away.lineup.starters||[]).reduce((sum,p)=>{
+      const pts = (livePts[p.id] != null) ? Number(livePts[p.id]) : 0;
+      return sum + pts;
+    },0);
   }
   if(!isCurrent && storedHome != null && storedHome > 0){
     homePts = storedHome; awayPts = storedAway || 0;
