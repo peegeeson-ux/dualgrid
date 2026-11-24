@@ -670,6 +670,18 @@ function updateMatchupTotals(){
       if(parts[1]) window._matchTotals[parts[1]] = away;
       try{ localStorage.setItem("dualgrid-match-totals", JSON.stringify(window._matchTotals)); }catch(e){}
       try{ dataRef("config/matchTotals").set(window._matchTotals); }catch(e){}
+      // Save week scores for schedule
+      try{
+        const s = load();
+        const week = Number(localStorage.getItem("dualgrid-view-week") || (s.records && s.records.week) || currentNflWeek());
+        if(!s.records.weekScores) s.records.weekScores = {};
+        if(!s.records.weekScores["w"+week]) s.records.weekScores["w"+week] = {};
+        const homeKey = card.getAttribute("data-pod") + "-" + card.getAttribute("data-home");
+        const awayKey = card.getAttribute("data-pod") + "-" + card.getAttribute("data-away");
+        s.records.weekScores["w"+week][homeKey] = {pf:home, pa:away, opp:card.getAttribute("data-away")};
+        s.records.weekScores["w"+week][awayKey] = {pf:away, pa:home, opp:card.getAttribute("data-home")};
+        save(s);
+      }catch(e){}
     }
   });
 }
