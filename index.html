@@ -1760,17 +1760,15 @@ pods.forEach(pod=>{
 const out=[]; for(let i=0;i<seasonGames;i++)out.push(weeks[i%Math.max(1,weeks.length)]||[]); return out;
 }
 function renderScoreboard(){
-dataRef("config/matchTotals").once("value", snap => {
-  if(snap.val()) window._matchTotals = snap.val();
-  try{ window._matchTotals = window._matchTotals || JSON.parse(localStorage.getItem("dualgrid-match-totals")||"{}"); }catch(e){}
-  console.log("scoreboard matchTotals", window._matchTotals);
-  loadBoxCache().then(()=>{
+try{ window._matchTotals = JSON.parse(localStorage.getItem("dualgrid-match-totals")||"{}"); }catch(e){}
+dataRef("config/matchTotals").once("value", snap => { if(snap.val()) window._matchTotals = snap.val(); });
+loadBoxCache().then(()=>{
+  fillLiveStats();
+  setTimeout(()=>{
     fillLiveStats();
-    setTimeout(()=>{
-      fillLiveStats();
-      if(typeof updateMatchupTotals === "function") updateMatchupTotals();
-      try{ const s=load(); applyWeekResults(s); save(s); publishRecords(); }catch(e){}
-      const s=load(); if(!s.records)s.records={week:1,rows:{}};
+    if(typeof updateMatchupTotals === "function") updateMatchupTotals();
+    try{ const s=load(); applyWeekResults(s); save(s); publishRecords(); }catch(e){}
+    const s=load(); if(!s.records)s.records={week:1,rows:{}};
 const rec=s.records; if(!rec.board)rec.board={style:"standard"};
 const pods=podsOf(s); const can=!!s.owner;
 const style=rec.board.style||"standard";
@@ -1852,9 +1850,7 @@ const ss=document.getElementById("style-standard"); if(ss) ss.onclick=()=>{const
 const sr=document.getElementById("style-retro"); if(sr) sr.onclick=()=>{const st=load(); st.records.board=st.records.board||{}; st.records.board.style="retro"; save(st); publishRecords(); renderScoreboard();};
 const sb=document.getElementById("save-board"); if(sb) sb.onclick=()=>{const st=load(); st.records.board=st.records.board||{style:style}; const by={}; document.querySelectorAll("[data-game]").forEach(inp=>{by[inp.dataset.game]=by[inp.dataset.game]||{key:inp.dataset.game}; by[inp.dataset.game][inp.dataset.side]=Number(inp.value)||0;}); st.records.board.games=Object.values(by); const sched={}; document.querySelectorAll('[data-sched]').forEach(sel=>{sched[sel.dataset.sched]=sched[sel.dataset.sched]||{}; const slot=sched[sel.dataset.sched][sel.dataset.slot]=sched[sel.dataset.sched][sel.dataset.slot]||[null,null]; slot[sel.dataset.side==='home'?0:1]=Number(sel.value);}); Object.keys(sched).forEach(pod=>sched[pod]=Object.values(sched[pod])); st.records.board.schedule=sched; save(st); publishRecords(); renderScoreboard();};
 const cw=document.getElementById("close-week"); if(cw) cw.onclick=()=>{ if(!load().owner)return; if(!confirm("Close Week "+((load().records&&load().records.week)||1)+" and snapshot the current totals?"))return; cw.textContent="Closing…"; loadBoxCache().then(()=>{ fillLiveStats(); setTimeout(()=>{ const st=load(); try{ applyWeekResults(st); }catch(e){} save(st); publishRecords(); alert("Week closed. Totals saved."); cw.textContent="Close Week "+((load().records&&load().records.week)||1); renderScoreboard(); }, 3000); }); };
-  }, 2500);
-  setTimeout(()=>{ if(location.hash === "#scoreboard" && !window._sbRefresh){ window._sbRefresh = true; renderScoreboard(); setTimeout(()=>{ window._sbRefresh = false; }, 8000); } }, 8000);
-});
+  }, 800);
 });
 }
 
