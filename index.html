@@ -490,6 +490,8 @@ function fillLiveStats(){
     if(!p || !p.name || p.name === "—") return;
     const opp = playerOpp(p);
     if(opp === "BYE"){
+      const ptsEls = document.querySelectorAll('.live-pts[data-id="'+id+'"]');
+      const lineEls = document.querySelectorAll('.live-line[data-id="'+id+'"]');
       ptsEls.forEach(el => el.textContent = "BYE");
       lineEls.forEach(el => el.textContent = "");
       return;
