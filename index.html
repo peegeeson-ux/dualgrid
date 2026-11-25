@@ -2171,12 +2171,33 @@ if(send) send.onclick=()=>{const name=(document.getElementById("talk-name").valu
 function renderHistory(){
 const s=load();
 document.getElementById("app").innerHTML=header('<a class="btn" href="#home">Home</a>')+
-'<div class="page"><div class="eyebrow">'+((s.league&&s.league.name)||leagueName)+'</div><h1>League history</h1><p class="lede">Champions, records, and streaks stay with this league.</p><div id="history-list"></div>'+
-(s.owner?'<div class="card no-print"><h2>Add season</h2><label>Season</label><input id="hist-season" placeholder="2026"><label>Champion</label><input id="hist-champ" placeholder="Team name"><label>Best regular season record</label><input id="hist-record" placeholder="12-2"><label>Longest winning streak</label><input id="hist-streak" placeholder="8 games"><label>Runner-up</label><input id="hist-runner" placeholder="Team name"><button class="btn btn-lime" id="hist-save" style="margin-top:8px">Add season</button></div>':"")+'</div>';
+'<div class="page"><div class="eyebrow">'+((s.league&&s.league.name)||leagueName)+'</div><h1>League history</h1><p class="lede">Champions, records, and streaks stay with this league.</p><div id="history-highlights"></div><div id="history-list" style="margin-top:16px"></div>'+
+(s.owner?'<div class="card no-print" style="margin-top:16px"><h2>Add season</h2><label>Season</label><input id="hist-season" placeholder="2026"><label>Champion</label><input id="hist-champ" placeholder="Team name"><label>Best regular season record</label><input id="hist-record" placeholder="12-2"><label>Longest winning streak</label><input id="hist-streak" placeholder="8 games"><label>Runner-up</label><input id="hist-runner" placeholder="Team name"><button class="btn btn-lime" id="hist-save" style="margin-top:8px">Add season</button></div>':"")+'</div>';
 dataRef("history").on("value",snap=>{
   const rows=snap.val()?Object.values(snap.val()):[];
   const el=document.getElementById("history-list");
+  const hi=document.getElementById("history-highlights");
   if(!el)return;
+  // All-time highlights
+  let bestRec = null, bestStreak = null;
+  rows.forEach(r=>{
+    if(r.record && (!bestRec || parseInt(r.record) > parseInt(bestRec.record||0))) bestRec = r;
+    if(r.streak && (!bestStreak || parseInt(r.streak) > parseInt(bestStreak.streak||0))) bestStreak = r;
+  });
+  if(hi){
+    hi.innerHTML = '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">'+
+      '<div class="card" style="background:linear-gradient(135deg,#1a3a1a,#0d1f0d);border:1px solid var(--lime);text-align:center;padding:16px">'+
+        '<div style="font-size:12px;letter-spacing:1px;color:var(--lime)">BEST REGULAR SEASON</div>'+
+        '<div style="font-size:28px;font-weight:800;margin:6px 0">'+(bestRec?bestRec.record:"—")+'</div>'+
+        '<div style="opacity:.8">'+(bestRec?bestRec.champ+" · "+bestRec.season:"No record yet")+'</div>'+
+      '</div>'+
+      '<div class="card" style="background:linear-gradient(135deg,#1a2a3a,#0d1a2f);border:1px solid #7cc8ff;text-align:center;padding:16px">'+
+        '<div style="font-size:12px;letter-spacing:1px;color:#7cc8ff">LONGEST WINNING STREAK</div>'+
+        '<div style="font-size:28px;font-weight:800;margin:6px 0">'+(bestStreak?bestStreak.streak:"—")+'</div>'+
+        '<div style="opacity:.8">'+(bestStreak?bestStreak.champ+" · "+bestStreak.season:"No streak yet")+'</div>'+
+      '</div>'+
+    '</div>';
+  }
   el.innerHTML=rows.length?rows.map(r=>'<div class="card" style="border-left:6px solid var(--lime)"><h2 style="margin:0 0 6px">'+r.season+' <span style="font-size:18px">🏆</span></h2><p style="margin:4px 0"><strong>Champion:</strong> '+r.champ+'</p>'+(r.runner?'<p style="margin:4px 0"><strong>Runner-up:</strong> '+r.runner+'</p>':'')+'<p style="margin:4px 0"><strong>Best regular season:</strong> '+r.record+'</p>'+(r.streak?'<p style="margin:4px 0"><strong>Longest winning streak:</strong> '+r.streak+'</p>':'')+'</div>').join(""):"<p>No seasons yet.</p>";
 });
 const hs=document.getElementById("hist-save");
