@@ -2531,10 +2531,11 @@ if(added) save(s);
       const override = s.owner && (localStorage.getItem("dualgrid-override-"+pod+"-"+team.id)==="1");
       html+='<div class="card" style="background:linear-gradient(160deg,#14233a,#0d1524);color:#fff;border-left:8px dashed #c9a227"><div class="eyebrow">SEASON TICKET · '+podName(pod).toUpperCase()+'</div><h2 style="font-size:28px;margin:6px 0">'+(team.name||"Team")+'</h2><p>'+(team.ownerName||"Owner")+(mineHere?" · you":"")+'</p><p style="font-size:20px;letter-spacing:1px">'+(row.w||0)+'-'+(row.l||0)+' · '+(row.pf||0)+' PF</p><p style="opacity:.7">Seat '+(team.id+1)+' · '+ (s.season||"2026")+' · Roster '+total+' + '+(rs.ir||1)+' IR</p>'+(s.owner?'<label style="display:flex;align-items:center;gap:8px;margin-top:10px"><input type="checkbox" data-override="'+pod+'-'+team.id+'" '+(override?"checked":"")+'> Commissioner override</label>':'')+'</div>';
       const maxK = Number((s.records||{}).maxKeepers) || 0;
-      if(maxK > 0 && mineHere){
+      if(mineHere){
         const ks = team.keepers || [];
-        html += '<div class="card"><h3>Keepers ('+ks.length+'/'+maxK+')</h3>'+
-          (team.picks||[]).slice(0,12).map(p=>'<div style="display:flex;justify-content:space-between;align-items:center;padding:4px 0"><span>'+p.name+'</span><button class="btn" style="padding:3px 8px;font-size:11px" onclick="toggleKeeper(\''+String(p.name).replace(/'/g,"")+'\' )">'+(ks.includes(p.name)?"Unkeep":"Keep")+'</button></div>').join("") +
+        html += '<div class="card"><h3>Keepers ('+ks.length+'/'+(maxK||0)+')</h3>'+
+          (maxK===0 ? '<p class="sub">Commissioner has keepers turned off (set Max keepers on the Trade page).</p>' : 
+          (team.picks||[]).slice(0,12).map(p=>'<div style="display:flex;justify-content:space-between;align-items:center;padding:4px 0"><span>'+p.name+'</span><button class="btn" style="padding:3px 8px;font-size:11px" onclick="toggleKeeper(\''+String(p.name).replace(/'/g,"")+'\' )">'+(ks.includes(p.name)?"Unkeep":"Keep")+'</button></div>').join("")) +
           '</div>';
       }
       const starters = Array.isArray(lineup.starters) ? lineup.starters : [];
@@ -2840,7 +2841,7 @@ function renderTrade(prefillTo, prefillPlayer){
   let settings = "";
   if(isCommish){
     const deadlineVal = s.records.tradeDeadline ? s.records.tradeDeadline.slice(0,16) : "";
-    settings = '<div class="card"><h3>Trade settings</h3><label>How trades finalize</label><select id="trade-mode" class="search"><option value="commish"'+(mode==="commish"?" selected":"")+'>Commissioner only</option><option value="vote"'+(mode==="vote"?" selected":"")+'>League vote</option><option value="vote-commish"'+(mode==="vote-commish"?" selected":"")+'>League vote + commissioner</option></select><label>Review period (hours, 0 = instant)</label><input id="trade-review" class="search" type="number" min="0" value="'+reviewHours+'"><label>Trade deadline (date & time)</label><input id="trade-deadline" class="search" type="datetime-local" value="'+deadlineVal+'"><label>Max keepers per team</label><input id="max-keepers" class="search" type="number" min="0" value="'+((s.records&&s.records.maxKeepers)||0)+'"><button class="btn" id="save-trade-settings" style="margin-top:8px">Save settings</button></div>'+
+    settings = '<div class="card"><h3>Trade settings</h3><label>How trades finalize</label><select id="trade-mode" class="search"><option value="commish"'+(mode==="commish"?" selected":"")+'>Commissioner only</option><option value="vote"'+(mode==="vote"?" selected":"")+'>League vote</option><option value="vote-commish"'+(mode==="vote-commish"?" selected":"")+'>League vote + commissioner</option></select><label>Review period (hours, 0 = instant)</label><input id="trade-review" class="search" type="number" min="0" value="'+reviewHours+'"><label>Trade deadline (date & time)</label><input id="trade-deadline" class="search" type="datetime-local" value="'+deadlineVal+'"><button class="btn" id="save-trade-settings" style="margin-top:8px">Save settings</button></div>'+
       '<div class="card"><h3>Move a player</h3><input id="move-name" class="search" placeholder="Player name (e.g. Wandale Robinson)"><input id="move-from" class="search" placeholder="From team name"><input id="move-to" class="search" placeholder="To team name"><button class="btn" id="move-player" style="margin-top:8px">Move player</button></div>';
   }
 
@@ -2867,7 +2868,6 @@ function renderTrade(prefillTo, prefillPlayer){
     const st = load();
     st.records.tradeMode = document.getElementById("trade-mode").value;
     st.records.tradeReviewHours = Number(document.getElementById("trade-review").value) || 0;
-    st.records.maxKeepers = Number(document.getElementById("max-keepers").value) || 0;
     const dl = document.getElementById("trade-deadline").value;
     if(dl) st.records.tradeDeadline = new Date(dl).toISOString();
     save(st);
@@ -3144,6 +3144,7 @@ function renderSettings(){
     '<label>Team DEF</label><input id="rs-teamDef" type="number" value="'+(rs.teamDef||0)+'">'+
     '<label>IDP</label><input id="rs-defPlayers" type="number" value="'+(rs.defPlayers||0)+'">'+
     '<label>K</label><input id="rs-k" type="number" value="'+(rs.k||1)+'">'+
+    '<label>Max keepers</label><input id="rs-keepers" type="number" min="0" value="'+((s.records&&s.records.maxKeepers)||0)+'">'+
     '</div>'+
   '</div>'+
   '<div class="card" style="margin-top:12px"><h2>Team logos</h2>'+
@@ -3194,6 +3195,7 @@ function renderSettings(){
     st.records.waiverTime = wtime || "03:00";
     if(td) st.records.tradeDeadline = new Date(td).toISOString();
     st.records.waiverType = waiverType;
+    st.records.maxKeepers = Number(document.getElementById("rs-keepers").value) || 0;
     save(st);
     publishLeague(); publishSize(); publishGames(); publishSpots(); publishTie(); publishSeed(); publishRoster();
     if(wd || td) publishRecords();
