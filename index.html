@@ -2351,7 +2351,8 @@ function addWaiver(id){
   if(!player){ alert("Player not found."); return; }
   const pod = window.waiverPod || "east";
   rec.claims = rec.claims || [];
-  if(rec.claims.some(c => c.id === player.id && c.pod === pod)){ alert("Already claimed."); return; }
+  // Only block if there's an open waiver claim and we're still in the waiver window
+  if(!closed && rec.claims.some(c => c.id === player.id && c.pod === pod && c.kind !== "fa")){ alert("Already claimed."); return; }
   let targetTeam = null;
   const d = ensureDraft(s, pod);
   (d.teams||[]).forEach(team => {
