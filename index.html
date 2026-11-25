@@ -213,6 +213,7 @@ document.addEventListener("touchend", openPlayerFromEvent, {passive:false});
 const firebaseConfig={apiKey:"AIzaSyCPoc8RiH0GtWnyPe9azxQ8lFCLrOBoMts",authDomain:"dualgrid-427ca.firebaseapp.com",databaseURL:"https://dualgrid-427ca-default-rtdb.firebaseio.com",projectId:"dualgrid-427ca",storageBucket:"dualgrid-427ca.firebasestorage.app",messagingSenderId:"52737569543",appId:"1:52737569543:web:cf80fe25c42eb4891a0ba2"};
 firebase.initializeApp(firebaseConfig);
 const cloud=firebase.database();
+function currentSeat(){try{return (JSON.parse(localStorage.getItem("dualgrid-my-seats")||"{}")[leagueCode()]||JSON.parse(localStorage.getItem("dualgrid-my-seat")||"null"))}catch(e){return null}}
 function showCountdownOverlay(pod){
   if(podFromHash()!==pod) return;
   let overlay=document.getElementById("draft-countdown");
@@ -1682,7 +1683,6 @@ const q=document.getElementById("q");if(q)q.oninput=e=>{
     row.style.display = hit ? "" : "none";
   });
 };
-function currentSeat(){try{return (JSON.parse(localStorage.getItem("dualgrid-my-seats")||"{}")[leagueCode()]||JSON.parse(localStorage.getItem("dualgrid-my-seat")||"null"))}catch(e){return null}}
 const here=currentSeat(); const seat=here&&here.pod===pod?here.teamId:null;
 const myTeam=seat!=null?draft.teams.find(team=>Number(team.id)===Number(seat)):null;
 const asList=v=>Array.isArray(v)?v:(v&&typeof v==="object"?Object.values(v):[]);
