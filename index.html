@@ -702,32 +702,33 @@ function updateMatchupTotals(){
     const projAway = card.querySelector('.proj-sum[data-side="away"]');
     if(projHome) homeProj = Number(projHome.textContent) || 0;
     if(projAway) awayProj = Number(projAway.textContent) || 0;
-    // Use live if available, otherwise projection
+    // Use live if available, otherwise projection (display only — do not save projections)
     const useHome = home > 0 ? home : homeProj;
     const useAway = away > 0 ? away : awayProj;
     card.querySelectorAll('.live-sum[data-side="home"]').forEach(el => el.textContent = home > 0 ? home.toFixed(1) : "—");
     card.querySelectorAll('.live-sum[data-side="away"]').forEach(el => el.textContent = away > 0 ? away.toFixed(1) : "—");
-    // Store for scoreboard/ticker by team names
-    const key = card.getAttribute("data-key");
-    if(key && (useHome > 0 || useAway > 0)){
-      window._matchTotals = window._matchTotals || {};
-      window._matchTotals[key] = {home:useHome, away:useAway};
-      const parts = key.split("|");
-      if(parts[0]) window._matchTotals[parts[0]] = useHome;
-      if(parts[1]) window._matchTotals[parts[1]] = useAway;
-      try{ localStorage.setItem("dualgrid-match-totals", JSON.stringify(window._matchTotals)); }catch(e){}
-      // Save week scores for schedule
-      try{
-        const s = load();
-        const week = Number(localStorage.getItem("dualgrid-view-week") || (s.records && s.records.week) || currentNflWeek());
-        if(!s.records.weekScores) s.records.weekScores = {};
-        if(!s.records.weekScores["w"+week]) s.records.weekScores["w"+week] = {};
-        const homeKey = card.getAttribute("data-pod") + "-" + card.getAttribute("data-home");
-        const awayKey = card.getAttribute("data-pod") + "-" + card.getAttribute("data-away");
-        s.records.weekScores["w"+week][homeKey] = {pf:useHome, pa:useAway, opp:card.getAttribute("data-away")};
-        s.records.weekScores["w"+week][awayKey] = {pf:useAway, pa:useHome, opp:card.getAttribute("data-home")};
-        save(s);
-      }catch(e){}
+    // Only store real live totals — never projections
+    if(home > 0 || away > 0){
+      const key = card.getAttribute("data-key");
+      if(key){
+        window._matchTotals = window._matchTotals || {};
+        window._matchTotals[key] = {home:home, away:away};
+        const parts = key.split("|");
+        if(parts[0]) window._matchTotals[parts[0]] = home;
+        if(parts[1]) window._matchTotals[parts[1]] = away;
+        try{ localStorage.setItem("dualgrid-match-totals", JSON.stringify(window._matchTotals)); }catch(e){}
+        try{
+          const s = load();
+          const week = Number(localStorage.getItem("dualgrid-view-week") || (s.records && s.records.week) || currentNflWeek());
+          if(!s.records.weekScores) s.records.weekScores = {};
+          if(!s.records.weekScores["w"+week]) s.records.weekScores["w"+week] = {};
+          const homeKey = card.getAttribute("data-pod") + "-" + card.getAttribute("data-home");
+          const awayKey = card.getAttribute("data-pod") + "-" + card.getAttribute("data-away");
+          s.records.weekScores["w"+week][homeKey] = {pf:home, pa:away, opp:card.getAttribute("data-away")};
+          s.records.weekScores["w"+week][awayKey] = {pf:away, pa:home, opp:card.getAttribute("data-home")};
+          save(s);
+        }catch(e){}
+      }
     }
   });
 }
@@ -932,18 +933,12 @@ function applyWeekResults(s){
       }
     }
     const existing = s.records.weekScores[weekKey][homeKey];
-    // Only overwrite if we have real live numbers or nothing is stored yet
-    if(homePts > 0 || awayPts > 0 || !existing){
+    // Only apply real scored points — never projections or zeros
+    if(homePts > 0 || awayPts > 0){
       if(!s.records.rows[homeKey]) s.records.rows[homeKey]={w:0,l:0,pf:0,pa:0};
       if(!s.records.rows[awayKey]) s.records.rows[awayKey]={w:0,l:0,pf:0,pa:0};
       const hr = s.records.rows[homeKey], ar = s.records.rows[awayKey];
-      // Adjust season totals only once (if we previously stored zeros, correct them)
-      if(existing && existing.pf === 0 && homePts > 0){
-        hr.pf = (Number(hr.pf)||0) - (existing.pf||0) + homePts;
-        hr.pa = (Number(hr.pa)||0) - (existing.pa||0) + awayPts;
-        ar.pf = (Number(ar.pf)||0) - (existing.pa||0) + awayPts;
-        ar.pa = (Number(ar.pa)||0) - (existing.pf||0) + homePts;
-      } else if(!existing){
+      if(!existing || existing.pf === 0){
         hr.pf = (Number(hr.pf)||0) + homePts;
         hr.pa = (Number(hr.pa)||0) + awayPts;
         ar.pf = (Number(ar.pf)||0) + awayPts;
