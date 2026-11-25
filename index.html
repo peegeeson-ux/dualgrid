@@ -2245,7 +2245,7 @@ const posMatch = !window.waiverPos || p.pos===window.waiverPos || (window.waiver
   return qMatch && posMatch;
 }).slice(0,40);
   const podBtns = s.owner ? ["east","west","north","south"].map(p=>'<button class="btn" style="padding:4px 10px'+(pod===p?";background:var(--lime);color:#111":"")+'" onclick="window.waiverPod=\''+p+'\';renderWaiver()">'+podName(p)+'</button>').join("") : "";
-  document.getElementById("app").innerHTML=header('<a class="btn" href="#home">Home</a>')+'<div class="page"><div class="eyebrow">'+(closed?"FREE AGENTS":"WAIVER")+' · '+podName(pod)+'</div><h1>'+(closed?"Waiver cleared. Free agent pickups.":"Claims close at the deadline.")+'</h1><div style="display:flex;gap:6px;flex-wrap:wrap;margin:8px 0">'+podBtns+'</div>'+(s.owner?'<div class="card"><label>Deadline</label><input id="waiver-deadline" class="search" type="datetime-local" value="'+deadline+'"><button class="btn btn-lime" type="button" onclick="saveWaiverDeadline()">Save deadline</button><p id="waiver-note"></p></div>':'')+'<div class="card"><p>'+(deadline?(closed?"Players have cleared waivers.":"Open until "+deadline):"No deadline yet.")+'</p><input id="waiver-q" class="search" placeholder="Find a player" value="'+q+'" oninput="filterWaiver(this.value)"><div style="display:flex;gap:6px;flex-wrap:wrap;margin:8px 0">'+["ALL","QB","RB","WR","TE","K","DEF"].concat((Number((window.rosterSettings||{}).defPlayers)>0)?["IDP"]:[]).map(pos=>'<button class="btn" data-wpos="'+pos+'" style="padding:4px 10px;font-size:12px'+(window.waiverPos===pos||(pos==="ALL"&&!window.waiverPos)?" ;background:var(--lime);color:#111":"")+'" onclick="window.waiverPos=\''+(pos==="ALL"?"":pos)+'\';renderWaiver()">'+pos+'</button>').join("")+'</div><table><tr><th>Player</th><th>Proj</th><th></th></tr>'+shown.map(pl=>'<tr><td><span class="name" data-player-id="'+pl.id+'" style="cursor:pointer">'+pl.name+'</span> · '+pl.pos+(pl.team?' · '+pl.team:'')+' '+injuryBadge(pl.name)+' <span class="game-score" data-id="'+pl.id+'" style="font-size:10px;color:#aaa;margin-left:6px"></span></td><td>'+(pl.projWeek||"—")+'</td><td><button class="btn" type="button" onclick="addWaiver('+pl.id+')">'+(closed?"Pick up":"Add")+'</button></td></tr>').join("")+'</table></div><div class="card"><h2>'+(closed?"Pickups":"Claims")+' · '+podName(pod)+'</h2>'+(function(){
+  document.getElementById("app").innerHTML=header('<a class="btn" href="#home">Home</a>')+'<div class="page"><div class="eyebrow">'+(closed?"FREE AGENTS":"WAIVER")+' · '+podName(pod)+' · '+( (rec.waiverType||"priority")==="faab"?"FAAB":"Priority" )+'</div><h1>'+(closed?"Waiver cleared. Free agent pickups.":"Claims close at the deadline.")+'</h1><div style="display:flex;gap:6px;flex-wrap:wrap;margin:8px 0">'+podBtns+'</div>'+(s.owner?'<div class="card"><label>Deadline</label><input id="waiver-deadline" class="search" type="datetime-local" value="'+deadline+'"><button class="btn btn-lime" type="button" onclick="saveWaiverDeadline()">Save deadline</button><p id="waiver-note"></p></div>':'')+'<div class="card"><p>'+(deadline?(closed?"Players have cleared waivers.":"Open until "+deadline):"No deadline yet.")+'</p><input id="waiver-q" class="search" placeholder="Find a player" value="'+q+'" oninput="filterWaiver(this.value)"><div style="display:flex;gap:6px;flex-wrap:wrap;margin:8px 0">'+["ALL","QB","RB","WR","TE","K","DEF"].concat((Number((window.rosterSettings||{}).defPlayers)>0)?["IDP"]:[]).map(pos=>'<button class="btn" data-wpos="'+pos+'" style="padding:4px 10px;font-size:12px'+(window.waiverPos===pos||(pos==="ALL"&&!window.waiverPos)?" ;background:var(--lime);color:#111":"")+'" onclick="window.waiverPos=\''+(pos==="ALL"?"":pos)+'\';renderWaiver()">'+pos+'</button>').join("")+'</div><table><tr><th>Player</th><th>Proj</th><th></th></tr>'+shown.map(pl=>'<tr><td><span class="name" data-player-id="'+pl.id+'" style="cursor:pointer">'+pl.name+'</span> · '+pl.pos+(pl.team?' · '+pl.team:'')+' '+injuryBadge(pl.name)+' <span class="game-score" data-id="'+pl.id+'" style="font-size:10px;color:#aaa;margin-left:6px"></span></td><td>'+(pl.projWeek||"—")+'</td><td><button class="btn" type="button" onclick="addWaiver('+pl.id+')">'+(closed?"Pick up":"Add")+'</button></td></tr>').join("")+'</table></div><div class="card"><h2>'+(closed?"Pickups":"Claims")+' · '+podName(pod)+'</h2>'+(function(){
     const overrideOn = s.owner && (d.teams||[]).some(t => localStorage.getItem("dualgrid-override-"+pod+"-"+t.id)==="1");
     if(!overrideOn) return '<p style="opacity:.6">Turn on Commissioner override to see claims.</p>';
     const byTeam = {};
@@ -2253,7 +2253,8 @@ const posMatch = !window.waiverPos || p.pos===window.waiverPos || (window.waiver
     claims.forEach(c => { const key = c.teamId != null ? c.teamId : "none"; if(!byTeam[key]) byTeam[key] = {name:c.team||"Unknown", claims:[]}; byTeam[key].claims.push(c); });
     return Object.keys(byTeam).map(tid => {
       const g = byTeam[tid];
-      return '<div style="margin-bottom:10px"><strong>'+g.name+'</strong>'+(g.claims.length ? g.claims.map(c=>'<div class="log-item">'+c.player+' <button class="btn" style="margin-left:8px;padding:2px 8px;font-size:11px" onclick="awardClaim('+c.id+','+tid+')">Award</button></div>').join("") : '<div class="log-item" style="opacity:.5">None</div>')+'</div>';
+      const isFaab = (rec.waiverType || "priority") === "faab";
+      return '<div style="margin-bottom:10px"><strong>'+g.name+'</strong>'+(g.claims.length ? g.claims.map(c=>'<div class="log-item">'+c.player+(isFaab && c.bid!=null?' · $'+c.bid:'')+' <button class="btn" style="margin-left:8px;padding:2px 8px;font-size:11px" onclick="awardClaim('+c.id+','+tid+')">Award</button></div>').join("") : '<div class="log-item" style="opacity:.5">None</div>')+'</div>';
     }).join("") || '<p>No claims yet.</p>';
   })()+'</div></div>';
 }
@@ -2276,10 +2277,17 @@ function addWaiver(id){
     else if(!s.owner && canEditTeam(s, pod, team.id)) targetTeam = team;
   });
   if(!targetTeam){ alert("Turn on Commissioner override for the team that is claiming."); return; }
-  rec.claims.unshift({id:player.id, player:player.name, kind:closed?"fa":"waiver", at:Date.now(), pod:pod, teamId:targetTeam.id, team:targetTeam.name});
+  const isFaab = (rec.waiverType || "priority") === "faab";
+  let bid = 0;
+  if(isFaab && !closed){
+    const raw = prompt("Enter bid amount ($0–$100):", "0");
+    if(raw === null) return;
+    bid = Math.max(0, Math.min(100, Number(raw)||0));
+  }
+  rec.claims.unshift({id:player.id, player:player.name, kind:closed?"fa":"waiver", at:Date.now(), pod:pod, teamId:targetTeam.id, team:targetTeam.name, bid:bid});
   saveWaiver(s);
   renderWaiver();
-  alert(player.name + " claimed by " + targetTeam.name + ".");
+  alert(player.name + " claimed by " + targetTeam.name + (isFaab && !closed ? " for $"+bid : "") + ".");
 }
 function awardClaim(id, teamId){
   const s = waiverState();
@@ -2845,6 +2853,7 @@ function renderSettings(){
     '<label>Upload logo</label><input id="team-logo-file" type="file" accept="image/*">'+
     '<button class="btn" id="clear-team-logo" style="margin-top:8px">Clear logo</button>'+
   '</div>'+
+    '<label>Waiver system</label><select id="set-waiver-type" class="search"><option value="priority"'+( (s.records&&s.records.waiverType||"priority")==="priority"?" selected":"")+'>Priority (moves up if unused)</option><option value="faab"'+( (s.records&&s.records.waiverType)==="faab"?" selected":"")+'>FAAB (budget bidding)</option></select>'+
     '<label>Waiver deadline</label><input id="set-waiver" type="datetime-local" value="'+(s.records&&s.records.waiverDeadline?s.records.waiverDeadline.slice(0,16):"")+'">'+
     '<label>Trade deadline</label><input id="set-trade" type="datetime-local" value="'+(s.records&&s.records.tradeDeadline?s.records.tradeDeadline.slice(0,16):"")+'">'+
   '</div>'+
@@ -2876,10 +2885,12 @@ function renderSettings(){
     };
     const wd = document.getElementById("set-waiver").value;
     const td = document.getElementById("set-trade").value;
+    const waiverType = document.getElementById("set-waiver-type").value;
     const st = load();
     if(!st.records) st.records = {};
     if(wd) st.records.waiverDeadline = new Date(wd).toISOString();
     if(td) st.records.tradeDeadline = new Date(td).toISOString();
+    st.records.waiverType = waiverType;
     save(st);
     publishLeague(); publishSize(); publishGames(); publishSpots(); publishTie(); publishSeed(); publishRoster();
     if(wd || td) publishRecords();
