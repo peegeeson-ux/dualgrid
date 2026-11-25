@@ -1059,9 +1059,29 @@ function showPlayerModal(p){
   card.onclick = ev=>ev.stopPropagation();
   const opp = playerOpp(p) || "—";
   const past = e.weeks ? Object.keys(e.weeks).sort((a,b)=>Number(a)-Number(b)).map(w=>'<span style="margin-right:8px">Wk '+w+': '+(e.weeks[w]||"—")+'</span>').join("") : "";
-  card.innerHTML = '<h2>'+name+injuryBadge(name)+'</h2><p style="font-size:15px;margin:4px 0"><strong>'+pos+' · '+team+'</strong> · <span style="color:#69be28">'+opp+'</span></p><p style="opacity:.8;margin:4px 0">Season proj: '+(e.proj||"—")+' · Week '+week+' proj: '+(e.projWeek||"—")+'</p>'+(past?'<p style="font-size:12px;opacity:.7;margin:4px 0">'+past+'</p>':'')+'<div id="live-card-stats" style="margin-top:10px;font-size:13px;color:#7cc8ff;min-height:40px">Loading stats…</div><div id="card-history" style="margin-top:10px;font-size:12px;opacity:.8"></div><div id="card-schedule" style="margin-top:10px;font-size:12px;opacity:.8">Loading schedule…</div><button class="btn btn-lime" style="margin-top:12px;margin-right:8px" onclick="dropPlayer('+p.id+')">Drop</button><button class="btn" style="margin-top:12px" onclick="this.closest(\'div\').parentElement.remove()">Close</button>';
+  card.innerHTML = '<h2>'+name+injuryBadge(name)+'</h2><p style="font-size:15px;margin:4px 0"><strong>'+pos+' · '+team+'</strong> · <span style="color:#69be28">'+opp+'</span></p><p style="opacity:.8;margin:4px 0">Season proj: '+(e.proj||"—")+' · Week '+week+' proj: '+(e.projWeek||"—")+'</p>'+(past?'<p style="font-size:12px;opacity:.7;margin:4px 0">'+past+'</p>':'')+'<div id="live-card-stats" style="margin-top:10px;font-size:13px;color:#7cc8ff;min-height:40px">Loading stats…</div><div id="card-history" style="margin-top:10px;font-size:12px;opacity:.8"></div><div id="card-schedule" style="margin-top:10px;font-size:12px;opacity:.8">Loading schedule…</div><button class="btn" id="modal-trade" style="margin-top:12px;margin-right:8px;background:var(--lime);color:#111">Trade for</button><button class="btn btn-lime" style="margin-top:12px;margin-right:8px" onclick="dropPlayer('+p.id+')">Drop</button><button class="btn" style="margin-top:12px" onclick="this.closest(\'div\').parentElement.remove()">Close</button>';
   modal.appendChild(card);
   document.body.appendChild(modal);
+  const tradeBtn = card.querySelector("#modal-trade");
+  if(tradeBtn){
+    tradeBtn.onclick = ()=>{
+      modal.remove();
+      // find which team owns this player
+      const seat = currentSeat() || {};
+      const pods = ["east","west","north","south"];
+      let ownerTeam = null;
+      for(const pd of pods){
+        const dd = ensureDraft(load(), pd);
+        for(const t of (dd.teams||[])){
+          const has = (t.picks||[]).some(x => String(x.id) === String(p.id) || (x.name && x.name === name));
+          if(has && String(t.id) !== String(seat.teamId)){ ownerTeam = t.name; break; }
+        }
+        if(ownerTeam) break;
+      }
+      location.hash = "#trade";
+      setTimeout(()=>renderTrade(ownerTeam || ""), 50);
+    };
+  }
   const box = card.querySelector("#live-card-stats");
   const showStats = () => {
     const key = name.toLowerCase().trim().replace(/[^a-z ]/g,"").replace(/\s+(ii|iii|iv|jr|sr)$/,"").trim();
@@ -2691,33 +2711,41 @@ function renderLogin(){
 }
 
 
-function renderTrade(){
+function renderTrade(prefillTo){
   const s = load() || {};
   if(!s.records) s.records = {};
   const trades = s.records.trades || [];
   const mode = s.records.tradeMode || "commish";
   const deadline = s.records.tradeDeadline ? new Date(s.records.tradeDeadline).toLocaleString() : "Not set";
   const isCommish = !!s.owner;
-  const seat = (typeof currentSeat === "function" ? currentSeat() : null) || {};
+  const seat = currentSeat() || {};
   const pod = seat.pod || "east";
   const d = ensureDraft(s, pod);
-  const myTeam = seat.teamId != null ? (d.teams||[]).find(t => t.id === seat.teamId) : null;
-  const myPlayers = (myTeam && myTeam.picks) || [];
-  const otherTeams = (d.teams||[]).filter(t => t.id !== seat.teamId);
+  const myTeam = seat.teamId != null ? (d.teams||[]).find(t => String(t.id) === String(seat.teamId)) : null;
+  let myPlayers = [];
+  if(myTeam){
+    myPlayers = myTeam.picks || [];
+    if(!myPlayers.length && myTeam.lineup){
+      myPlayers = [].concat(myTeam.lineup.starters||[], myTeam.lineup.bench||[]);
+    }
+  }
+  const otherTeams = (d.teams||[]).filter(t => !myTeam || String(t.id) !== String(myTeam.id));
 
   let list = trades.map((t,i) => {
     const status = t.status || "pending";
-    const canRespond = status === "pending" && (isCommish || (seat.name && t.to === seat.name));
-    return '<div class="card" style="margin:8px 0"><strong>'+ (t.from||"Team") +' → '+ (t.to||"Team") +'</strong><div class="sub">'+ (t.picks||"Picks") +' · '+status+'</div>'+(canRespond ? '<button class="btn btn-lime" onclick="approveTrade('+i+')">Accept</button> <button class="btn" onclick="rejectTrade('+i+')">Reject</button>' : '')+'</div>';
+    const canRespond = status === "pending" && (isCommish || (myTeam && (t.to === myTeam.name || t.to === seat.name)));
+    return '<div class="card" style="margin:8px 0"><strong>'+ (t.from||"Team") +' → '+ (t.to||"Team") +'</strong><div class="sub">'+ (t.picks||"") +' · '+status+'</div>'+(canRespond ? '<button class="btn btn-lime" onclick="approveTrade('+i+')">Accept</button> <button class="btn" onclick="rejectTrade('+i+')">Reject</button>' : '')+'</div>';
   }).join("") || "<p class=\"lede\">No pending trades.</p>";
 
   let form = "";
-  if(myTeam || isCommish){
+  if(myTeam){
     form = '<div class="card"><h3>Propose a trade</h3>'+
-      '<label>Send to</label><select id="trade-to" class="search">'+otherTeams.map(t=>'<option value="'+t.name+'">'+t.name+'</option>').join("")+'</select>'+
-      '<label>Your players (hold Ctrl/Cmd to select more)</label><select id="trade-mine" class="search" multiple size="4">'+myPlayers.map(p=>'<option value="'+p.name+'">'+p.name+' ('+p.pos+')</option>').join("")+'</select>'+
-      '<label>What you want back</label><input id="trade-theirs" class="search" placeholder="e.g. their WR2 or 2027 1st">'+
+      '<label>Send to</label><select id="trade-to" class="search">'+otherTeams.map(t=>'<option value="'+t.name+'"'+(prefillTo===t.name?" selected":"")+'>'+t.name+'</option>').join("")+'</select>'+
+      '<label>Your players</label><select id="trade-mine" class="search" multiple size="5">'+(myPlayers.length ? myPlayers.map(p=>'<option value="'+p.name+'">'+p.name+' ('+(p.pos||"?")+')</option>').join("") : '<option disabled>No players drafted yet</option>')+'</select>'+
+      '<label>What you want back</label><input id="trade-theirs" class="search" placeholder="their player or pick">'+
       '<button class="btn btn-lime" id="propose-trade" style="margin-top:8px">Propose trade</button></div>';
+  } else {
+    form = '<div class="card"><p>Claim a team on the Home page first.</p></div>';
   }
 
   let settings = "";
@@ -2727,7 +2755,7 @@ function renderTrade(){
   }
 
   document.getElementById("app").innerHTML = header('<a class="btn" href="#home">Home</a>') +
-    '<div class="page"><div class="eyebrow">TRADES</div><h1>Trade center</h1><p class="lede">Draft picks and players. Mode: '+mode+' · Deadline: '+deadline+'</p>'+settings+form+list+'</div>';
+    '<div class="page"><div class="eyebrow">TRADES</div><h1>Trade center</h1><p class="lede">Mode: '+mode+' · Deadline: '+deadline+'</p>'+settings+form+list+'</div>';
 
   const prop = document.getElementById("propose-trade");
   if(prop) prop.onclick = ()=>{
@@ -2738,7 +2766,7 @@ function renderTrade(){
     const picks = "You: " + mineSel.join(", ") + (theirs ? " · Them: " + theirs : "");
     const st = load();
     st.records.trades = st.records.trades || [];
-    st.records.trades.push({ from: seat.name || myTeam.name, to, picks, status: "pending", time: Date.now() });
+    st.records.trades.push({ from: (myTeam&&myTeam.name) || seat.name || "You", to, picks, status: "pending", time: Date.now() });
     save(st);
     try{ dataRef("config/trades").set(st.records.trades); }catch(e){}
     renderTrade();
