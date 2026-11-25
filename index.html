@@ -1060,27 +1060,37 @@ function showPlayerModal(p){
   card.onclick = ev=>ev.stopPropagation();
   const opp = playerOpp(p) || "—";
   const past = e.weeks ? Object.keys(e.weeks).sort((a,b)=>Number(a)-Number(b)).map(w=>'<span style="margin-right:8px">Wk '+w+': '+(e.weeks[w]||"—")+'</span>').join("") : "";
-  card.innerHTML = '<h2>'+name+injuryBadge(name)+'</h2><p style="font-size:15px;margin:4px 0"><strong>'+pos+' · '+team+'</strong> · <span style="color:#69be28">'+opp+'</span></p><p style="opacity:.8;margin:4px 0">Season proj: '+(e.proj||"—")+' · Week '+week+' proj: '+(e.projWeek||"—")+'</p>'+(past?'<p style="font-size:12px;opacity:.7;margin:4px 0">'+past+'</p>':'')+'<div id="live-card-stats" style="margin-top:10px;font-size:13px;color:#7cc8ff;min-height:40px">Loading stats…</div><div id="card-history" style="margin-top:10px;font-size:12px;opacity:.8"></div><div id="card-schedule" style="margin-top:10px;font-size:12px;opacity:.8">Loading schedule…</div><button class="btn" id="modal-trade" style="margin-top:12px;margin-right:8px;background:var(--lime);color:#111">Trade for</button><button class="btn btn-lime" style="margin-top:12px;margin-right:8px" onclick="dropPlayer('+p.id+')">Drop</button><button class="btn" style="margin-top:12px" onclick="this.closest(\'div\').parentElement.remove()">Close</button>';
+  // only show Trade for if this player is not on my team
+  const seat = currentSeat() || {};
+  let isMine = false;
+  if(seat.teamId != null){
+    const pods = ["east","west","north","south"];
+    for(const pd of pods){
+      const dd = ensureDraft(load(), pd);
+      const myT = (dd.teams||[]).find(t => String(t.id) === String(seat.teamId));
+      if(myT && (myT.picks||[]).some(x => String(x.id) === String(p.id) || x.name === name)){ isMine = true; break; }
+    }
+  }
+  card.innerHTML = '<h2>'+name+injuryBadge(name)+'</h2><p style="font-size:15px;margin:4px 0"><strong>'+pos+' · '+team+'</strong> · <span style="color:#69be28">'+opp+'</span></p><p style="opacity:.8;margin:4px 0">Season proj: '+(e.proj||"—")+' · Week '+week+' proj: '+(e.projWeek||"—")+'</p>'+(past?'<p style="font-size:12px;opacity:.7;margin:4px 0">'+past+'</p>':'')+'<div id="live-card-stats" style="margin-top:10px;font-size:13px;color:#7cc8ff;min-height:40px">Loading stats…</div><div id="card-history" style="margin-top:10px;font-size:12px;opacity:.8"></div><div id="card-schedule" style="margin-top:10px;font-size:12px;opacity:.8">Loading schedule…</div>'+(isMine ? '' : '<button class="btn" id="modal-trade" style="margin-top:12px;margin-right:8px;background:var(--lime);color:#111">Trade for</button>')+'<button class="btn btn-lime" style="margin-top:12px;margin-right:8px" onclick="dropPlayer('+p.id+')">Drop</button><button class="btn" style="margin-top:12px" onclick="this.closest(\'div\').parentElement.remove()">Close</button>';
   modal.appendChild(card);
   document.body.appendChild(modal);
   const tradeBtn = card.querySelector("#modal-trade");
   if(tradeBtn){
     tradeBtn.onclick = ()=>{
       modal.remove();
-      // find which team owns this player
-      const seat = currentSeat() || {};
-      const pods = ["east","west","north","south"];
+      const seat2 = currentSeat() || {};
+      const pods2 = ["east","west","north","south"];
       let ownerTeam = null;
-      for(const pd of pods){
+      for(const pd of pods2){
         const dd = ensureDraft(load(), pd);
         for(const t of (dd.teams||[])){
           const has = (t.picks||[]).some(x => String(x.id) === String(p.id) || (x.name && x.name === name));
-          if(has && String(t.id) !== String(seat.teamId)){ ownerTeam = t.name; break; }
+          if(has && String(t.id) !== String(seat2.teamId)){ ownerTeam = t.name; break; }
         }
         if(ownerTeam) break;
       }
       location.hash = "#trade";
-      setTimeout(()=>renderTrade(ownerTeam || ""), 50);
+      setTimeout(()=>renderTrade(ownerTeam || "", name), 50);
     };
   }
   const box = card.querySelector("#live-card-stats");
@@ -2711,7 +2721,7 @@ function renderLogin(){
 }
 
 
-function renderTrade(prefillTo){
+function renderTrade(prefillTo, prefillPlayer){
   const s = load() || {};
   if(!s.records) s.records = {};
   const trades = s.records.trades || [];
@@ -2741,8 +2751,8 @@ function renderTrade(prefillTo){
   if(myTeam){
     form = '<div class="card"><h3>Propose a trade</h3>'+
       '<label>Send to</label><select id="trade-to" class="search">'+otherTeams.map(t=>'<option value="'+t.name+'"'+(prefillTo===t.name?" selected":"")+'>'+t.name+'</option>').join("")+'</select>'+
-      '<label>Your players (check the ones to send)</label><div id="trade-mine-list" style="max-height:180px;overflow:auto;margin:6px 0">'+(myPlayers.length ? myPlayers.map(p=>'<label style="display:block;padding:4px 0"><input type="checkbox" class="trade-mine-chk" value="'+p.name+'"> '+p.name+' ('+(p.pos||"?")+')</label>').join("") : '<p>No players drafted yet</p>')+'</div>'+
-      '<label>What you want back</label><input id="trade-theirs" class="search" placeholder="their player or pick">'+
+      '<label>Your players (check the ones to send)</label><div id="trade-mine-list" style="max-height:180px;overflow:auto;margin:6px 0">'+(myPlayers.length ? myPlayers.map(p=>'<label style="display:flex;align-items:center;gap:8px;padding:6px 0"><input type="checkbox" class="trade-mine-chk" value="'+p.name+'" style="margin:0"> <span>'+p.name+' ('+(p.pos||"?")+')</span></label>').join("") : '<p>No players drafted yet</p>')+'</div>'+
+      '<label>What you want back</label><input id="trade-theirs" class="search" placeholder="their player or pick" value="'+(prefillPlayer||"")+'">'+
       '<button class="btn btn-lime" id="propose-trade" style="margin-top:8px">Propose trade</button></div>';
   } else {
     form = '<div class="card"><p>Claim a team on the Home page first.</p></div>';
