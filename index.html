@@ -908,16 +908,44 @@ function applyWeekResults(s){
     }
   });
 }
+function standingsCountWeek(){
+  // Standings count at 5am Tuesday
+  const now = new Date();
+  const et = new Date(now.toLocaleString("en-US", {timeZone:"America/New_York"}));
+  const seasonStart = new Date("2026-09-10T00:00:00-04:00");
+  const ms = et - seasonStart;
+  const days = Math.floor(ms / 86400000);
+  let week = Math.floor(days / 7) + 1;
+  const day = et.getDay();
+  const hour = et.getHours();
+  if(day === 2 && hour >= 5) week += 1;
+  if(day > 2 && day < 5) week += 1;
+  if(week < 1) week = 1;
+  if(week > 18) week = 18;
+  return week;
+}
 function autoAdvanceWeek(){
   const s = load();
   if(!s.records) s.records = {week:1, rows:{}};
   const stored = Number(s.records.week) || 1;
-  const live = currentNflWeek();
-  if(stored < live){
-    // Snapshot current (previous week) results before moving forward
-    try{ applyWeekResults(s); }catch(e){}
-    s.records.week = live;
-    // Hard clear so old week numbers cannot appear as live
+  const displayWeek = currentNflWeek();
+  const countWeek = standingsCountWeek();
+  // Count standings at 5am if we haven't counted yet
+  if(stored < countWeek){
+    const doCount = ()=>{
+      try{ applyWeekResults(s); }catch(e){}
+      save(s);
+      publishRecords();
+    };
+    if(Object.keys(livePts).length > 0){
+      doCount();
+    } else {
+      loadBoxCache().then(()=>{ fillLiveStats(); setTimeout(doCount, 2000); }).catch(()=>setTimeout(doCount, 3000));
+    }
+  }
+  // Advance display week at 2pm
+  if(stored < displayWeek){
+    s.records.week = displayWeek;
     Object.keys(livePts).forEach(k => delete livePts[k]);
     boxCache = {};
     playerStatsCache = {};
