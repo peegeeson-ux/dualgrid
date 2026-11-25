@@ -2368,6 +2368,7 @@ function setPlayoffStartWeek(v){
   saveWaiver(s);
 }
 window.setPlayoffStartWeek = setPlayoffStartWeek;
+function toggleLockNonPlayoff(on){
   const s = waiverState();
   if(!s.owner){ alert("Commissioner only."); return; }
   s.records.lockNonPlayoff = !!on;
