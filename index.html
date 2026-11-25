@@ -1850,7 +1850,11 @@ const slap='<div class="card" style="margin-top:12px"><div class="eyebrow">PECKE
 let sections="";
 pods.forEach(pod=>{
   const d=ensureDraft(s,pod);
-  const ranked=d.teams.map(team=>{const key=pod+"-"+team.id; const row=rec.rows[key]||{w:0,l:0,pf:0,pa:0}; return {team,key,row,w:Number(row.w)||0,l:Number(row.l)||0};}).sort((a,b)=>b.w-a.w||a.l-b.l);
+  const ranked=d.teams.map(team=>{const key=pod+"-"+team.id; const row=rec.rows[key]||{w:0,l:0,pf:0,pa:0}; return {team,key,row,w:Number(row.w)||0,l:Number(row.l)||0,pf:Number(row.pf)||0};}).sort((a,b)=>{
+    if(b.w !== a.w) return b.w - a.w;
+    if(a.l !== b.l) return a.l - b.l;
+    return b.pf - a.pf;
+  });
   const lead=ranked[0]||{w:0,l:0};
   const spots=Number(playoffSpots)||4;
   let rows="";
@@ -2131,7 +2135,14 @@ const take=pod=>{
     const key=pod+"-"+team.id;
     const row=(s.records&&s.records.rows&&s.records.rows[key])||{w:0,l:0,pf:0};
     return {team,key,w:Number(row.w)||0,l:Number(row.l)||0,pf:Number(row.pf)||0};
-  }).sort((a,b)=>b.w-a.w||a.l-b.l||b.pf-a.pf);
+  }).sort((a,b)=>{
+    if(b.w !== a.w) return b.w - a.w;
+    if(a.l !== b.l) return a.l - b.l;
+    // tiebreaker
+    if(tieRule === "pf" || tieRule === "split") return b.pf - a.pf;
+    // h2h would need schedule data; fall back to PF for now
+    return b.pf - a.pf;
+  });
   return ranked.slice(0,per).map((item,i)=>({pod,seed:i+1,name:item.team.name||"TBD",photo:item.team.photo||"",proj:item.pf||"—",w:item.w,l:item.l}));
 };
 const left=take(pods[0]||"east");
