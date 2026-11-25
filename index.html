@@ -2413,7 +2413,10 @@ function deleteClaim(id){
   const rec = s.records;
   const pod = window.waiverPod || "east";
   rec.claims = (rec.claims||[]).filter(c => !(Number(c.id) === Number(id) && c.pod === pod));
-  saveWaiver(s);
+  save(s);
+  // Write both places so it doesn't come back
+  try{ dataRef("config/waiver").set({deadline:rec.waiverDeadline||"", claims:rec.claims||[]}); }catch(e){}
+  try{ dataRef("records").update({claims:rec.claims||[]}); }catch(e){}
   renderWaiver();
 }
 window.deleteClaim = deleteClaim;
@@ -3333,7 +3336,7 @@ function route(){const page=(location.hash.replace("#","").split("/")[0]||"lobby
   setTimeout(loadWeekTicker, 400); // extra refresh after league switch
 }
 ["east","west","north","south"].forEach(pod=>{dataRef("drafts/"+pod).on("value",snap=>{const remote=snap.val();if(!remote||!remote.teams)return; if(window._isMock) return; applyingRemote=true;const s=load();s.drafts[pod]=normalizeDraft(remote);save(s);applyingRemote=false;const page=(location.hash.replace("#","").split("/")[0]||"");const onPod=(location.hash.split("/")[1]||"")===(pod);if((page==="draft"||page==="board"||page==="dash")&&onPod&&window._paint){ clearTimeout(window._paintDebounce); window._paintDebounce=setTimeout(()=>{ if(Date.now()-(window._lastPaint||0)>2000){ window._lastPaint=Date.now(); window._paint&&window._paint(); } }, 1500); }});});
-dataRef("records").on("value",snap=>{const remote=snap.val();if(!remote)return;applyingRemote=true;const s=load();s.records=remote;save(s);applyingRemote=false;if((location.hash||"").startsWith("#scores"))renderScores(); if((location.hash||"").startsWith("#bracket"))renderBracket();});
+dataRef("records").on("value",snap=>{const remote=snap.val();if(!remote)return;applyingRemote=true;const s=load(); const localClaims = (s.records&&s.records.claims)||[]; s.records=remote; if(Array.isArray(localClaims) && localClaims.length) s.records.claims = localClaims; save(s);applyingRemote=false;if((location.hash||"").startsWith("#scores"))renderScores(); if((location.hash||"").startsWith("#bracket"))renderBracket();});
 if(!window._countdownWatch){window._countdownWatch=setInterval(()=>{
   const h=location.hash||"";
   if(!(h.startsWith("#draft")||h.startsWith("#board"))) return;
