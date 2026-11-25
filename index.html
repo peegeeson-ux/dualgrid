@@ -1012,7 +1012,6 @@ function dropPlayer(id){
   const undrop = (s.records||{}).undroppable || [];
   const player = PLAYERS.find(p=>p.id===Number(id));
   if(player && undrop.includes(player.name)){ alert(player.name + " is undroppable."); return; }
-  const s = load();
   let found = false;
   podsOf(s).forEach(pod => {
     const d = ensureDraft(s, pod);
