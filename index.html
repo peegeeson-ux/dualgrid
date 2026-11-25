@@ -2534,14 +2534,13 @@ if(added) save(s);
       if(mineHere){
         const ks = team.keepers || [];
         html += '<div class="card"><h3>Keepers ('+ks.length+'/'+(maxK||0)+')</h3>'+
-          (maxK===0 ? '<p class="sub">Commissioner has keepers turned off (set Max keepers on the Trade page).</p>' : 
+          (maxK===0 ? '<p class="sub">Commissioner has keepers turned off (set Max keepers in League Settings).</p>' : 
           (team.picks||[]).slice(0,12).map(p=>'<div style="display:flex;justify-content:space-between;align-items:center;padding:4px 0"><span>'+p.name+'</span><button class="btn" style="padding:3px 8px;font-size:11px" onclick="toggleKeeper(\''+String(p.name).replace(/'/g,"")+'\' )">'+(ks.includes(p.name)?"Unkeep":"Keep")+'</button></div>').join("")) +
           '</div>';
       }
       const starters = Array.isArray(lineup.starters) ? lineup.starters : [];
       const bench = Array.isArray(lineup.bench) ? lineup.bench : [];
       const ir = Array.isArray(lineup.ir) ? lineup.ir : [];
-      const rs = window.rosterSettings || {qb:1,rb:2,wr:2,te:1,flex:1,superflex:0,k:1,teamDef:1};
       const slots = [];
       for(let i=0;i<(rs.qb||1);i++) slots.push({pos:"QB",label:"QB"});
       for(let i=0;i<(rs.rb||2);i++) slots.push({pos:"RB",label:"RB"});
