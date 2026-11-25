@@ -1248,19 +1248,19 @@ const POD_TEAMS = {
 function renderMock(){
   window._isMock = true;
   const pod = podFromHash();
-  // Use a separate mock state
   const key = "dualgrid-mock-" + (leagueCode()||"local") + "-" + pod;
   try{
     const raw = localStorage.getItem(key);
-    if(!raw){
-      const mock = emptyDraft(pod, "snake");
+    let mock = raw ? JSON.parse(raw) : null;
+    if(!mock || !mock.teams || !mock.teams.length){
+      mock = emptyDraft(pod, "snake");
       mock.mock = true;
-      // fresh random order every new mock
-      const ids = mock.teams.map(t=>t.id);
-      for(let i=ids.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [ids[i],ids[j]]=[ids[j],ids[i]]; }
-      mock.order = ids;
-      localStorage.setItem(key, JSON.stringify(mock));
     }
+    // fresh random order every time you open the mock
+    const ids = mock.teams.map(t=>t.id);
+    for(let i=ids.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [ids[i],ids[j]]=[ids[j],ids[i]]; }
+    mock.order = ids;
+    localStorage.setItem(key, JSON.stringify(mock));
   }catch(e){}
   renderDraft();
 }
@@ -1353,6 +1353,31 @@ function startCpuDraft(pod){
     cpuPick(pod);
     if(window._paint) window._paint();
   }, 900);
+}
+function makePick(state,pod,playerId){
+  const d=ensureDraft(state,pod);
+  const info=snakeSlot(d.pickIndex,d);
+  const player=PLAYERS.find(p=>p.id===playerId);
+  if(!player)return;
+  if(d.format==="auction"){
+    if(d.nomination)return;
+    d.nomination={playerId,teamId:d.nomIndex%10,bid:1,seconds:BID_SECONDS};
+    if(window._isMock) saveMock(pod, d);
+    else { save(state); publish(pod); }
+    return;
+  }
+  const already=d.teams.some(t=>Array.isArray(t.picks)&&t.picks.some(p=>Number(p.id)===Number(playerId)));
+  if(already){alert(player.name+" is already drafted.");return;}
+  const team=d.teams[info.teamId];
+  team.picks.push(player);
+  d.log.unshift({label:info.label,player:player.name,pos:player.pos,team:team.name});
+  d.pickIndex++;
+  d.started=true;
+  d.clockEnds=Date.now()+(d.pickSeconds||PICK_SECONDS)*1000;
+  d.secondsLeft=d.pickSeconds||PICK_SECONDS;
+  dropQueued(state,pod,playerId);
+  if(window._isMock) saveMock(pod, d);
+  else { save(state); publish(pod); }
 }
 function bid(state,pod,teamId){const d=ensureDraft(state,pod);if(!d.nomination)return;const t=d.teams[teamId];const next=d.nomination.bid+1;if(t.budget<next)return;d.nomination.bid=next;d.nomination.teamId=teamId;d.nomination.seconds=BID_SECONDS;save(state);publish(pod);}
 function settleAuction(state,pod){const d=ensureDraft(state,pod);const n=d.nomination;if(!n)return;const player=PLAYERS.find(p=>p.id===n.playerId);const team=d.teams[n.teamId];team.picks.push(player);team.budget-=n.bid;d.log.unshift({label:"$"+n.bid,player:player.name,pos:player.pos,team:team.name});d.nomination=null;d.nomIndex++;d.pickIndex++;d.secondsLeft=BID_SECONDS;save(state);publish(pod);}
