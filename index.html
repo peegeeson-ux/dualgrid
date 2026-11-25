@@ -1036,15 +1036,15 @@ function dropPlayer(id){
   if(!found){ alert("Player not on a roster."); return; }
   const rec = s.records || (s.records = {});
   rec.claims = rec.claims || [];
-  const closed = !!(rec.waiverDeadline && Date.now() > new Date(rec.waiverDeadline).getTime());
   const pod = window.waiverPod || "east";
+  // Dropped players always go to waivers (must be claimed)
   if(!rec.claims.some(c => c.id === player.id && c.pod === pod)){
-    rec.claims.unshift({id:player.id, player:player.name, kind:closed?"fa":"waiver", at:Date.now(), pod:pod});
+    rec.claims.unshift({id:player.id, player:player.name, kind:"waiver", at:Date.now(), pod:pod});
   }
   saveWaiver(s);
   document.querySelectorAll("div[style*='z-index:50']").forEach(m => m.remove());
   if(location.hash.startsWith("#roster")) renderRoster();
-  alert(player.name + " dropped to " + (closed ? "free agents" : "waivers") + ".");
+  alert(player.name + " dropped to waivers.");
 }
 
 function showPlayerModal(p){
@@ -2336,7 +2336,7 @@ const posMatch = !window.waiverPos || p.pos===window.waiverPos || (window.waiver
     return Object.keys(byTeam).map(tid => {
       const g = byTeam[tid];
       const isFaab = (rec.waiverType || "priority") === "faab";
-      return '<div style="margin-bottom:10px"><strong>'+g.name+'</strong>'+(g.claims.length ? g.claims.map(c=>'<div class="log-item">'+c.player+(isFaab && c.bid!=null?' · $'+c.bid:'')+' <button class="btn" style="margin-left:8px;padding:2px 8px;font-size:11px" onclick="awardClaim('+c.id+','+tid+')">Award</button></div>').join("") : '<div class="log-item" style="opacity:.5">None</div>')+'</div>';
+      return '<div style="margin-bottom:10px"><strong>'+g.name+'</strong>'+(g.claims.length ? g.claims.map(c=>'<div class="log-item">'+c.player+(isFaab && c.bid!=null?' · $'+c.bid:'')+' <button class="btn" style="margin-left:8px;padding:2px 8px;font-size:11px" onclick="awardClaim('+c.id+','+tid+')">Award</button> <button class="btn" style="margin-left:4px;padding:2px 8px;font-size:11px" onclick="deleteClaim('+c.id+')">Delete</button></div>').join("") : '<div class="log-item" style="opacity:.5">None</div>')+'</div>';
     }).join("") || '<p>No claims yet.</p>';
   })()+'</div></div>';
 }
@@ -2394,7 +2394,16 @@ function addWaiver(id){
   renderWaiver();
   alert(player.name + " claimed by " + targetTeam.name + (isFaab && !closed ? " for $"+bid : "") + ".");
 }
-function awardClaim(id, teamId){
+function deleteClaim(id){
+  const s = waiverState();
+  if(!s.owner){ alert("Commissioner only."); return; }
+  const rec = s.records;
+  const pod = window.waiverPod || "east";
+  rec.claims = (rec.claims||[]).filter(c => !(Number(c.id) === Number(id) && c.pod === pod));
+  saveWaiver(s);
+  renderWaiver();
+}
+window.deleteClaim = deleteClaim;
   const s = waiverState();
   const rec = s.records;
   const pod = window.waiverPod || "east";
