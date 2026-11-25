@@ -1037,8 +1037,17 @@ function dropPlayer(id){
   const rec = s.records || (s.records = {});
   rec.claims = rec.claims || [];
   const pod = window.waiverPod || "east";
-  // Dropped players always go to waivers (must be claimed)
-  if(!rec.claims.some(c => c.id === player.id && c.pod === pod)){
+  // ESPN rule: <24 hours on roster → free agent, >24 hours → waivers
+  let onRosterMs = 0;
+  podsOf(s).forEach(pod2 => {
+    const d2 = ensureDraft(s, pod2);
+    (d2.teams||[]).forEach(team => {
+      const pick = (team.picks||[]).find(p => Number(p.id) === Number(id));
+      if(pick && pick.addedAt) onRosterMs = Math.max(onRosterMs, Date.now() - pick.addedAt);
+    });
+  });
+  const goToWaivers = onRosterMs > 24*60*60*1000;
+  if(goToWaivers && !rec.claims.some(c => c.id === player.id && c.pod === pod)){
     rec.claims.unshift({id:player.id, player:player.name, kind:"waiver", at:Date.now(), pod:pod});
   }
   saveWaiver(s);
@@ -2387,7 +2396,7 @@ function addWaiver(id){
       const maxes = {QB: (s.records||{}).maxQB||2, RB:(s.records||{}).maxRB||6, WR:(s.records||{}).maxWR||6, TE:(s.records||{}).maxTE||3};
       const count = (targetTeam.picks||[]).filter(p=>p.pos===player.pos).length;
       if(maxes[player.pos] && count >= maxes[player.pos]){ alert("Position limit reached for "+player.pos+"."); return; }
-      targetTeam.picks.push({id:player.id, name:player.name, pos:player.pos});
+      targetTeam.picks.push({id:player.id, name:player.name, pos:player.pos, addedAt:Date.now()});
     }
     targetTeam.lineup = targetTeam.lineup || {starters:[], bench:[], ir:[]};
     targetTeam.lineup.bench = targetTeam.lineup.bench || [];
@@ -2439,7 +2448,7 @@ function awardClaim(id, teamId){
   if(!team){ alert("Team not found."); return; }
   team.picks = team.picks || [];
   if(!team.picks.some(p => Number(p.id) === Number(player.id))){
-    team.picks.push({id:player.id, name:player.name, pos:player.pos});
+    team.picks.push({id:player.id, name:player.name, pos:player.pos, addedAt:Date.now()});
   }
   team.lineup = team.lineup || {starters:[], bench:[], ir:[]};
   team.lineup.bench = team.lineup.bench || [];
