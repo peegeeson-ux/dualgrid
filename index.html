@@ -2910,6 +2910,7 @@ function voteTrade(i, yes){
   try{ dataRef("config/trades").set(st.records.trades); }catch(e){}
   renderTrade();
 }
+function vetoTrade(i){
   const st = load();
   if(!st.records || !st.records.trades || !st.records.trades[i]) return;
   st.records.trades[i].status = "vetoed";
