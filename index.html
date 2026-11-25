@@ -2476,6 +2476,23 @@ function movePlayer(pod, teamId, playerId, to){
   }catch(e){ alert("error: "+e.message); }
 }
 
+function toggleKeeper(name){
+  const s = load();
+  const seat = currentSeat() || {};
+  const pod = seat.pod || "east";
+  const d = ensureDraft(s, pod);
+  const team = seat.teamId != null ? (d.teams||[]).find(t => String(t.id) === String(seat.teamId)) : null;
+  if(!team) return;
+  const max = Number((s.records||{}).maxKeepers) || 0;
+  team.keepers = team.keepers || [];
+  const i = team.keepers.indexOf(name);
+  if(i >= 0) team.keepers.splice(i, 1);
+  else if(team.keepers.length < max) team.keepers.push(name);
+  else { alert("Max keepers reached."); return; }
+  save(s);
+  try{ dataRef("drafts/"+pod+"/teams/"+team.id+"/keepers").set(team.keepers); }catch(e){}
+  if(location.hash.startsWith("#roster")) renderRoster();
+}
 function renderRoster(){
   loadInjuries();
   const s=load();
@@ -2513,6 +2530,13 @@ if(added) save(s);
       const lineup = team.lineup || {starters:[], bench:[], ir:[]}; lineup.starters = lineup.starters || []; lineup.bench = lineup.bench || []; lineup.ir = lineup.ir || [];
       const override = s.owner && (localStorage.getItem("dualgrid-override-"+pod+"-"+team.id)==="1");
       html+='<div class="card" style="background:linear-gradient(160deg,#14233a,#0d1524);color:#fff;border-left:8px dashed #c9a227"><div class="eyebrow">SEASON TICKET · '+podName(pod).toUpperCase()+'</div><h2 style="font-size:28px;margin:6px 0">'+(team.name||"Team")+'</h2><p>'+(team.ownerName||"Owner")+(mineHere?" · you":"")+'</p><p style="font-size:20px;letter-spacing:1px">'+(row.w||0)+'-'+(row.l||0)+' · '+(row.pf||0)+' PF</p><p style="opacity:.7">Seat '+(team.id+1)+' · '+ (s.season||"2026")+' · Roster '+total+' + '+(rs.ir||1)+' IR</p>'+(s.owner?'<label style="display:flex;align-items:center;gap:8px;margin-top:10px"><input type="checkbox" data-override="'+pod+'-'+team.id+'" '+(override?"checked":"")+'> Commissioner override</label>':'')+'</div>';
+      const maxK = Number((s.records||{}).maxKeepers) || 0;
+      if(maxK > 0 && mineHere){
+        const ks = team.keepers || [];
+        html += '<div class="card"><h3>Keepers ('+ks.length+'/'+maxK+')</h3>'+
+          (team.picks||[]).slice(0,12).map(p=>'<div style="display:flex;justify-content:space-between;align-items:center;padding:4px 0"><span>'+p.name+'</span><button class="btn" style="padding:3px 8px;font-size:11px" onclick="toggleKeeper(\''+String(p.name).replace(/'/g,"")+'\' )">'+(ks.includes(p.name)?"Unkeep":"Keep")+'</button></div>').join("") +
+          '</div>';
+      }
       const starters = Array.isArray(lineup.starters) ? lineup.starters : [];
       const bench = Array.isArray(lineup.bench) ? lineup.bench : [];
       const ir = Array.isArray(lineup.ir) ? lineup.ir : [];
@@ -2816,7 +2840,7 @@ function renderTrade(prefillTo, prefillPlayer){
   let settings = "";
   if(isCommish){
     const deadlineVal = s.records.tradeDeadline ? s.records.tradeDeadline.slice(0,16) : "";
-    settings = '<div class="card"><h3>Trade settings</h3><label>How trades finalize</label><select id="trade-mode" class="search"><option value="commish"'+(mode==="commish"?" selected":"")+'>Commissioner only</option><option value="vote"'+(mode==="vote"?" selected":"")+'>League vote</option><option value="vote-commish"'+(mode==="vote-commish"?" selected":"")+'>League vote + commissioner</option></select><label>Review period (hours, 0 = instant)</label><input id="trade-review" class="search" type="number" min="0" value="'+reviewHours+'"><label>Trade deadline (date & time)</label><input id="trade-deadline" class="search" type="datetime-local" value="'+deadlineVal+'"><button class="btn" id="save-trade-settings" style="margin-top:8px">Save settings</button></div>'+
+    settings = '<div class="card"><h3>Trade settings</h3><label>How trades finalize</label><select id="trade-mode" class="search"><option value="commish"'+(mode==="commish"?" selected":"")+'>Commissioner only</option><option value="vote"'+(mode==="vote"?" selected":"")+'>League vote</option><option value="vote-commish"'+(mode==="vote-commish"?" selected":"")+'>League vote + commissioner</option></select><label>Review period (hours, 0 = instant)</label><input id="trade-review" class="search" type="number" min="0" value="'+reviewHours+'"><label>Trade deadline (date & time)</label><input id="trade-deadline" class="search" type="datetime-local" value="'+deadlineVal+'"><label>Max keepers per team</label><input id="max-keepers" class="search" type="number" min="0" value="'+((s.records&&s.records.maxKeepers)||0)+'"><button class="btn" id="save-trade-settings" style="margin-top:8px">Save settings</button></div>'+
       '<div class="card"><h3>Move a player</h3><input id="move-name" class="search" placeholder="Player name (e.g. Wandale Robinson)"><input id="move-from" class="search" placeholder="From team name"><input id="move-to" class="search" placeholder="To team name"><button class="btn" id="move-player" style="margin-top:8px">Move player</button></div>';
   }
 
@@ -2843,6 +2867,7 @@ function renderTrade(prefillTo, prefillPlayer){
     const st = load();
     st.records.tradeMode = document.getElementById("trade-mode").value;
     st.records.tradeReviewHours = Number(document.getElementById("trade-review").value) || 0;
+    st.records.maxKeepers = Number(document.getElementById("max-keepers").value) || 0;
     const dl = document.getElementById("trade-deadline").value;
     if(dl) st.records.tradeDeadline = new Date(dl).toISOString();
     save(st);
