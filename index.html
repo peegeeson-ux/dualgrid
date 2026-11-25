@@ -1009,6 +1009,10 @@ let PLAYERS = [];
 
 function dropPlayer(id){
   const s = load();
+  const undrop = (s.records||{}).undroppable || [];
+  const player = PLAYERS.find(p=>p.id===Number(id));
+  if(player && undrop.includes(player.name)){ alert(player.name + " is undroppable."); return; }
+  const s = load();
   let found = false;
   podsOf(s).forEach(pod => {
     const d = ensureDraft(s, pod);
@@ -2362,7 +2366,10 @@ function addWaiver(id){
     // Free agent pickup - add directly, no priority change
     targetTeam.picks = targetTeam.picks || [];
     if(!targetTeam.picks.some(p => Number(p.id) === Number(player.id))){
-      targetTeam.picks.push({id:player.id, name:player.name, pos:player.pos});
+      const maxes = {QB: (s.records||{}).maxQB||2, RB:(s.records||{}).maxRB||6, WR:(s.records||{}).maxWR||6, TE:(s.records||{}).maxTE||3};
+    const count = (targetTeam.picks||[]).filter(p=>p.pos===player.pos).length;
+    if(maxes[player.pos] && count >= maxes[player.pos]){ alert("Position limit reached for "+player.pos+"."); return; }
+    targetTeam.picks.push({id:player.id, name:player.name, pos:player.pos});
     }
     targetTeam.lineup = targetTeam.lineup || {starters:[], bench:[], ir:[]};
     targetTeam.lineup.bench = targetTeam.lineup.bench || [];
@@ -2478,6 +2485,34 @@ function movePlayer(pod, teamId, playerId, to){
 
 function toggleKeeper(name){
   const s = load();
+  if(!s.actingAs) return;
+  const pod = s.actingAs.pod;
+  const teamId = s.actingAs.teamId;
+  const d = ensureDraft(s, pod);
+  const team = (d.teams||[]).find(t=>t.id===teamId);
+  if(!team) return;
+  team.keepers = team.keepers || [];
+  const i = team.keepers.indexOf(name);
+  if(i>=0) team.keepers.splice(i,1);
+  else {
+    const max = Number((s.records||{}).maxKeepers)||0;
+    if(team.keepers.length >= max){ alert("Keeper limit reached."); return; }
+    team.keepers.push(name);
+  }
+  save(s);
+  renderRoster();
+}
+
+function removeUndrop(name){
+  const s = load();
+  if(!s.owner) return;
+  s.records = s.records || {};
+  s.records.undroppable = (s.records.undroppable||[]).filter(n=>n!==name);
+  save(s);
+  renderSettings();
+}
+window.removeUndrop = removeUndrop;
+  const s = load();
   const seat = currentSeat() || {};
   const pod = seat.pod || "east";
   const d = ensureDraft(s, pod);
@@ -2537,6 +2572,14 @@ if(added) save(s);
           (maxK===0 ? '<p class="sub">Commissioner has keepers turned off (set Max keepers in League Settings).</p>' : 
           (team.picks||[]).slice(0,12).map(p=>'<div style="display:flex;justify-content:space-between;align-items:center;padding:4px 0"><span>'+p.name+'</span><button class="btn" style="padding:3px 8px;font-size:11px" onclick="toggleKeeper(\''+String(p.name).replace(/'/g,"")+'\' )">'+(ks.includes(p.name)?"Unkeep":"Keep")+'</button></div>').join("")) +
           '</div>';
+      }
+      if(mineHere && (s.records||{}).showAdvice){
+        const all = [...starters, ...bench].slice(0,8);
+        const advice = all.map(p => {
+          const score = (p.proj || 8) + (p.pos==="QB"?2:0) + (p.pos==="RB"?1:0);
+          return '<div style="display:flex;justify-content:space-between;padding:3px 0"><span>'+p.name+' ('+p.pos+')</span><span style="opacity:.7">'+(score>12?"Start":"Sit")+'</span></div>';
+        }).join("");
+        html += '<div class="card"><h3>Start / Sit advice</h3>'+advice+'</div>';
       }
       const starters = Array.isArray(lineup.starters) ? lineup.starters : [];
       const bench = Array.isArray(lineup.bench) ? lineup.bench : [];
@@ -3154,7 +3197,21 @@ function renderSettings(){
     '<label>IDP</label><input id="rs-defPlayers" type="number" value="'+(rs.defPlayers||0)+'">'+
     '<label>K</label><input id="rs-k" type="number" value="'+(rs.k||1)+'">'+
     '<label>Max keepers</label><input id="rs-keepers" type="number" min="0" value="'+((s.records&&s.records.maxKeepers)||0)+'">'+
+    '<label>Max QB</label><input id="rs-maxqb" type="number" min="0" value="'+((s.records&&s.records.maxQB)||2)+'">'+
+    '<label>Max RB</label><input id="rs-maxrb" type="number" min="0" value="'+((s.records&&s.records.maxRB)||6)+'">'+
+    '<label>Max WR</label><input id="rs-maxwr" type="number" min="0" value="'+((s.records&&s.records.maxWR)||6)+'">'+
+    '<label>Max TE</label><input id="rs-maxte" type="number" min="0" value="'+((s.records&&s.records.maxTE)||3)+'">'+
     '</div>'+
+  '</div>'+
+  '<div class="card" style="margin-top:12px"><h2>Undroppable players</h2>'+
+    '<p style="font-size:13px;opacity:.8">Commissioner can protect key players from being dropped.</p>'+
+    '<label>Player name to protect</label><input id="undrop-name" placeholder="e.g. Josh Allen">'+
+    '<button class="btn" id="add-undrop" style="margin-top:6px">Add to undroppable</button>'+
+    '<div id="undrop-list" style="margin-top:10px;font-size:13px">'+( (s.records&&s.records.undroppable||[]).map(n=>'<div style="display:flex;justify-content:space-between;padding:3px 0"><span>'+n+'</span><button class="btn" style="padding:2px 6px;font-size:11px" onclick="removeUndrop(\''+n.replace(/'/g,"")+'\' )">Remove</button></div>').join("") )+'</div>'+
+  '</div>'+
+  '<div class="card" style="margin-top:12px"><h2>Start / Sit advice</h2>'+
+    '<p style="font-size:13px;opacity:.8">Simple advice tool. Uses basic position strength and recent scoring when available.</p>'+
+    '<label><input type="checkbox" id="set-advice" '+( (s.records&&s.records.showAdvice)?"checked":"")+'> Show start/sit advice on roster page</label>'+
   '</div>'+
   '<div class="card" style="margin-top:12px"><h2>Team logos</h2>'+
     '<p style="font-size:13px;opacity:.8">Commissioner can set a logo for any team.</p>'+
@@ -3207,10 +3264,28 @@ function renderSettings(){
     if(td) st.records.tradeDeadline = new Date(td).toISOString();
     st.records.waiverType = waiverType;
     st.records.maxKeepers = Number(document.getElementById("rs-keepers").value) || 0;
+    st.records.maxQB = Number(document.getElementById("rs-maxqb").value) || 2;
+    st.records.maxRB = Number(document.getElementById("rs-maxrb").value) || 6;
+    st.records.maxWR = Number(document.getElementById("rs-maxwr").value) || 6;
+    st.records.maxTE = Number(document.getElementById("rs-maxte").value) || 3;
+    st.records.showAdvice = !!document.getElementById("set-advice").checked;
+    if(!st.records.undroppable) st.records.undroppable = [];
     save(st);
     publishLeague(); publishSize(); publishGames(); publishSpots(); publishTie(); publishSeed(); publishRoster();
     if(wd || td) publishRecords();
     alert("Settings saved.");
+    renderSettings();
+  };
+
+  const addUndrop = document.getElementById("add-undrop");
+  if(addUndrop) addUndrop.onclick = ()=>{
+    const name = (document.getElementById("undrop-name").value||"").trim();
+    if(!name) return;
+    const st = load();
+    st.records = st.records || {};
+    st.records.undroppable = st.records.undroppable || [];
+    if(!st.records.undroppable.includes(name)) st.records.undroppable.push(name);
+    save(st);
     renderSettings();
   };
 
