@@ -2171,11 +2171,25 @@ if(send) send.onclick=()=>{const name=(document.getElementById("talk-name").valu
 function renderHistory(){
 const s=load();
 document.getElementById("app").innerHTML=header('<a class="btn" href="#home">Home</a>')+
-'<div class="page"><div class="eyebrow">'+((s.league&&s.league.name)||leagueName)+'</div><h1>League history</h1><p class="lede">Champions and records stay with this league.</p><div id="history-list"></div>'+
-(s.owner?'<div class="card no-print"><label>Season</label><input id="hist-season" placeholder="2026"><label>Champion</label><input id="hist-champ" placeholder="Team"><label>Best record</label><input id="hist-record" placeholder="12-2"><button class="btn btn-lime" id="hist-save" style="margin-top:8px">Add season</button></div>':"")+'</div>';
-dataRef("history").on("value",snap=>{const rows=snap.val()?Object.values(snap.val()):[]; const el=document.getElementById("history-list"); if(!el)return; el.innerHTML=rows.map(r=>'<div class="card"><h2>'+r.season+'</h2><p>Champion: '+r.champ+'</p><p>Best record: '+r.record+'</p></div>').join("")||"<p>No seasons yet.</p>";});
+'<div class="page"><div class="eyebrow">'+((s.league&&s.league.name)||leagueName)+'</div><h1>League history</h1><p class="lede">Champions, records, and trophies stay with this league.</p><div id="history-list"></div>'+
+(s.owner?'<div class="card no-print"><h2>Add season</h2><label>Season</label><input id="hist-season" placeholder="2026"><label>Champion</label><input id="hist-champ" placeholder="Team name"><label>Best record</label><input id="hist-record" placeholder="12-2"><label>Runner-up</label><input id="hist-runner" placeholder="Team name"><button class="btn btn-lime" id="hist-save" style="margin-top:8px">Add season</button></div>':"")+'</div>';
+dataRef("history").on("value",snap=>{
+  const rows=snap.val()?Object.values(snap.val()):[];
+  const el=document.getElementById("history-list");
+  if(!el)return;
+  el.innerHTML=rows.length?rows.map(r=>'<div class="card" style="border-left:6px solid var(--lime)"><h2 style="margin:0 0 6px">'+r.season+' <span style="font-size:18px">🏆</span></h2><p style="margin:4px 0"><strong>Champion:</strong> '+r.champ+'</p>'+(r.runner?'<p style="margin:4px 0"><strong>Runner-up:</strong> '+r.runner+'</p>':'')+'<p style="margin:4px 0"><strong>Best record:</strong> '+r.record+'</p></div>').join(""):"<p>No seasons yet.</p>";
+});
 const hs=document.getElementById("hist-save");
-if(hs) hs.onclick=()=>{if(!load().owner)return; dataRef("history").push({season:document.getElementById("hist-season").value||"2026",champ:document.getElementById("hist-champ").value||"TBD",record:document.getElementById("hist-record").value||""});};
+if(hs) hs.onclick=()=>{
+  if(!load().owner)return;
+  dataRef("history").push({
+    season:document.getElementById("hist-season").value||"2026",
+    champ:document.getElementById("hist-champ").value||"TBD",
+    record:document.getElementById("hist-record").value||"",
+    runner:document.getElementById("hist-runner").value||""
+  });
+  ["hist-season","hist-champ","hist-record","hist-runner"].forEach(id=>{const el=document.getElementById(id); if(el) el.value="";});
+};
 }
 
 function renderScoring(){
