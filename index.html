@@ -2785,8 +2785,13 @@ function renderTrade(prefillTo, prefillPlayer){
   let list = trades.map((t,i) => {
     const status = t.status || "pending";
     const proposedAt = t.time || t.at || 0;
-    const inReview = reviewHours > 0 && status === "pending" && (Date.now() - proposedAt) < reviewHours * 3600000;
-    const canRespond = status === "pending" && !inReview && (isCommish || (myTeam && (t.to === myTeam.name || t.to === seat.name)));
+    const reviewEnd = proposedAt + reviewHours * 3600000;
+    const inReview = reviewHours > 0 && status === "pending" && Date.now() < reviewEnd;
+    // Auto-approve once review period ends with no veto
+    if(reviewHours > 0 && status === "pending" && Date.now() >= reviewEnd){
+      setTimeout(()=>approveTrade(i), 200);
+    }
+    const canRespond = (t.status || status) === "pending" && !inReview && (isCommish || (myTeam && (t.to === myTeam.name || t.to === seat.name)));
     const canVeto = inReview && (isCommish || (myTeam && (t.from === myTeam.name || t.to === myTeam.name)));
     const needsVote = (mode === "vote" || mode === "vote-commish") && status === "pending" && !inReview;
     const votes = t.votes || {yes:0, no:0};
