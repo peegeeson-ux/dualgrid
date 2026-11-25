@@ -2753,10 +2753,14 @@ function renderTrade(prefillTo, prefillPlayer){
 
   let form = "";
   if(myTeam){
+    const targetTeam = otherTeams.find(t => t.name === prefillTo);
+    const theirPlayers = targetTeam ? (targetTeam.picks||[]).concat((targetTeam.lineup&&targetTeam.lineup.starters)||[], (targetTeam.lineup&&targetTeam.lineup.bench)||[]) : [];
+    const theirSeen = new Set();
+    const theirList = theirPlayers.filter(p => p && p.name && !theirSeen.has(p.name) && theirSeen.add(p.name));
     form = '<div class="card"><h3>Propose a trade</h3>'+
       '<label>Send to</label><select id="trade-to" class="search">'+otherTeams.map(t=>'<option value="'+t.name+'"'+(prefillTo===t.name?" selected":"")+'>'+t.name+'</option>').join("")+'</select>'+
       '<label>Your players (check the ones to send) — '+myPlayers.length+' found</label><div id="trade-mine-list" style="max-height:180px;overflow:auto;margin:6px 0">'+(myPlayers.length ? myPlayers.map(p=>'<label style="display:flex;align-items:center;gap:8px;padding:6px 0"><input type="checkbox" class="trade-mine-chk" value="'+p.name+'" style="margin:0"> <span>'+p.name+' ('+(p.pos||"?")+')</span></label>').join("") : '<p>No players on this team yet. Draft some first.</p>')+'</div>'+
-      '<label>What you want back</label><input id="trade-theirs" class="search" placeholder="their player or pick" value="'+(prefillPlayer||"")+'">'+
+      '<label>Their players (check the ones you want)</label><div id="trade-theirs-list" style="max-height:180px;overflow:auto;margin:6px 0">'+(theirList.length ? theirList.map(p=>'<label style="display:flex;align-items:center;gap:8px;padding:6px 0"><input type="checkbox" class="trade-theirs-chk" value="'+p.name+'"'+(prefillPlayer && p.name===prefillPlayer ? " checked" : "")+' style="margin:0"> <span>'+p.name+' ('+(p.pos||"?")+')</span></label>').join("") : '<p>No players on that team yet.</p>')+'</div>'+
       '<button class="btn btn-lime" id="propose-trade" style="margin-top:8px">Propose trade</button></div>';
   } else {
     form = '<div class="card"><p>Claim a team on the Home page first.</p></div>';
@@ -2765,7 +2769,8 @@ function renderTrade(prefillTo, prefillPlayer){
   let settings = "";
   if(isCommish){
     const deadlineVal = s.records.tradeDeadline ? s.records.tradeDeadline.slice(0,16) : "";
-    settings = '<div class="card"><h3>Trade settings</h3><label>How trades finalize</label><select id="trade-mode" class="search"><option value="commish"'+(mode==="commish"?" selected":"")+'>Commissioner only</option><option value="vote"'+(mode==="vote"?" selected":"")+'>League vote</option><option value="vote-commish"'+(mode==="vote-commish"?" selected":"")+'>League vote + commissioner</option></select><label>Trade deadline (date & time)</label><input id="trade-deadline" class="search" type="datetime-local" value="'+deadlineVal+'"><button class="btn" id="save-trade-settings" style="margin-top:8px">Save settings</button></div>';
+    settings = '<div class="card"><h3>Trade settings</h3><label>How trades finalize</label><select id="trade-mode" class="search"><option value="commish"'+(mode==="commish"?" selected":"")+'>Commissioner only</option><option value="vote"'+(mode==="vote"?" selected":"")+'>League vote</option><option value="vote-commish"'+(mode==="vote-commish"?" selected":"")+'>League vote + commissioner</option></select><label>Trade deadline (date & time)</label><input id="trade-deadline" class="search" type="datetime-local" value="'+deadlineVal+'"><button class="btn" id="save-trade-settings" style="margin-top:8px">Save settings</button></div>'+
+      '<div class="card"><h3>Move a player</h3><input id="move-name" class="search" placeholder="Player name (e.g. Wandale Robinson)"><input id="move-from" class="search" placeholder="From team name"><input id="move-to" class="search" placeholder="To team name"><button class="btn" id="move-player" style="margin-top:8px">Move player</button></div>';
   }
 
   document.getElementById("app").innerHTML = header('<a class="btn" href="#home">Home</a>') +
@@ -2775,9 +2780,9 @@ function renderTrade(prefillTo, prefillPlayer){
   if(prop) prop.onclick = ()=>{
     const to = document.getElementById("trade-to").value;
     const mineSel = Array.from(document.querySelectorAll(".trade-mine-chk:checked")).map(el=>el.value);
-    const theirs = (document.getElementById("trade-theirs").value||"").trim();
-    if(!to || !mineSel.length){ alert("Pick a team and at least one of your players."); return; }
-    const picks = "You: " + mineSel.join(", ") + (theirs ? " · Them: " + theirs : "");
+    const theirsSel = Array.from(document.querySelectorAll(".trade-theirs-chk:checked")).map(el=>el.value);
+    if(!to || !mineSel.length || !theirsSel.length){ alert("Pick a team, at least one of your players, and at least one of theirs."); return; }
+    const picks = "You: " + mineSel.join(", ") + " · Them: " + theirsSel.join(", ");
     const st = load();
     st.records.trades = st.records.trades || [];
     st.records.trades.push({ from: (myTeam&&myTeam.name) || seat.name || "You", to, picks, status: "pending", time: Date.now() });
@@ -2786,14 +2791,53 @@ function renderTrade(prefillTo, prefillPlayer){
     renderTrade();
   };
 
-  const saveBtn = document.getElementById("save-trade-settings");
-  if(saveBtn) saveBtn.onclick = ()=>{
+  const moveBtn = document.getElementById("move-player");
+  if(moveBtn) moveBtn.onclick = ()=>{
+    const nm = (document.getElementById("move-name").value||"").trim().toLowerCase();
+    const fromName = (document.getElementById("move-from").value||"").trim().toLowerCase();
+    const toName = (document.getElementById("move-to").value||"").trim().toLowerCase();
+    if(!nm || !fromName || !toName){ alert("Fill all three fields."); return; }
     const st = load();
-    st.records.tradeMode = document.getElementById("trade-mode").value;
-    const dl = document.getElementById("trade-deadline").value;
-    if(dl) st.records.tradeDeadline = new Date(dl).toISOString();
+    const pods = ["east","west","north","south"];
+    let fromT = null, toT = null, fromP = null, toP = null;
+    for(const pd of pods){
+      const d = ensureDraft(st, pd);
+      for(const t of (d.teams||[])){
+        if(!fromT && (t.name||"").toLowerCase() === fromName){ fromT = t; fromP = pd; }
+        if(!toT && (t.name||"").toLowerCase() === toName){ toT = t; toP = pd; }
+      }
+    }
+    if(!fromT || !toT){ alert("Team not found."); return; }
+    let moved = false;
+    let idx = (fromT.picks||[]).findIndex(p => (p.name||"").toLowerCase() === nm);
+    if(idx >= 0){
+      const pl = fromT.picks.splice(idx, 1)[0];
+      toT.picks = toT.picks || [];
+      toT.picks.push(pl);
+      moved = true;
+    }
+    if(fromT.lineup){
+      ["starters","bench","ir"].forEach(slot => {
+        const arr = fromT.lineup[slot] || [];
+        const li = arr.findIndex(p => (p.name||"").toLowerCase() === nm);
+        if(li >= 0){
+          const pl = arr.splice(li, 1)[0];
+          toT.lineup = toT.lineup || {starters:[],bench:[],ir:[]};
+          toT.lineup.bench = toT.lineup.bench || [];
+          toT.lineup.bench.push(pl);
+          moved = true;
+        }
+      });
+    }
+    if(!moved){ alert("Player not found on that team."); return; }
     save(st);
-    try{ dataRef("config/tradeSettings").set({ mode: st.records.tradeMode, deadline: st.records.tradeDeadline }); }catch(e){}
+    try{
+      if(fromP) publish(fromP);
+      if(toP) publish(toP);
+      if(fromP) dataRef("drafts/"+fromP+"/teams/"+fromT.id+"/picks").set(fromT.picks||[]);
+      if(toP) dataRef("drafts/"+toP+"/teams/"+toT.id+"/picks").set(toT.picks||[]);
+    }catch(e){}
+    alert("Moved.");
     renderTrade();
   };
 }
@@ -2817,6 +2861,11 @@ function approveTrade(i){
     }
   }
   if(!fromTeam || !toTeam){ alert("Could not find both teams."); return; }
+  const rs = window.rosterSettings || {};
+  const maxSize = (Number(rs.qb)||1) + (Number(rs.rb)||2) + (Number(rs.wr)||2) + (Number(rs.te)||1) + (Number(rs.k)||1) + (Number(rs.flex)||1) + (Number(rs.bench)||6) + (Number(rs.ir)||1);
+  const count = t => (t.picks||[]).length + ((t.lineup&&t.lineup.starters||[]).length) + ((t.lineup&&t.lineup.bench||[]).length);
+  if(count(fromTeam) - youNames.length + themNames.length > maxSize){ alert("That would put a team over the roster limit."); return; }
+  if(count(toTeam) - themNames.length + youNames.length > maxSize){ alert("That would put a team over the roster limit."); return; }
   const move = (from, to, names) => {
     names.forEach(nm => {
       // from picks
