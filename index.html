@@ -2798,49 +2798,47 @@ function approveTrade(i){
   if(!st.records || !st.records.trades || !st.records.trades[i]) return;
   const trade = st.records.trades[i];
   if(trade.status === "approved") return;
-  // parse players
   const picks = trade.picks || "";
   const youPart = (picks.split("·")[0] || "").replace(/^You:\s*/,"").trim();
   const themPart = (picks.split("·")[1] || "").replace(/^Them:\s*/,"").trim();
-  const youNames = youPart.split(",").map(s=>s.trim()).filter(Boolean);
-  const themNames = themPart.split(",").map(s=>s.trim()).filter(Boolean);
-  // find the two teams
+  const youNames = youPart.split(",").map(s=>s.trim().toLowerCase()).filter(Boolean);
+  const themNames = themPart.split(",").map(s=>s.trim().toLowerCase()).filter(Boolean);
   const pods = ["east","west","north","south"];
   let fromTeam = null, toTeam = null, fromPod = null, toPod = null;
   for(const pd of pods){
     const d = ensureDraft(st, pd);
     for(const t of (d.teams||[])){
-      if(!fromTeam && t.name === trade.from){ fromTeam = t; fromPod = pd; }
-      if(!toTeam && t.name === trade.to){ toTeam = t; toPod = pd; }
+      if(!fromTeam && (t.name||"").toLowerCase() === (trade.from||"").toLowerCase()){ fromTeam = t; fromPod = pd; }
+      if(!toTeam && (t.name||"").toLowerCase() === (trade.to||"").toLowerCase()){ toTeam = t; toPod = pd; }
     }
   }
-  if(fromTeam && toTeam){
-    // move youNames from fromTeam to toTeam
-    youNames.forEach(nm => {
-      const idx = (fromTeam.picks||[]).findIndex(p => p.name === nm);
-      if(idx >= 0){
-        const pl = fromTeam.picks.splice(idx, 1)[0];
-        toTeam.picks = toTeam.picks || [];
-        toTeam.picks.push(pl);
+  if(!fromTeam || !toTeam){ alert("Could not find both teams."); return; }
+  const move = (from, to, names) => {
+    names.forEach(nm => {
+      let idx = (from.picks||[]).findIndex(p => (p.name||"").toLowerCase() === nm);
+      if(idx < 0) return;
+      const pl = from.picks.splice(idx, 1)[0];
+      to.picks = to.picks || [];
+      to.picks.push(pl);
+      // also clean from lineup if present
+      if(from.lineup){
+        ["starters","bench","ir"].forEach(slot => {
+          if(from.lineup[slot]) from.lineup[slot] = from.lineup[slot].filter(p => (p.name||"").toLowerCase() !== nm);
+        });
       }
     });
-    // move themNames from toTeam to fromTeam
-    themNames.forEach(nm => {
-      const idx = (toTeam.picks||[]).findIndex(p => p.name === nm);
-      if(idx >= 0){
-        const pl = toTeam.picks.splice(idx, 1)[0];
-        fromTeam.picks = fromTeam.picks || [];
-        fromTeam.picks.push(pl);
-      }
-    });
-    save(st);
-    try{ publish(fromPod); publish(toPod); }catch(e){}
-  }
+  };
+  move(fromTeam, toTeam, youNames);
+  move(toTeam, fromTeam, themNames);
+  save(st);
+  try{ if(fromPod) publish(fromPod); if(toPod) publish(toPod); }catch(e){}
   trade.status = "approved";
   save(st);
   try{ dataRef("config/trades").set(st.records.trades); }catch(e){}
   alert("Trade completed. Players moved.");
   renderTrade();
+  // force roster refresh if open
+  if(location.hash.startsWith("#roster")) setTimeout(()=>renderRoster(), 100);
 }
 function rejectTrade(i){
   const st = load();
