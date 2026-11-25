@@ -2138,7 +2138,15 @@ const left=take(pods[0]||"east");
 const right=take(pods[1]||"west");
 const started=!!(s.records&&s.records.playoffs&&s.records.playoffs.started);
 const chip=team=>'<div class="team-row" style="background:#051428;border:1px solid #1a3a5c;border-radius:8px;margin:4px 0;padding:6px 8px;display:flex;align-items:center;gap:6px">'+(team.photo?'<img src="'+team.photo+'" alt="" style="width:28px;height:28px;border-radius:4px;object-fit:cover">':'')+'<span style="color:#69be28;font-weight:800">'+(team.seed||"")+'</span><strong style="flex:1">'+(team.name||"TBD")+'</strong><span style="color:#69be28">'+(started?0:(team.proj||"—"))+'</span></div>';
-const pairs=list=>{const out=[]; for(let i=0;i<list.length;i+=2)out.push([list[i]||{name:"TBD"},list[i+1]||{name:"TBD"}]); return out;};
+const pairs=list=>{
+  const out=[];
+  const n=list.length;
+  for(let i=0;i<Math.floor(n/2);i++){
+    out.push([list[i]||{name:"TBD"}, list[n-1-i]||{name:"TBD"}]);
+  }
+  if(n%2) out.push([list[Math.floor(n/2)]||{name:"TBD"}, {name:"BYE"}]);
+  return out;
+};
 const slot=label=>'<div class="team-row" style="background:#051428;border:1px solid #1a3a5c;border-radius:8px;margin:4px 0;padding:6px 8px;min-height:28px">'+label+'</div>';
 const u=flip=>'<div style="width:18px;align-self:stretch;margin:8px 0;border-top:2px solid #69be28;border-bottom:2px solid #69be28;border-'+(flip?"left":"right")+':2px solid #8d8d8d"></div>';
 const line='<div style="width:24px;border-top:2px solid #69be28"></div>';
@@ -2196,7 +2204,9 @@ document.getElementById("app").innerHTML=header('<a class="btn" href="#home">Hom
 '<div class="page"><div class="eyebrow">'+((s.league&&s.league.name)||leagueName)+'</div><h1>League history</h1><p class="lede">Champions, records, and streaks stay with this league.</p><div id="history-highlights"></div><div id="history-list" style="margin-top:16px"></div>'+
 (s.owner?'<div class="card no-print" style="margin-top:16px"><h2>Add season</h2><label>Season</label><input id="hist-season" placeholder="2026"><label>Champion</label><input id="hist-champ" placeholder="Team name"><label>Best regular season record</label><input id="hist-record" placeholder="12-2"><label>Longest winning streak</label><input id="hist-streak" placeholder="8 games"><label>Runner-up</label><input id="hist-runner" placeholder="Team name"><button class="btn btn-lime" id="hist-save" style="margin-top:8px">Add season</button></div>':"")+'</div>';
 dataRef("history").on("value",snap=>{
-  const rows=snap.val()?Object.values(snap.val()):[];
+  const val=snap.val()||{};
+  const keys=Object.keys(val);
+  const rows=keys.map(k=>({...val[k], _key:k}));
   const el=document.getElementById("history-list");
   const hi=document.getElementById("history-highlights");
   if(!el)return;
@@ -2220,7 +2230,7 @@ dataRef("history").on("value",snap=>{
       '</div>'+
     '</div>';
   }
-  el.innerHTML=rows.length?rows.map(r=>'<div class="card" style="border-left:6px solid var(--lime)"><h2 style="margin:0 0 6px">'+r.season+' <span style="font-size:18px">🏆</span></h2><p style="margin:4px 0"><strong>Champion:</strong> '+r.champ+'</p>'+(r.runner?'<p style="margin:4px 0"><strong>Runner-up:</strong> '+r.runner+'</p>':'')+'<p style="margin:4px 0"><strong>Best regular season:</strong> '+r.record+'</p>'+(r.streak?'<p style="margin:4px 0"><strong>Longest winning streak:</strong> '+r.streak+'</p>':'')+'</div>').join(""):"<p>No seasons yet.</p>";
+  el.innerHTML=rows.length?rows.map(r=>'<div class="card" style="border-left:6px solid var(--lime)"><h2 style="margin:0 0 6px">'+r.season+' <span style="font-size:18px">🏆</span>'+(s.owner?' <button class="btn" style="margin-left:8px;padding:2px 8px;font-size:11px" onclick="editHistory(\''+r._key+'\')">Edit</button> <button class="btn" style="margin-left:4px;padding:2px 8px;font-size:11px" onclick="deleteHistory(\''+r._key+'\')">Delete</button>':"")+'</h2><p style="margin:4px 0"><strong>Champion:</strong> '+r.champ+'</p>'+(r.runner?'<p style="margin:4px 0"><strong>Runner-up:</strong> '+r.runner+'</p>':'')+'<p style="margin:4px 0"><strong>Best regular season:</strong> '+r.record+'</p>'+(r.streak?'<p style="margin:4px 0"><strong>Longest winning streak:</strong> '+r.streak+'</p>':'')+'</div>').join(""):"<p>No seasons yet.</p>";
 });
 const hs=document.getElementById("hist-save");
 if(hs) hs.onclick=()=>{
@@ -2236,7 +2246,30 @@ if(hs) hs.onclick=()=>{
 };
 }
 
-function renderScoring(){
+function editHistory(key){
+  if(!load().owner) return;
+  dataRef("history/"+key).once("value", snap=>{
+    const r = snap.val()||{};
+    const season = prompt("Season", r.season||"");
+    if(season==null) return;
+    const champ = prompt("Champion", r.champ||"");
+    if(champ==null) return;
+    const record = prompt("Best regular season record", r.record||"");
+    if(record==null) return;
+    const streak = prompt("Longest winning streak", r.streak||"");
+    if(streak==null) return;
+    const runner = prompt("Runner-up", r.runner||"");
+    if(runner==null) return;
+    dataRef("history/"+key).set({season, champ, record, streak, runner});
+  });
+}
+function deleteHistory(key){
+  if(!load().owner) return;
+  if(!confirm("Delete this season from history?")) return;
+  dataRef("history/"+key).remove();
+}
+window.editHistory = editHistory;
+window.deleteHistory = deleteHistory;
 const s=load();
 const fields=[
   // Passing
@@ -3247,7 +3280,7 @@ function renderSettings(){
     '<label>Playoff spots per division</label><input id="set-spots" type="number" min="2" max="6" value="'+playoffSpots+'">'+
     '<label>Draft format</label><select id="set-format"><option value="snake"'+(s.format!=="auction"?" selected":"")+'>Snake</option><option value="auction"'+(s.format==="auction"?" selected":"")+'>Auction · $200</option></select>'+
     '<label>Tie breakers</label><select id="set-tie"><option value="split"'+(tieRule==="split"?" selected":"")+'>Two teams: H2H. More: PF</option><option value="pf"'+(tieRule==="pf"?" selected":"")+'>Always points for</option><option value="h2h"'+(tieRule==="h2h"?" selected":"")+'>Always head to head</option></select>'+
-    '<label>Playoff seeding</label><select id="set-seed"><option value="division"'+(seedMode==="division"?" selected":"")+'>Division only</option><option value="league"'+(seedMode==="league"?" selected":"")+'>Full league</option></select>'+
+    '<label>Playoff seeding</label><select id="set-seed"><option value="division"'+(seedMode==="division"?" selected":"")+'>Division only (top vs bottom)</option><option value="league"'+(seedMode==="league"?" selected":"")+'>Full league (top vs bottom)</option></select>'+
     '<div style="margin-top:16px"><button class="btn btn-lime" id="save-settings">Save all settings</button> <a class="btn" href="#scoring">Full scoring rules</a></div>'+
   '</div>'+
   '<div class="card" style="margin-top:12px"><h2>Roster</h2>'+
