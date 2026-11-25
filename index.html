@@ -2762,6 +2762,7 @@ function renderTrade(prefillTo, prefillPlayer){
   if(!s.records) s.records = {};
   const trades = s.records.trades || [];
   const mode = s.records.tradeMode || "commish";
+  const reviewHours = Number(s.records.tradeReviewHours) || 0;
   const deadline = s.records.tradeDeadline ? new Date(s.records.tradeDeadline).toLocaleString() : "Not set";
   const isCommish = !!s.owner;
   const seat = currentSeat() || {};
@@ -2783,8 +2784,11 @@ function renderTrade(prefillTo, prefillPlayer){
 
   let list = trades.map((t,i) => {
     const status = t.status || "pending";
-    const canRespond = status === "pending" && (isCommish || (myTeam && (t.to === myTeam.name || t.to === seat.name)));
-    return '<div class="card" style="margin:8px 0"><strong>'+ (t.from||"Team") +' → '+ (t.to||"Team") +'</strong><div class="sub">'+ (t.picks||"") +' · '+status+'</div>'+(canRespond ? '<button class="btn btn-lime" onclick="approveTrade('+i+')">Accept</button> <button class="btn" onclick="rejectTrade('+i+')">Reject</button>' : '')+'</div>';
+    const proposedAt = t.time || t.at || 0;
+    const inReview = reviewHours > 0 && status === "pending" && (Date.now() - proposedAt) < reviewHours * 3600000;
+    const canRespond = status === "pending" && !inReview && (isCommish || (myTeam && (t.to === myTeam.name || t.to === seat.name)));
+    const canVeto = inReview && (isCommish || (myTeam && (t.from === myTeam.name || t.to === myTeam.name)));
+    return '<div class="card" style="margin:8px 0"><strong>'+ (t.from||"Team") +' → '+ (t.to||"Team") +'</strong><div class="sub">'+ (t.picks||"") +' · '+status+(inReview?" · in review":"")+'</div>'+(canRespond ? '<button class="btn btn-lime" onclick="approveTrade('+i+')">Accept</button> <button class="btn" onclick="rejectTrade('+i+')">Reject</button>' : '')+(canVeto ? '<button class="btn" onclick="vetoTrade('+i+')" style="margin-left:6px">Veto</button>' : '')+'</div>';
   }).join("") || "<p class=\"lede\">No pending trades.</p>";
 
   let form = "";
@@ -2805,7 +2809,7 @@ function renderTrade(prefillTo, prefillPlayer){
   let settings = "";
   if(isCommish){
     const deadlineVal = s.records.tradeDeadline ? s.records.tradeDeadline.slice(0,16) : "";
-    settings = '<div class="card"><h3>Trade settings</h3><label>How trades finalize</label><select id="trade-mode" class="search"><option value="commish"'+(mode==="commish"?" selected":"")+'>Commissioner only</option><option value="vote"'+(mode==="vote"?" selected":"")+'>League vote</option><option value="vote-commish"'+(mode==="vote-commish"?" selected":"")+'>League vote + commissioner</option></select><label>Trade deadline (date & time)</label><input id="trade-deadline" class="search" type="datetime-local" value="'+deadlineVal+'"><button class="btn" id="save-trade-settings" style="margin-top:8px">Save settings</button></div>'+
+    settings = '<div class="card"><h3>Trade settings</h3><label>How trades finalize</label><select id="trade-mode" class="search"><option value="commish"'+(mode==="commish"?" selected":"")+'>Commissioner only</option><option value="vote"'+(mode==="vote"?" selected":"")+'>League vote</option><option value="vote-commish"'+(mode==="vote-commish"?" selected":"")+'>League vote + commissioner</option></select><label>Review period (hours, 0 = instant)</label><input id="trade-review" class="search" type="number" min="0" value="'+reviewHours+'"><label>Trade deadline (date & time)</label><input id="trade-deadline" class="search" type="datetime-local" value="'+deadlineVal+'"><button class="btn" id="save-trade-settings" style="margin-top:8px">Save settings</button></div>'+
       '<div class="card"><h3>Move a player</h3><input id="move-name" class="search" placeholder="Player name (e.g. Wandale Robinson)"><input id="move-from" class="search" placeholder="From team name"><input id="move-to" class="search" placeholder="To team name"><button class="btn" id="move-player" style="margin-top:8px">Move player</button></div>';
   }
 
@@ -2824,6 +2828,19 @@ function renderTrade(prefillTo, prefillPlayer){
     st.records.trades.push({ from: (myTeam&&myTeam.name) || seat.name || "You", to, picks, status: "pending", time: Date.now() });
     save(st);
     try{ dataRef("config/trades").set(st.records.trades); }catch(e){}
+    renderTrade();
+  };
+
+  const saveSet = document.getElementById("save-trade-settings");
+  if(saveSet) saveSet.onclick = ()=>{
+    const st = load();
+    st.records.tradeMode = document.getElementById("trade-mode").value;
+    st.records.tradeReviewHours = Number(document.getElementById("trade-review").value) || 0;
+    const dl = document.getElementById("trade-deadline").value;
+    if(dl) st.records.tradeDeadline = new Date(dl).toISOString();
+    save(st);
+    try{ dataRef("config/tradeSettings").set({mode:st.records.tradeMode, reviewHours:st.records.tradeReviewHours, deadline:st.records.tradeDeadline}); }catch(e){}
+    alert("Trade settings saved.");
     renderTrade();
   };
 
@@ -2876,6 +2893,14 @@ function renderTrade(prefillTo, prefillPlayer){
     alert("Moved.");
     renderTrade();
   };
+}
+function vetoTrade(i){
+  const st = load();
+  if(!st.records || !st.records.trades || !st.records.trades[i]) return;
+  st.records.trades[i].status = "vetoed";
+  save(st);
+  try{ dataRef("config/trades").set(st.records.trades); }catch(e){}
+  renderTrade();
 }
 function approveTrade(i){
   const st = load();
