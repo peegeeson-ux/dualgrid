@@ -1251,7 +1251,7 @@ dataRef("config/waiver").on("value", snap => {
   const v=snap.val(); if(!v) return;
   const s=load(); if(!s.records)s.records={};
   if(v.deadline) s.records.waiverDeadline=v.deadline;
-  if(Array.isArray(v.claims) && v.claims.length) s.records.claims=v.claims;
+  if(Array.isArray(v.claims)) s.records.claims=v.claims;
   save(s);
   if((location.hash||"").startsWith("#waiver")) renderWaiver();
 });
@@ -2300,11 +2300,18 @@ function nextWaiverDeadline(rec){
   d.setDate(d.getDate() + add);
   return d;
 }
+function isWaiverClosed(rec){
+  // Free agent window: after the weekly deadline until the next one
+  const next = nextWaiverDeadline(rec);
+  const prev = new Date(next.getTime() - 7*24*60*60*1000);
+  const now = Date.now();
+  return now > prev.getTime() && now < next.getTime();
+}
 function renderWaiver(){
   const s=waiverState();
   const rec=s.records;
   const next = nextWaiverDeadline(rec);
-  const closed = Date.now() > next.getTime();
+  const closed = isWaiverClosed(rec);
   const deadlineLabel = next.toLocaleString();
   let seat = null;
   try{ seat = (JSON.parse(localStorage.getItem("dualgrid-my-seats")||"{}")[leagueCode()] || JSON.parse(localStorage.getItem("dualgrid-my-seat")||"null")); }catch(e){}
@@ -2346,7 +2353,7 @@ function addWaiver(id){
   const s = waiverState();
   const rec = s.records;
   const next = nextWaiverDeadline(rec);
-  const closed = Date.now() > next.getTime();
+  const closed = isWaiverClosed(rec);
   const player = PLAYERS.find(p => p.id === Number(id));
   if(!player){ alert("Player not found."); return; }
   const pod = window.waiverPod || "east";
