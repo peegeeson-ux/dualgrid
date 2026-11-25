@@ -2132,12 +2132,12 @@ const take=pod=>{
     const row=(s.records&&s.records.rows&&s.records.rows[key])||{w:0,l:0,pf:0};
     return {team,key,w:Number(row.w)||0,l:Number(row.l)||0,pf:Number(row.pf)||0};
   }).sort((a,b)=>b.w-a.w||a.l-b.l||b.pf-a.pf);
-  return ranked.slice(0,per).map((item,i)=>({pod,seed:i+1,name:item.team.name||"TBD",photo:item.team.photo||"",proj:item.pf||"—"}));
+  return ranked.slice(0,per).map((item,i)=>({pod,seed:i+1,name:item.team.name||"TBD",photo:item.team.photo||"",proj:item.pf||"—",w:item.w,l:item.l}));
 };
 const left=take(pods[0]||"east");
 const right=take(pods[1]||"west");
 const started=!!(s.records&&s.records.playoffs&&s.records.playoffs.started);
-const chip=team=>'<div class="team-row" style="background:#051428;border:1px solid #1a3a5c;border-radius:8px;margin:4px 0;padding:6px 8px;display:flex;align-items:center;gap:6px">'+(team.photo?'<img src="'+team.photo+'" alt="" style="width:28px;height:28px;border-radius:4px;object-fit:cover">':'')+'<span style="color:#69be28;font-weight:800">'+(team.seed||"")+'</span><strong style="flex:1">'+(team.name||"TBD")+'</strong><span style="color:#69be28">'+(started?0:(team.proj||"—"))+'</span></div>';
+const chip=team=>'<div class="team-row" style="background:#051428;border:1px solid #1a3a5c;border-radius:8px;margin:4px 0;padding:6px 8px;display:flex;align-items:center;gap:6px">'+(team.photo?'<img src="'+team.photo+'" alt="" style="width:28px;height:28px;border-radius:4px;object-fit:cover">':'')+'<span style="color:#69be28;font-weight:800">'+(team.seed||"")+'</span><strong style="flex:1">'+(team.name||"TBD")+'</strong><span style="opacity:.7;font-size:12px">'+(team.w||0)+'-'+(team.l||0)+'</span></div>';
 const pairs=list=>{
   const out=[];
   const n=list.length;
@@ -2675,6 +2675,8 @@ if(added) save(s);
           '</div>';
       }
       if(mineHere && (s.records||{}).showAdvice){
+        const starters = Array.isArray(lineup.starters) ? lineup.starters : [];
+        const bench = Array.isArray(lineup.bench) ? lineup.bench : [];
         const all = [...starters, ...bench].slice(0,8);
         const advice = all.map(p => {
           const score = (p.proj || 8) + (p.pos==="QB"?2:0) + (p.pos==="RB"?1:0);
