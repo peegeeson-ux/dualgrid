@@ -2862,10 +2862,10 @@ function approveTrade(i){
   }
   if(!fromTeam || !toTeam){ alert("Could not find both teams."); return; }
   const rs = window.rosterSettings || {};
-  const maxSize = (Number(rs.qb)||1) + (Number(rs.rb)||2) + (Number(rs.wr)||2) + (Number(rs.te)||1) + (Number(rs.k)||1) + (Number(rs.flex)||1) + (Number(rs.bench)||6) + (Number(rs.ir)||1);
-  const count = t => (t.picks||[]).length + ((t.lineup&&t.lineup.starters||[]).length) + ((t.lineup&&t.lineup.bench||[]).length);
-  if(count(fromTeam) - youNames.length + themNames.length > maxSize){ alert("That would put a team over the roster limit."); return; }
-  if(count(toTeam) - themNames.length + youNames.length > maxSize){ alert("That would put a team over the roster limit."); return; }
+  const maxSize = Math.max(15, (Number(rs.qb)||1)+(Number(rs.rb)||2)+(Number(rs.wr)||2)+(Number(rs.te)||1)+(Number(rs.k)||1)+(Number(rs.flex)||1)+(Number(rs.bench)||6)+(Number(rs.ir)||1)+(Number(rs.teamDef)||0)+(Number(rs.defPlayers)||0));
+  const count = t => (t.picks||[]).length;
+  if(count(fromTeam) - youNames.length + themNames.length > maxSize){ alert("That would put a team over the roster limit ("+maxSize+")."); return; }
+  if(count(toTeam) - themNames.length + youNames.length > maxSize){ alert("That would put a team over the roster limit ("+maxSize+")."); return; }
   const move = (from, to, names) => {
     names.forEach(nm => {
       // from picks
