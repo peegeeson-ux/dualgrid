@@ -1245,9 +1245,44 @@ const POD_TEAMS = {
   north: ["Frozen Fury","Polar Bears","Northern Knights","Ice Breakers","Snow Owls","Timberwolves","Lakeside Lions","Prairie Storm","Frostbite FC","North Star"],
   south: ["Heat Seekers","Southern Comfort","Bayou Bulls","Gulf Coast Gang","Swamp Kings","Sunshine Smash","River Rats","Peach State","Palmetto Power","Dixie Destroyers"]
 };
+function renderMock(){
+  window._isMock = true;
+  const pod = podFromHash();
+  // Use a separate mock state
+  const key = "dualgrid-mock-" + (leagueCode()||"local") + "-" + pod;
+  try{
+    const raw = localStorage.getItem(key);
+    if(!raw){
+      const mock = emptyDraft(pod, "snake");
+      mock.mock = true;
+      localStorage.setItem(key, JSON.stringify(mock));
+    }
+  }catch(e){}
+  renderDraft();
+}
+function renderDraft(){
+  if(location.hash.indexOf("#mock/")!==0) window._isMock = false;
 function emptyDraft(pod,format){const n=teamCount();return{pod,format:format||"snake",size:n,teams:POD_TEAMS[pod].slice(0,n).map((name,i)=>({id:i,name,picks:[],budget:BUDGET})),pickIndex:0,nomIndex:0,started:false,secondsLeft:format==="auction"?BID_SECONDS:PICK_SECONDS,nomination:null,log:[]};}
 function normalizeDraft(d){if(!d)return d;d.teams=(d.teams||[]).map(t=>Object.assign({picks:[],budget:200},t,{picks:t.picks||[]})); const need=teamCount(); while(d.teams.length<need){ const i=d.teams.length; const names=POD_TEAMS[d.pod]||[]; d.teams.push({id:i,name:names[i]||("Team "+(i+1)),picks:[],budget:BUDGET}); } if (d.order && (Array.isArray(d.order) ? d.order.length : Object.keys(d.order).length) !== teamCount()) d.order = null; if(d.teams.length>need) d.teams=d.teams.slice(0,need); d.log=d.log||[]; return d;}
-function ensureDraft(s,pod){if(!s.drafts[pod])s.drafts[pod]=emptyDraft(pod,s.format||"snake");s.drafts[pod]=normalizeDraft(s.drafts[pod]);return s.drafts[pod];}
+function ensureDraft(s,pod){
+  if(window._isMock){
+    const key = "dualgrid-mock-" + (leagueCode()||"local") + "-" + pod;
+    try{
+      const raw = localStorage.getItem(key);
+      if(raw) return normalizeDraft(JSON.parse(raw));
+    }catch(e){}
+    const mock = emptyDraft(pod, "snake");
+    mock.mock = true;
+    return mock;
+  }
+  if(!s.drafts[pod])s.drafts[pod]=emptyDraft(pod,s.format||"snake");
+  s.drafts[pod]=normalizeDraft(s.drafts[pod]);
+  return s.drafts[pod];
+}
+function saveMock(pod, d){
+  const key = "dualgrid-mock-" + (leagueCode()||"local") + "-" + pod;
+  try{ localStorage.setItem(key, JSON.stringify(d)); }catch(e){}
+}
 function snakeSlot(i,draft){
   const n = teamCount();
   const r = Math.floor(i / n), p = i % n;
@@ -1271,7 +1306,18 @@ function fmtTime(s){return Math.floor(s/60)+":"+String(Math.max(0,s)%60).padStar
 function podFromHash(){return (location.hash.split("/")[1]||"east").toLowerCase();}
 function ticker(d){const n=(d&&d.log)?d.log.length:0;const bits=n?d.log.slice().reverse().map(l=>l.label+" "+l.player+" to "+l.team).join("    ·    "):"Waiting for the first pick";const secs=Math.max(110, n*18);return '<div class="ticker"><span style="animation-duration:'+secs+'s">'+bits+"    ·    "+bits+"</span></div>";}
 function header(extra){return '<header class="app-header"><div class="brand"><img class="hero-mark" src="mark.png" alt="Dualgrid"><div><img src="wordmark.png" alt="DUALGRID" style="height:36px;border-radius:6px"><div><svg viewBox="0 0 60 40" width="22" height="14" style="vertical-align:middle;margin:0 4px;border-radius:2px"><rect width="60" height="40" fill="#bf0a30"/><rect y="3" width="60" height="3" fill="#fff"/><rect y="9" width="60" height="3" fill="#fff"/><rect y="15" width="60" height="3" fill="#fff"/><rect y="21" width="60" height="3" fill="#fff"/><rect y="27" width="60" height="3" fill="#fff"/><rect y="33" width="60" height="3" fill="#fff"/><rect width="24" height="21" fill="#002868"/></svg><small>PROTOTYPE</small><svg viewBox="0 0 60 40" width="22" height="14" style="vertical-align:middle;margin:0 4px;border-radius:2px"><rect width="60" height="40" fill="#bf0a30"/><rect y="3" width="60" height="3" fill="#fff"/><rect y="9" width="60" height="3" fill="#fff"/><rect y="15" width="60" height="3" fill="#fff"/><rect y="21" width="60" height="3" fill="#fff"/><rect y="27" width="60" height="3" fill="#fff"/><rect y="33" width="60" height="3" fill="#fff"/><rect width="24" height="21" fill="#002868"/></svg></div></div></div><div class="header-actions"><span class="live" id="live">'+(cloudOn?"LIVE BOARD":"CONNECTING")+'</span><button class="btn menu-btn" id="menu-btn">Menu</button><div class="nav-links">'+(extra||"")+'</div></div></header>';}
-function publish(pod){if(applyingRemote)return;const s=load();const d=s.drafts[pod];if(!d)return;dataRef("drafts/"+pod).set(d).catch(()=>{});}
+function publish(pod){
+  if(window._isMock){
+    const d = ensureDraft(load(), pod);
+    saveMock(pod, d);
+    return;
+  }
+  if(applyingRemote)return;
+  const s=load();
+  const d=s.drafts[pod];
+  if(!d)return;
+  dataRef("drafts/"+pod).set(d).catch(()=>{});
+}
 function publishRecords(){if(applyingRemote)return;const s=load();dataRef("records").set(s.records||{week:1,rows:{}}).catch(()=>{});}
 function dropQueued(state,pod,playerId){const d=ensureDraft(state,pod); d.teams.forEach(team=>{ if(Array.isArray(team.queue)) team.queue=team.queue.map(Number).filter(id=>id!==Number(playerId)); });}
 function makePick(state,pod,playerId){const d=ensureDraft(state,pod);const info=snakeSlot(d.pickIndex,d);const player=PLAYERS.find(p=>p.id===playerId);if(!player)return;if(d.format==="auction"){if(d.nomination)return;d.nomination={playerId,teamId:d.nomIndex%10,bid:1,seconds:BID_SECONDS};save(state);publish(pod);return;}const already=d.teams.some(t=>Array.isArray(t.picks)&&t.picks.some(p=>Number(p.id)===Number(playerId)));if(already){alert(player.name+" is already drafted.");return;}const team=d.teams[info.teamId];team.picks.push(player);d.log.unshift({label:info.label,player:player.name,pos:player.pos,team:team.name});d.pickIndex++;d.started=true;d.clockEnds=Date.now()+(d.pickSeconds||PICK_SECONDS)*1000;d.secondsLeft=d.pickSeconds||PICK_SECONDS;save(state);dropQueued(state,pod,playerId);save(state);publish(pod);}
@@ -1291,7 +1337,7 @@ function renderHome(){
 const root=document.getElementById("app");const s=syncOwner(load());const on=unlocked(s);const pods=podsOf(s);
 if(!s.owner){
 const mine=(()=>{try{return (JSON.parse(localStorage.getItem('dualgrid-my-seats')||'{}')[leagueCode()]||JSON.parse(localStorage.getItem('dualgrid-my-seat')||'null'))}catch(e){return null}})();
-const rooms=pods.map(p=>'<div class="team-row"><span class="pod-chip '+p+'">'+podName(p)+'</span><span><a class="btn" href="#draft/'+p+'">War Room</a> <a class="btn" href="#board/'+p+'">Board</a> <a class="btn" href="#dash/'+p+'">Dash</a></span></div>').join("");
+const rooms=pods.map(p=>'<div class="team-row"><span class="pod-chip '+p+'">'+podName(p)+'</span><span><a class="btn" href="#draft/'+p+'">War Room</a> <a class="btn" href="#board/'+p+'">Board</a> <a class="btn" href="#dash/'+p+'">Dash</a> <a class="btn" href="#mock/'+p+'">Mock</a></span></div>').join("");
 root.innerHTML=header('<a class="btn" href="#lobby">League</a><a class="btn" href="#scores">Standings</a>')+
 '<div class="page" style="background:#0b0b0b;color:#fff;border:3px solid #c6f25a;border-radius:12px;padding:16px">'+
 '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">'+
@@ -1460,7 +1506,7 @@ const mine=(()=>{try{return (JSON.parse(localStorage.getItem('dualgrid-my-seats'
 const claimedHere = mine && mine.pod === pod;
 const acting = claimedHere ? Number(mine.teamId) : ((onClock&&onClock.id)||0);
 const seatStatus = claimedHere ? "You are locked to " + ((draft.teams.find(t=>Number(t.id)===Number(mine.teamId))||{}).name||"your team") : "No team claimed on this phone";
-root.innerHTML=header('<a class="btn" href="#home">Circuit</a><a class="btn" href="#payout">Payouts</a><a class="btn btn-lime" href="#board/'+pod+'">Cast Big Board</a><button class="btn" id="reset">Reset</button><button class="btn" id="force-clear" style="background:#c0392b">Force clear all</button>')+
+root.innerHTML=header('<a class="btn" href="#home">Circuit</a><a class="btn" href="#payout">Payouts</a><a class="btn btn-lime" href="#board/'+pod+'">Cast Big Board</a><button class="btn" id="reset">Reset</button><button class="btn" id="force-clear" style="background:#c0392b">Force clear all</button>'+(window._isMock?'<span style="color:#eab308;font-weight:800;margin-left:8px">MOCK DRAFT</span>':''))+
 '<div class="draft-shell"><aside class="panel"><h3>'+(function(){const mine=(()=>{try{return (JSON.parse(localStorage.getItem("dualgrid-my-seats")||"{}")[leagueCode()]||null)}catch(e){return null}})(); const t=mine&&mine.pod===pod?draft.teams.find(x=>Number(x.id)===Number(mine.teamId)):null; return (t&&t.name?t.name+" War Room":(auction?"AUCTION":"WAR ROOM")+" · "+podName(pod));})()+'</h3><div class="clock-box"><div style="font-size:13px;color:#69be28;margin-bottom:4px">'+seatStatus+'</div><div class="who">'+(done?"Complete":onClock.name)+'</div><div class="meta">'+(done?"Board locked":(auction?(draft.nomination?"High bid $"+draft.nomination.bid:"Nominate"):"Pick "+info.label))+'</div><div class="timer">'+fmtTime(auction&&draft.nomination?draft.nomination.seconds:clockLeft(draft))+'</div>'+(onClock&&onClock.ownerName?'<div style="font-size:12px;color:var(--mute);margin-top:4px">Owner: '+onClock.ownerName+'</div>':'')+'</div><div class="you-pick" style="font-size:20px;font-weight:900;color:#69be28;margin:8px 0 12px;text-align:center">'+(()=>{
   let myId = acting;
   if (myId === undefined || myId === null || myId === 0 && !mine) {
@@ -1568,7 +1614,7 @@ const cleanBtn=document.getElementById("clean-dupes"); if(cleanBtn) cleanBtn.onc
 root.querySelectorAll(".pick-btn").forEach(btn=>btn.onclick=()=>{makePick(load(),pod,Number(btn.dataset.id));paint();});
 const actor=document.getElementById("actor");if(actor)actor.onchange=()=>{const st=load();st.actingAs[pod]=Number(actor.value);save(st);paint();};
 const bidBtn=document.getElementById("bid");if(bidBtn)bidBtn.onclick=()=>{bid(load(),pod,acting);paint();};
-const resetBtn=document.getElementById("reset"); if(resetBtn) resetBtn.onclick=()=>{ if(!unlocked(load())){ alert("Commissioner code required to reset."); location.hash="#home"; return;} if(confirm("Reset this pod for everyone?")){resetPod(load(),pod);paint();}};
+const resetBtn=document.getElementById("reset"); if(resetBtn) resetBtn.onclick=()=>{ if(window._isMock){ if(confirm("Reset this mock draft?")){ const key="dualgrid-mock-"+(leagueCode()||"local")+"-"+pod; localStorage.removeItem(key); window._isMock=true; paint(); } return; } if(!unlocked(load())){ alert("Commissioner code required to reset."); location.hash="#home"; return;} if(confirm("Reset this pod for everyone?")){resetPod(load(),pod);paint();}};
 const fc=document.getElementById("force-clear"); if(fc){ fc.onclick=()=>{ if(!unlocked(load())){ alert("Commissioner only."); return;} if(confirm("Force clear ALL divisions?")){ const st=load(); ["east","west","north","south"].forEach(p=>{ const d=ensureDraft(st,p); d.teams.forEach(t=>{ t.picks=[]; t.lineup={starters:[],bench:[],ir:[]}; }); d.pickIndex=0; d.log=[]; d.started=false; try{ dataRef("drafts/"+p).set(d); }catch(e){} }); save(st); paint(); alert("All divisions cleared."); }}; }
 
 const claim=document.getElementById("claim"); if(claim) claim.onclick=()=>{ const st=load(); const id=Number((document.getElementById("actor")||{}).value||0); claimSeat(st,pod,id,(document.getElementById("seat-name")||{}).value||""); paint(); };
@@ -2772,7 +2818,7 @@ function renderSettings(){
   };
 }
 
-function route(){const page=(location.hash.replace("#","").split("/")[0]||"lobby"); const st=load(); if(!st.email && page!=="login"){ location.hash="#login"; return renderLogin(); } if(page==="login"){ return renderLogin(); } if(page!=="lobby"&&!leagueCode()&&page!=="draft"&&page!=="board"&&page!=="trade"){location.hash="#lobby"; return renderLobby();}if(page==="pay")renderPay();else if(page==="draft")renderDraft();else if(page==="board")renderBoard();else if(page==="wall")renderWall();else if(page==="payout"){ if(!unlocked(load())){ alert("Commissioner code required."); location.hash="#home"; return;} renderPayout(); }else if(page==="scores")renderScores();else if(page==="scoreboard")renderScoreboard();else if(page==="bracket")renderBracket();else if(page==="talk")renderTalk();else if(page==="waiver")renderWaiver();else if(page==="roster")renderRoster();else if(page==="history")renderHistory();else if(page==="scoring")renderScoring();else if(page==="settings")renderSettings();else if(page==="matchup")renderMatchup();else if(page==="trade")renderTrade();else if(page==="dash")renderDash();else if(page==="nfl")renderNflScoreboard();else if(page==="injuries")renderInjuries();else if(page==="lobby"||page==="")renderLobby();else renderHome();
+function route(){const page=(location.hash.replace("#","").split("/")[0]||"lobby"); const st=load(); if(!st.email && page!=="login"){ location.hash="#login"; return renderLogin(); } if(page==="login"){ return renderLogin(); } if(page!=="lobby"&&!leagueCode()&&page!=="draft"&&page!=="board"&&page!=="trade"&&page!=="mock"){location.hash="#lobby"; return renderLobby();}if(page==="pay")renderPay();else if(page==="draft")renderDraft();else if(page==="mock")renderMock();else if(page==="board")renderBoard();else if(page==="wall")renderWall();else if(page==="payout"){ if(!unlocked(load())){ alert("Commissioner code required."); location.hash="#home"; return;} renderPayout(); }else if(page==="scores")renderScores();else if(page==="scoreboard")renderScoreboard();else if(page==="bracket")renderBracket();else if(page==="talk")renderTalk();else if(page==="waiver")renderWaiver();else if(page==="roster")renderRoster();else if(page==="history")renderHistory();else if(page==="scoring")renderScoring();else if(page==="settings")renderSettings();else if(page==="matchup")renderMatchup();else if(page==="trade")renderTrade();else if(page==="dash")renderDash();else if(page==="nfl")renderNflScoreboard();else if(page==="injuries")renderInjuries();else if(page==="lobby"||page==="")renderLobby();else renderHome();
   setTimeout(loadWeekTicker, 50);
   setTimeout(loadNflTicker, 80);
   setTimeout(loadWeekTicker, 400); // extra refresh after league switch
