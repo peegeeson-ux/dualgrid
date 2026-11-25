@@ -2409,6 +2409,7 @@ function deleteClaim(id){
   renderWaiver();
 }
 window.deleteClaim = deleteClaim;
+function awardClaim(id, teamId){
   const s = waiverState();
   const rec = s.records;
   const pod = window.waiverPod || "east";
