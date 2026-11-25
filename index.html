@@ -2360,6 +2360,11 @@ function addWaiver(id){
     else if(!s.owner && canEditTeam(s, pod, team.id)) targetTeam = team;
   });
   if(!targetTeam){ alert("Turn on Commissioner override for the team that is claiming."); return; }
+  // Roster size check
+  const rs = window.rosterSettings || {qb:1,rb:2,wr:2,te:1,flex:1,superflex:0,bench:6,ir:1,teamDef:0,defPlayers:0,k:1};
+  const maxRoster = (Number(rs.qb)||0)+(Number(rs.rb)||0)+(Number(rs.wr)||0)+(Number(rs.te)||0)+(Number(rs.teamDef)||0)+(Number(rs.defPlayers)||0)+(Number(rs.k)||0)+(Number(rs.flex)||0)+(Number(rs.superflex)||0)+(Number(rs.bench)||0);
+  const current = (targetTeam.picks||[]).length;
+  if(current >= maxRoster){ alert("Roster is full ("+current+"/"+maxRoster+"). Drop a player first."); return; }
   if(closed){
     // Free agent pickup - add directly, no priority change
     targetTeam.picks = targetTeam.picks || [];
