@@ -2510,22 +2510,6 @@ function removeUndrop(name){
   renderSettings();
 }
 window.removeUndrop = removeUndrop;
-  const s = load();
-  const seat = currentSeat() || {};
-  const pod = seat.pod || "east";
-  const d = ensureDraft(s, pod);
-  const team = seat.teamId != null ? (d.teams||[]).find(t => String(t.id) === String(seat.teamId)) : null;
-  if(!team) return;
-  const max = Number((s.records||{}).maxKeepers) || 0;
-  team.keepers = team.keepers || [];
-  const i = team.keepers.indexOf(name);
-  if(i >= 0) team.keepers.splice(i, 1);
-  else if(team.keepers.length < max) team.keepers.push(name);
-  else { alert("Max keepers reached."); return; }
-  save(s);
-  try{ dataRef("drafts/"+pod+"/teams/"+team.id+"/keepers").set(team.keepers); }catch(e){}
-  if(location.hash.startsWith("#roster")) renderRoster();
-}
 function renderRoster(){
   loadInjuries();
   const s=load();
