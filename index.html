@@ -1321,7 +1321,35 @@ function publish(pod){
 }
 function publishRecords(){if(applyingRemote)return;const s=load();dataRef("records").set(s.records||{week:1,rows:{}}).catch(()=>{});}
 function dropQueued(state,pod,playerId){const d=ensureDraft(state,pod); d.teams.forEach(team=>{ if(Array.isArray(team.queue)) team.queue=team.queue.map(Number).filter(id=>id!==Number(playerId)); });}
-function makePick(state,pod,playerId){const d=ensureDraft(state,pod);const info=snakeSlot(d.pickIndex,d);const player=PLAYERS.find(p=>p.id===playerId);if(!player)return;if(d.format==="auction"){if(d.nomination)return;d.nomination={playerId,teamId:d.nomIndex%10,bid:1,seconds:BID_SECONDS};save(state);publish(pod);return;}const already=d.teams.some(t=>Array.isArray(t.picks)&&t.picks.some(p=>Number(p.id)===Number(playerId)));if(already){alert(player.name+" is already drafted.");return;}const team=d.teams[info.teamId];team.picks.push(player);d.log.unshift({label:info.label,player:player.name,pos:player.pos,team:team.name});d.pickIndex++;d.started=true;d.clockEnds=Date.now()+(d.pickSeconds||PICK_SECONDS)*1000;d.secondsLeft=d.pickSeconds||PICK_SECONDS;save(state);dropQueued(state,pod,playerId);save(state);publish(pod);}
+function cpuPick(pod){
+  if(!window._isMock) return;
+  const s = load();
+  const d = ensureDraft(s, pod);
+  const info = snakeSlot(d.pickIndex, d);
+  if(!info) return;
+  const mine = (()=>{try{return (JSON.parse(localStorage.getItem("dualgrid-my-seats")||"{}")[leagueCode()]||null)}catch(e){return null}})();
+  const myTeam = mine && mine.pod===pod ? Number(mine.teamId) : -1;
+  if(Number(info.teamId) === myTeam) return; // user's turn
+  const taken = new Set();
+  d.teams.forEach(t => (t.picks||[]).forEach(p => taken.add(Number(p.id))));
+  const best = PLAYERS.find(p => !taken.has(Number(p.id)));
+  if(best) makePick(s, pod, best.id);
+}
+function startCpuDraft(pod){
+  if(!window._isMock) return;
+  if(window._cpuTimer) clearInterval(window._cpuTimer);
+  window._cpuTimer = setInterval(()=>{
+    const d = ensureDraft(load(), pod);
+    const total = d.teams.length * 16;
+    if(d.pickIndex >= total){ clearInterval(window._cpuTimer); window._cpuTimer=null; return; }
+    const info = snakeSlot(d.pickIndex, d);
+    const mine = (()=>{try{return (JSON.parse(localStorage.getItem("dualgrid-my-seats")||"{}")[leagueCode()]||null)}catch(e){return null}})();
+    const myTeam = mine && mine.pod===pod ? Number(mine.teamId) : -1;
+    if(info && Number(info.teamId) === myTeam) return; // wait for user
+    cpuPick(pod);
+    if(window._paint) window._paint();
+  }, 900);
+}
 function bid(state,pod,teamId){const d=ensureDraft(state,pod);if(!d.nomination)return;const t=d.teams[teamId];const next=d.nomination.bid+1;if(t.budget<next)return;d.nomination.bid=next;d.nomination.teamId=teamId;d.nomination.seconds=BID_SECONDS;save(state);publish(pod);}
 function settleAuction(state,pod){const d=ensureDraft(state,pod);const n=d.nomination;if(!n)return;const player=PLAYERS.find(p=>p.id===n.playerId);const team=d.teams[n.teamId];team.picks.push(player);team.budget-=n.bid;d.log.unshift({label:"$"+n.bid,player:player.name,pos:player.pos,team:team.name});d.nomination=null;d.nomIndex++;d.pickIndex++;d.secondsLeft=BID_SECONDS;save(state);publish(pod);}
 function resetPod(state,pod){state.drafts[pod]=emptyDraft(pod,state.format||"snake"); state.drafts[pod].autoStarted=false; localStorage.removeItem("autoStart_"+pod); save(state); publish(pod);}
@@ -1508,7 +1536,7 @@ const mine=(()=>{try{return (JSON.parse(localStorage.getItem('dualgrid-my-seats'
 const claimedHere = mine && mine.pod === pod;
 const acting = claimedHere ? Number(mine.teamId) : ((onClock&&onClock.id)||0);
 const seatStatus = claimedHere ? "You are locked to " + ((draft.teams.find(t=>Number(t.id)===Number(mine.teamId))||{}).name||"your team") : "No team claimed on this phone";
-root.innerHTML=header('<a class="btn" href="#home">Circuit</a><a class="btn" href="#payout">Payouts</a><a class="btn btn-lime" href="#board/'+pod+'">Cast Big Board</a><button class="btn" id="reset">Reset</button><button class="btn" id="force-clear" style="background:#c0392b">Force clear all</button>'+(window._isMock?'<span style="color:#eab308;font-weight:800;margin-left:8px">MOCK DRAFT</span>':''))+
+root.innerHTML=header('<a class="btn" href="#home">Circuit</a><a class="btn" href="#payout">Payouts</a><a class="btn btn-lime" href="#board/'+pod+'">Cast Big Board</a><button class="btn" id="reset">Reset</button><button class="btn" id="force-clear" style="background:#c0392b">Force clear all</button>'+(window._isMock?'<span style="color:#eab308;font-weight:800;margin-left:8px">MOCK DRAFT</span><button class="btn" id="cpu-draft" style="margin-left:8px;background:#eab308;color:#111">CPU Draft</button>':''))+
 '<div class="draft-shell"><aside class="panel"><h3>'+(function(){const mine=(()=>{try{return (JSON.parse(localStorage.getItem("dualgrid-my-seats")||"{}")[leagueCode()]||null)}catch(e){return null}})(); const t=mine&&mine.pod===pod?draft.teams.find(x=>Number(x.id)===Number(mine.teamId)):null; return (t&&t.name?t.name+" War Room":(auction?"AUCTION":"WAR ROOM")+" · "+podName(pod));})()+'</h3><div class="clock-box"><div style="font-size:13px;color:#69be28;margin-bottom:4px">'+seatStatus+'</div><div class="who">'+(done?"Complete":onClock.name)+'</div><div class="meta">'+(done?"Board locked":(auction?(draft.nomination?"High bid $"+draft.nomination.bid:"Nominate"):"Pick "+info.label))+'</div><div class="timer">'+fmtTime(auction&&draft.nomination?draft.nomination.seconds:clockLeft(draft))+'</div>'+(onClock&&onClock.ownerName?'<div style="font-size:12px;color:var(--mute);margin-top:4px">Owner: '+onClock.ownerName+'</div>':'')+'</div><div class="you-pick" style="font-size:20px;font-weight:900;color:#69be28;margin:8px 0 12px;text-align:center">'+(()=>{
   let myId = acting;
   if (myId === undefined || myId === null || myId === 0 && !mine) {
@@ -1617,6 +1645,7 @@ root.querySelectorAll(".pick-btn").forEach(btn=>btn.onclick=()=>{makePick(load()
 const actor=document.getElementById("actor");if(actor)actor.onchange=()=>{const st=load();st.actingAs[pod]=Number(actor.value);save(st);paint();};
 const bidBtn=document.getElementById("bid");if(bidBtn)bidBtn.onclick=()=>{bid(load(),pod,acting);paint();};
 const resetBtn=document.getElementById("reset"); if(resetBtn) resetBtn.onclick=()=>{ if(window._isMock){ if(confirm("Reset this mock draft?")){ const key="dualgrid-mock-"+(leagueCode()||"local")+"-"+pod; localStorage.removeItem(key); window._isMock=true; paint(); } return; } if(!unlocked(load())){ alert("Commissioner code required to reset."); location.hash="#home"; return;} if(confirm("Reset this pod for everyone?")){resetPod(load(),pod);paint();}};
+const cpuBtn=document.getElementById("cpu-draft"); if(cpuBtn) cpuBtn.onclick=()=>startCpuDraft(pod);
 const fc=document.getElementById("force-clear"); if(fc){ fc.onclick=()=>{ if(!unlocked(load())){ alert("Commissioner only."); return;} if(confirm("Force clear ALL divisions?")){ const st=load(); ["east","west","north","south"].forEach(p=>{ const d=ensureDraft(st,p); d.teams.forEach(t=>{ t.picks=[]; t.lineup={starters:[],bench:[],ir:[]}; }); d.pickIndex=0; d.log=[]; d.started=false; try{ dataRef("drafts/"+p).set(d); }catch(e){} }); save(st); paint(); alert("All divisions cleared."); }}; }
 
 const claim=document.getElementById("claim"); if(claim) claim.onclick=()=>{ const st=load(); const id=Number((document.getElementById("actor")||{}).value||0); claimSeat(st,pod,id,(document.getElementById("seat-name")||{}).value||""); paint(); };
