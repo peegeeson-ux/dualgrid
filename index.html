@@ -870,19 +870,32 @@ function applyWeekResults(s){
   const games = schedule[week-1]||[];
   const weekKey = "w"+week;
   if(!s.records.weekScores[weekKey]) s.records.weekScores[weekKey] = {};
+  // Pull matchup totals from localStorage as fallback
+  let matchTotals = {};
+  try{ matchTotals = JSON.parse(localStorage.getItem("dualgrid-match-totals")||"{}"); }catch(e){}
   games.forEach(g=>{
     if(!g.home||!g.away||g.home.name==="BYE"||g.away.name==="BYE") return;
     const homeKey = g.pod+"-"+g.home.id;
     const awayKey = g.pod+"-"+g.away.id;
-    // Prefer live points if they exist for this week, otherwise keep any already stored value
-    const homePts = (g.home.lineup&&g.home.lineup.starters||[]).reduce((sum,p)=>{
+    // Prefer live points if they exist for this week
+    let homePts = (g.home.lineup&&g.home.lineup.starters||[]).reduce((sum,p)=>{
       const live = (livePts[p.id]!=null && livePts[p.id+"_wk"]==String(week)) ? Number(livePts[p.id]) : null;
       return sum + (live!=null ? live : 0);
     },0);
-    const awayPts = (g.away.lineup&&g.away.lineup.starters||[]).reduce((sum,p)=>{
+    let awayPts = (g.away.lineup&&g.away.lineup.starters||[]).reduce((sum,p)=>{
       const live = (livePts[p.id]!=null && livePts[p.id+"_wk"]==String(week)) ? Number(livePts[p.id]) : null;
       return sum + (live!=null ? live : 0);
     },0);
+    // Fallback to matchup totals if no live points
+    if(homePts === 0 && awayPts === 0 && matchTotals){
+      const mk = g.home.name + "|" + g.away.name;
+      const t = matchTotals[mk];
+      if(t){ homePts = t.home || 0; awayPts = t.away || 0; }
+      else {
+        if(matchTotals[g.home.name] != null) homePts = Number(matchTotals[g.home.name]) || 0;
+        if(matchTotals[g.away.name] != null) awayPts = Number(matchTotals[g.away.name]) || 0;
+      }
+    }
     const existing = s.records.weekScores[weekKey][homeKey];
     // Only overwrite if we have real live numbers or nothing is stored yet
     if(homePts > 0 || awayPts > 0 || !existing){
