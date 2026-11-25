@@ -967,6 +967,7 @@ function resetStandings(){
   renderStandings();
 }
 window.resetStandings = resetStandings;
+function standingsCountWeek(){
   // Standings count at 5am Tuesday
   const now = new Date();
   const et = new Date(now.toLocaleString("en-US", {timeZone:"America/New_York"}));
