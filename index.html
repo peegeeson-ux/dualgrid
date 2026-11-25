@@ -2696,7 +2696,7 @@ function renderTrade(){
   if(!s.records) s.records = {};
   const trades = s.records.trades || [];
   const mode = s.records.tradeMode || "commish";
-  const deadline = s.records.tradeDeadline || "Thursday 8:00 PM";
+  const deadline = s.records.tradeDeadline ? new Date(s.records.tradeDeadline).toLocaleString() : "Not set";
   const isCommish = !!s.owner;
   const seat = (typeof currentSeat === "function" ? currentSeat() : null) || {};
   const pod = seat.pod || "east";
@@ -2712,19 +2712,18 @@ function renderTrade(){
   }).join("") || "<p class=\"lede\">No pending trades.</p>";
 
   let form = "";
-  if(myTeam){
+  if(myTeam || isCommish){
     form = '<div class="card"><h3>Propose a trade</h3>'+
       '<label>Send to</label><select id="trade-to" class="search">'+otherTeams.map(t=>'<option value="'+t.name+'">'+t.name+'</option>').join("")+'</select>'+
-      '<label>Your players</label><select id="trade-mine" class="search" multiple size="4">'+myPlayers.map(p=>'<option value="'+p.name+'">'+p.name+' ('+p.pos+')</option>').join("")+'</select>'+
-      '<label>Their players (optional note)</label><input id="trade-theirs" class="search" placeholder="e.g. their WR2 or 2027 1st">'+
-      '<button class="btn btn-lime" id="propose-trade" style="margin-top:8px">Propose</button></div>';
+      '<label>Your players (hold Ctrl/Cmd to select more)</label><select id="trade-mine" class="search" multiple size="4">'+myPlayers.map(p=>'<option value="'+p.name+'">'+p.name+' ('+p.pos+')</option>').join("")+'</select>'+
+      '<label>What you want back</label><input id="trade-theirs" class="search" placeholder="e.g. their WR2 or 2027 1st">'+
+      '<button class="btn btn-lime" id="propose-trade" style="margin-top:8px">Propose trade</button></div>';
   }
 
   let settings = "";
   if(isCommish){
-    const day = s.records.tradeDay || "Thursday";
-    const time = s.records.tradeTime || "20:00";
-    settings = '<div class="card"><h3>Trade settings</h3><label>How trades finalize</label><select id="trade-mode" class="search"><option value="commish"'+(mode==="commish"?" selected":"")+'>Commissioner only</option><option value="vote"'+(mode==="vote"?" selected":"")+'>League vote</option><option value="vote-commish"'+(mode==="vote-commish"?" selected":"")+'>League vote + commissioner</option></select><label>Deadline day</label><select id="trade-day" class="search"><option'+(day==="Sunday"?" selected":"")+'>Sunday</option><option'+(day==="Monday"?" selected":"")+'>Monday</option><option'+(day==="Tuesday"?" selected":"")+'>Tuesday</option><option'+(day==="Wednesday"?" selected":"")+'>Wednesday</option><option'+(day==="Thursday"?" selected":"")+'>Thursday</option><option'+(day==="Friday"?" selected":"")+'>Friday</option><option'+(day==="Saturday"?" selected":"")+'>Saturday</option></select><label>Deadline time</label><input id="trade-time" class="search" type="time" value="'+time+'"><button class="btn" id="save-trade-settings" style="margin-top:8px">Save settings</button></div>';
+    const deadlineVal = s.records.tradeDeadline ? s.records.tradeDeadline.slice(0,16) : "";
+    settings = '<div class="card"><h3>Trade settings</h3><label>How trades finalize</label><select id="trade-mode" class="search"><option value="commish"'+(mode==="commish"?" selected":"")+'>Commissioner only</option><option value="vote"'+(mode==="vote"?" selected":"")+'>League vote</option><option value="vote-commish"'+(mode==="vote-commish"?" selected":"")+'>League vote + commissioner</option></select><label>Trade deadline (date & time)</label><input id="trade-deadline" class="search" type="datetime-local" value="'+deadlineVal+'"><button class="btn" id="save-trade-settings" style="margin-top:8px">Save settings</button></div>';
   }
 
   document.getElementById("app").innerHTML = header('<a class="btn" href="#home">Home</a>') +
@@ -2749,9 +2748,8 @@ function renderTrade(){
   if(saveBtn) saveBtn.onclick = ()=>{
     const st = load();
     st.records.tradeMode = document.getElementById("trade-mode").value;
-    st.records.tradeDay = document.getElementById("trade-day").value;
-    st.records.tradeTime = document.getElementById("trade-time").value;
-    st.records.tradeDeadline = st.records.tradeDay + " " + st.records.tradeTime;
+    const dl = document.getElementById("trade-deadline").value;
+    if(dl) st.records.tradeDeadline = new Date(dl).toISOString();
     save(st);
     try{ dataRef("config/tradeSettings").set({ mode: st.records.tradeMode, deadline: st.records.tradeDeadline }); }catch(e){}
     renderTrade();
