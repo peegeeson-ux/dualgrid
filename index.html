@@ -1355,6 +1355,23 @@ function startCpuDraft(pod){
   }, 900);
 }
 function makePick(state,pod,playerId){
+  if(window._isMock){
+    const d=ensureDraft(state,pod);
+    const info=snakeSlot(d.pickIndex,d);
+    const player=PLAYERS.find(p=>p.id===playerId);
+    if(!player)return;
+    const already=d.teams.some(t=>Array.isArray(t.picks)&&t.picks.some(p=>Number(p.id)===Number(playerId)));
+    if(already){alert(player.name+" is already drafted.");return;}
+    const team=d.teams[info.teamId];
+    team.picks.push(player);
+    d.log.unshift({label:info.label,player:player.name,pos:player.pos,team:team.name});
+    d.pickIndex++;
+    d.started=true;
+    d.clockEnds=Date.now()+(d.pickSeconds||PICK_SECONDS)*1000;
+    d.secondsLeft=d.pickSeconds||PICK_SECONDS;
+    saveMock(pod, d);
+    return;
+  }
   const d=ensureDraft(state,pod);
   const info=snakeSlot(d.pickIndex,d);
   const player=PLAYERS.find(p=>p.id===playerId);
@@ -1362,8 +1379,7 @@ function makePick(state,pod,playerId){
   if(d.format==="auction"){
     if(d.nomination)return;
     d.nomination={playerId,teamId:d.nomIndex%10,bid:1,seconds:BID_SECONDS};
-    if(window._isMock) saveMock(pod, d);
-    else { save(state); publish(pod); }
+    save(state); publish(pod);
     return;
   }
   const already=d.teams.some(t=>Array.isArray(t.picks)&&t.picks.some(p=>Number(p.id)===Number(playerId)));
@@ -1376,8 +1392,7 @@ function makePick(state,pod,playerId){
   d.clockEnds=Date.now()+(d.pickSeconds||PICK_SECONDS)*1000;
   d.secondsLeft=d.pickSeconds||PICK_SECONDS;
   dropQueued(state,pod,playerId);
-  if(window._isMock) saveMock(pod, d);
-  else { save(state); publish(pod); }
+  save(state); publish(pod);
 }
 function bid(state,pod,teamId){const d=ensureDraft(state,pod);if(!d.nomination)return;const t=d.teams[teamId];const next=d.nomination.bid+1;if(t.budget<next)return;d.nomination.bid=next;d.nomination.teamId=teamId;d.nomination.seconds=BID_SECONDS;save(state);publish(pod);}
 function settleAuction(state,pod){const d=ensureDraft(state,pod);const n=d.nomination;if(!n)return;const player=PLAYERS.find(p=>p.id===n.playerId);const team=d.teams[n.teamId];team.picks.push(player);team.budget-=n.bid;d.log.unshift({label:"$"+n.bid,player:player.name,pos:player.pos,team:team.name});d.nomination=null;d.nomIndex++;d.pickIndex++;d.secondsLeft=BID_SECONDS;save(state);publish(pod);}
@@ -1675,7 +1690,7 @@ const actor=document.getElementById("actor");if(actor)actor.onchange=()=>{const 
 const bidBtn=document.getElementById("bid");if(bidBtn)bidBtn.onclick=()=>{bid(load(),pod,acting);paint();};
 const resetBtn=document.getElementById("reset"); if(resetBtn) resetBtn.onclick=()=>{ if(window._isMock){ if(confirm("Reset this mock draft?")){ const key="dualgrid-mock-"+(leagueCode()||"local")+"-"+pod; localStorage.removeItem(key); window._isMock=true; paint(); } return; } if(!unlocked(load())){ alert("Commissioner code required to reset."); location.hash="#home"; return;} if(confirm("Reset this pod for everyone?")){resetPod(load(),pod);paint();}};
 const cpuBtn=document.getElementById("cpu-draft"); if(cpuBtn) cpuBtn.onclick=()=>startCpuDraft(pod);
-const fc=document.getElementById("force-clear"); if(fc){ fc.onclick=()=>{ if(!unlocked(load())){ alert("Commissioner only."); return;} if(confirm("Force clear ALL divisions?")){ const st=load(); ["east","west","north","south"].forEach(p=>{ const d=ensureDraft(st,p); d.teams.forEach(t=>{ t.picks=[]; t.lineup={starters:[],bench:[],ir:[]}; }); d.pickIndex=0; d.log=[]; d.started=false; try{ dataRef("drafts/"+p).set(d); }catch(e){} }); save(st); paint(); alert("All divisions cleared."); }}; }
+const fc=document.getElementById("force-clear"); if(fc){ fc.onclick=()=>{ if(window._isMock){ alert("Force clear is disabled in mock drafts."); return; } if(!unlocked(load())){ alert("Commissioner only."); return;} if(confirm("Force clear ALL divisions?")){ const st=load(); ["east","west","north","south"].forEach(p=>{ const d=ensureDraft(st,p); d.teams.forEach(t=>{ t.picks=[]; t.lineup={starters:[],bench:[],ir:[]}; }); d.pickIndex=0; d.log=[]; d.started=false; try{ dataRef("drafts/"+p).set(d); }catch(e){} }); save(st); paint(); alert("All divisions cleared."); }}; }
 
 const claim=document.getElementById("claim"); if(claim) claim.onclick=()=>{ const st=load(); const id=Number((document.getElementById("actor")||{}).value||0); claimSeat(st,pod,id,(document.getElementById("seat-name")||{}).value||""); paint(); };
 const clearer=document.getElementById("clear-seat"); if(clearer) clearer.onclick=()=>{ if(!confirm("Clear this seat for everyone?"))return; const st=load(); const id=Number((document.getElementById("actor")||{}).value||0); claimSeat(st,pod,id,"",true); paint(); };
@@ -2883,7 +2898,7 @@ function route(){const page=(location.hash.replace("#","").split("/")[0]||"lobby
   setTimeout(loadNflTicker, 80);
   setTimeout(loadWeekTicker, 400); // extra refresh after league switch
 }
-["east","west","north","south"].forEach(pod=>{dataRef("drafts/"+pod).on("value",snap=>{const remote=snap.val();if(!remote||!remote.teams)return;applyingRemote=true;const s=load();s.drafts[pod]=normalizeDraft(remote);save(s);applyingRemote=false;const page=(location.hash.replace("#","").split("/")[0]||"");const onPod=(location.hash.split("/")[1]||"")===(pod);if((page==="draft"||page==="board"||page==="dash")&&onPod&&window._paint){ clearTimeout(window._paintDebounce); window._paintDebounce=setTimeout(()=>{ if(Date.now()-(window._lastPaint||0)>2000){ window._lastPaint=Date.now(); window._paint&&window._paint(); } }, 1500); }});});
+["east","west","north","south"].forEach(pod=>{dataRef("drafts/"+pod).on("value",snap=>{const remote=snap.val();if(!remote||!remote.teams)return; if(window._isMock) return; applyingRemote=true;const s=load();s.drafts[pod]=normalizeDraft(remote);save(s);applyingRemote=false;const page=(location.hash.replace("#","").split("/")[0]||"");const onPod=(location.hash.split("/")[1]||"")===(pod);if((page==="draft"||page==="board"||page==="dash")&&onPod&&window._paint){ clearTimeout(window._paintDebounce); window._paintDebounce=setTimeout(()=>{ if(Date.now()-(window._lastPaint||0)>2000){ window._lastPaint=Date.now(); window._paint&&window._paint(); } }, 1500); }});});
 dataRef("records").on("value",snap=>{const remote=snap.val();if(!remote)return;applyingRemote=true;const s=load();s.records=remote;save(s);applyingRemote=false;if((location.hash||"").startsWith("#scores"))renderScores(); if((location.hash||"").startsWith("#bracket"))renderBracket();});
 if(!window._countdownWatch){window._countdownWatch=setInterval(()=>{
   const h=location.hash||"";
