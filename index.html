@@ -650,6 +650,8 @@ function updateRosterTotal(){
 function updateMatchupTotals(){
   document.querySelectorAll("details.card").forEach(card => {
     let home = 0, away = 0;
+    let homeProj = 0, awayProj = 0;
+    // Live points
     card.querySelectorAll(".live-pts").forEach(el => {
       const id = el.getAttribute("data-id");
       if(!id) return;
@@ -660,18 +662,25 @@ function updateMatchupTotals(){
       const isHome = row.children[0] && row.children[0].contains(el);
       if(isHome) home += v; else away += v;
     });
+    // Projections from .proj-sum
+    const projHome = card.querySelector('.proj-sum[data-side="home"]');
+    const projAway = card.querySelector('.proj-sum[data-side="away"]');
+    if(projHome) homeProj = Number(projHome.textContent) || 0;
+    if(projAway) awayProj = Number(projAway.textContent) || 0;
+    // Use live if available, otherwise projection
+    const useHome = home > 0 ? home : homeProj;
+    const useAway = away > 0 ? away : awayProj;
     card.querySelectorAll('.live-sum[data-side="home"]').forEach(el => el.textContent = home > 0 ? home.toFixed(1) : "—");
     card.querySelectorAll('.live-sum[data-side="away"]').forEach(el => el.textContent = away > 0 ? away.toFixed(1) : "—");
     // Store for scoreboard/ticker by team names
     const key = card.getAttribute("data-key");
-    if(key && (home > 0 || away > 0)){
+    if(key && (useHome > 0 || useAway > 0)){
       window._matchTotals = window._matchTotals || {};
-      window._matchTotals[key] = {home:home, away:away};
+      window._matchTotals[key] = {home:useHome, away:useAway};
       const parts = key.split("|");
-      if(parts[0]) window._matchTotals[parts[0]] = home;
-      if(parts[1]) window._matchTotals[parts[1]] = away;
+      if(parts[0]) window._matchTotals[parts[0]] = useHome;
+      if(parts[1]) window._matchTotals[parts[1]] = useAway;
       try{ localStorage.setItem("dualgrid-match-totals", JSON.stringify(window._matchTotals)); }catch(e){}
-      try{ dataRef("config/matchTotals").set(window._matchTotals); }catch(e){}
       // Save week scores for schedule
       try{
         const s = load();
@@ -680,8 +689,8 @@ function updateMatchupTotals(){
         if(!s.records.weekScores["w"+week]) s.records.weekScores["w"+week] = {};
         const homeKey = card.getAttribute("data-pod") + "-" + card.getAttribute("data-home");
         const awayKey = card.getAttribute("data-pod") + "-" + card.getAttribute("data-away");
-        s.records.weekScores["w"+week][homeKey] = {pf:home, pa:away, opp:card.getAttribute("data-away")};
-        s.records.weekScores["w"+week][awayKey] = {pf:away, pa:home, opp:card.getAttribute("data-home")};
+        s.records.weekScores["w"+week][homeKey] = {pf:useHome, pa:useAway, opp:card.getAttribute("data-away")};
+        s.records.weekScores["w"+week][awayKey] = {pf:useAway, pa:useHome, opp:card.getAttribute("data-home")};
         save(s);
       }catch(e){}
     }
