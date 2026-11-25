@@ -1338,7 +1338,7 @@ function renderHome(){
 const root=document.getElementById("app");const s=syncOwner(load());const on=unlocked(s);const pods=podsOf(s);
 if(!s.owner){
 const mine=(()=>{try{return (JSON.parse(localStorage.getItem('dualgrid-my-seats')||'{}')[leagueCode()]||JSON.parse(localStorage.getItem('dualgrid-my-seat')||'null'))}catch(e){return null}})();
-const rooms=pods.map(p=>'<div class="team-row"><span class="pod-chip '+p+'">'+podName(p)+'</span><span><a class="btn" href="#draft/'+p+'">War Room</a> <a class="btn" href="#board/'+p+'">Board</a> <a class="btn" href="#dash/'+p+'">Dash</a> <a class="btn" href="#mock/'+p+'">Mock</a></span></div>').join("");
+const rooms=pods.map(p=>'<div class="team-row"><span class="pod-chip '+p+'">'+podName(p)+'</span><span><a class="btn" href="#draft/'+p+'">War Room</a> <a class="btn" href="#board/'+p+'">Board</a> <a class="btn" href="#dash/'+p+'">Dash</a> <a class="btn" href="#mock/'+p+'" style="background:#eab308;color:#111">Mock</a></span></div>').join("");
 root.innerHTML=header('<a class="btn" href="#lobby">League</a><a class="btn" href="#scores">Standings</a>')+
 '<div class="page" style="background:#0b0b0b;color:#fff;border:3px solid #c6f25a;border-radius:12px;padding:16px">'+
 '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">'+
@@ -1419,6 +1419,7 @@ root.innerHTML=header('<a class="btn btn-lime" href="#home">Home</a><a class="bt
 '<a class="btn" href="#waiver" style="text-align:center">Waiver</a>'+
 '<a class="btn" href="#talk" style="text-align:center">Talk</a>'+
 '<a class="btn" href="#roster" style="text-align:center">Roster</a>'+
+'<a class="btn" href="#mock/east" style="text-align:center;background:#eab308;color:#111">Mock Draft</a>'+
 '</div></div>'+
 
 '</div></div>'+
@@ -1427,7 +1428,7 @@ root.innerHTML=header('<a class="btn btn-lime" href="#home">Home</a><a class="bt
 '<div class="card" style="border-top:3px solid var(--west);padding:12px">'+
 '<h2 style="margin:0 0 12px;color:#c6f25a;font-size:16px">Rooms / Circuit <svg viewBox="0 0 60 40" width="22" height="14" style="vertical-align:middle;margin:0 4px;border-radius:2px"><rect width="60" height="40" fill="#bf0a30"/><rect y="3" width="60" height="3" fill="#fff"/><rect y="9" width="60" height="3" fill="#fff"/><rect y="15" width="60" height="3" fill="#fff"/><rect y="21" width="60" height="3" fill="#fff"/><rect y="27" width="60" height="3" fill="#fff"/><rect y="33" width="60" height="3" fill="#fff"/><rect width="24" height="21" fill="#002868"/></svg></h2>'+
 '<details open><summary style="font-weight:700;cursor:pointer;margin-bottom:8px">Circuit</summary><button class="btn '+(s.circuit==="dual"?"btn-lime":"")+'" data-circuit="dual" style="width:100%;margin-bottom:4px">Dual</button><button class="btn '+(s.circuit==="quad"?"btn-lime":"")+'" data-circuit="quad" style="width:100%">Quad</button></details>'+
-'<div style="margin-top:12px"><h3 style="margin:0 0 6px;font-size:14px">Rooms</h3>'+pods.map(p=>'<a class="btn" href="#draft/'+p+'" style="width:100%;display:block;text-align:center;margin-bottom:4px">'+podName(p)+' Room</a>').join("")+'</div>'+
+'<div style="margin-top:12px"><h3 style="margin:0 0 6px;font-size:14px">Rooms</h3>'+pods.map(p=>'<a class="btn" href="#draft/'+p+'" style="width:100%;display:block;text-align:center;margin-bottom:4px">'+podName(p)+' Room</a><a class="btn" href="#mock/'+p+'" style="width:100%;display:block;text-align:center;margin-bottom:4px;background:#eab308;color:#111">'+podName(p)+' Mock</a>').join("")+'</div>'+
 '</div>'+
 
 '</div></div>';
