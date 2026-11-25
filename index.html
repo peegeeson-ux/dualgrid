@@ -1034,7 +1034,6 @@ function dropPlayer(id){
     });
   });
   if(!found){ alert("Player not on a roster."); return; }
-  const player = PLAYERS.find(p => Number(p.id) === Number(id)) || {id:Number(id), name:"Player"};
   const rec = s.records || (s.records = {});
   rec.claims = rec.claims || [];
   const closed = !!(rec.waiverDeadline && Date.now() > new Date(rec.waiverDeadline).getTime());
