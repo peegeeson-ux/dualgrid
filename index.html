@@ -2862,8 +2862,10 @@ function approveTrade(i){
   }
   if(!fromTeam || !toTeam){ alert("Could not find both teams."); return; }
   const moveOne = (from, to, nm) => {
+    const clean = s => (s||"").toLowerCase().replace(/[^a-z0-9 ]/g,"").trim();
+    const target = clean(nm);
     let found = false;
-    let idx = (from.picks||[]).findIndex(p => (p.name||"").toLowerCase() === nm);
+    let idx = (from.picks||[]).findIndex(p => clean(p.name) === target || clean(p.name).includes(target) || target.includes(clean(p.name)));
     if(idx >= 0){
       const pl = from.picks.splice(idx, 1)[0];
       to.picks = to.picks || [];
@@ -2873,7 +2875,7 @@ function approveTrade(i){
     if(from.lineup){
       ["starters","bench","ir"].forEach(slot => {
         const arr = from.lineup[slot] || [];
-        const li = arr.findIndex(p => (p.name||"").toLowerCase() === nm);
+        const li = arr.findIndex(p => clean(p.name) === target || clean(p.name).includes(target) || target.includes(clean(p.name)));
         if(li >= 0){
           const pl = arr.splice(li, 1)[0];
           to.lineup = to.lineup || {starters:[],bench:[],ir:[]};
@@ -2899,7 +2901,7 @@ function approveTrade(i){
   trade.status = "approved";
   save(st);
   try{ dataRef("config/trades").set(st.records.trades); }catch(e){}
-  alert("Moved: you "+movedYou.length+" · them "+movedThem.length);
+  alert("Moved you: "+movedYou.join(", ")+"\nMoved them: "+(movedThem.join(", ")||"none")+"\nLooking for them: "+themNames.join(", "));
   renderTrade();
   if(location.hash.startsWith("#roster")) setTimeout(()=>renderRoster(), 300);
 }
