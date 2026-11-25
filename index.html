@@ -2741,7 +2741,7 @@ function renderTrade(prefillTo){
   if(myTeam){
     form = '<div class="card"><h3>Propose a trade</h3>'+
       '<label>Send to</label><select id="trade-to" class="search">'+otherTeams.map(t=>'<option value="'+t.name+'"'+(prefillTo===t.name?" selected":"")+'>'+t.name+'</option>').join("")+'</select>'+
-      '<label>Your players</label><select id="trade-mine" class="search" multiple size="5">'+(myPlayers.length ? myPlayers.map(p=>'<option value="'+p.name+'">'+p.name+' ('+(p.pos||"?")+')</option>').join("") : '<option disabled>No players drafted yet</option>')+'</select>'+
+      '<label>Your players (check the ones to send)</label><div id="trade-mine-list" style="max-height:180px;overflow:auto;margin:6px 0">'+(myPlayers.length ? myPlayers.map(p=>'<label style="display:block;padding:4px 0"><input type="checkbox" class="trade-mine-chk" value="'+p.name+'"> '+p.name+' ('+(p.pos||"?")+')</label>').join("") : '<p>No players drafted yet</p>')+'</div>'+
       '<label>What you want back</label><input id="trade-theirs" class="search" placeholder="their player or pick">'+
       '<button class="btn btn-lime" id="propose-trade" style="margin-top:8px">Propose trade</button></div>';
   } else {
@@ -2760,7 +2760,7 @@ function renderTrade(prefillTo){
   const prop = document.getElementById("propose-trade");
   if(prop) prop.onclick = ()=>{
     const to = document.getElementById("trade-to").value;
-    const mineSel = Array.from(document.getElementById("trade-mine").selectedOptions).map(o=>o.value);
+    const mineSel = Array.from(document.querySelectorAll(".trade-mine-chk:checked")).map(el=>el.value);
     const theirs = (document.getElementById("trade-theirs").value||"").trim();
     if(!to || !mineSel.length){ alert("Pick a team and at least one of your players."); return; }
     const picks = "You: " + mineSel.join(", ") + (theirs ? " · Them: " + theirs : "");
