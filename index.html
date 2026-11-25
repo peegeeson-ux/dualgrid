@@ -2847,65 +2847,61 @@ function approveTrade(i){
   const trade = st.records.trades[i];
   if(trade.status === "approved") return;
   const picks = trade.picks || "";
-  const youPart = (picks.split("·")[0] || "").replace(/^You:\s*/,"").trim();
-  const themPart = (picks.split("·")[1] || "").replace(/^Them:\s*/,"").trim();
-  const youNames = youPart.split(",").map(s=>s.trim().toLowerCase()).filter(Boolean);
-  const themNames = themPart.split(",").map(s=>s.trim().toLowerCase()).filter(Boolean);
+  const parts = picks.split("·");
+  const youNames = ((parts[0]||"").replace(/^You:\s*/,"")).split(",").map(s=>s.trim().toLowerCase()).filter(Boolean);
+  const themNames = ((parts[1]||"").replace(/^Them:\s*/,"")).split(",").map(s=>s.trim().toLowerCase()).filter(Boolean);
   const pods = ["east","west","north","south"];
   let fromTeam = null, toTeam = null, fromPod = null, toPod = null;
   for(const pd of pods){
     const d = ensureDraft(st, pd);
     for(const t of (d.teams||[])){
-      if(!fromTeam && (t.name||"").toLowerCase() === (trade.from||"").toLowerCase()){ fromTeam = t; fromPod = pd; }
-      if(!toTeam && (t.name||"").toLowerCase() === (trade.to||"").toLowerCase()){ toTeam = t; toPod = pd; }
+      const tn = (t.name||"").toLowerCase();
+      if(!fromTeam && tn === (trade.from||"").toLowerCase()){ fromTeam = t; fromPod = pd; }
+      if(!toTeam && tn === (trade.to||"").toLowerCase()){ toTeam = t; toPod = pd; }
     }
   }
   if(!fromTeam || !toTeam){ alert("Could not find both teams."); return; }
-  const rs = window.rosterSettings || {};
-  const maxSize = Math.max(15, (Number(rs.qb)||1)+(Number(rs.rb)||2)+(Number(rs.wr)||2)+(Number(rs.te)||1)+(Number(rs.k)||1)+(Number(rs.flex)||1)+(Number(rs.bench)||6)+(Number(rs.ir)||1)+(Number(rs.teamDef)||0)+(Number(rs.defPlayers)||0));
-  const count = t => (t.picks||[]).length;
-  if(count(fromTeam) - youNames.length + themNames.length > maxSize){ alert("That would put a team over the roster limit ("+maxSize+")."); return; }
-  if(count(toTeam) - themNames.length + youNames.length > maxSize){ alert("That would put a team over the roster limit ("+maxSize+")."); return; }
-  const move = (from, to, names) => {
-    names.forEach(nm => {
-      // from picks
-      let idx = (from.picks||[]).findIndex(p => (p.name||"").toLowerCase() === nm);
-      if(idx >= 0){
-        const pl = from.picks.splice(idx, 1)[0];
-        to.picks = to.picks || [];
-        to.picks.push(pl);
-      }
-      // from lineup
-      if(from.lineup){
-        ["starters","bench","ir"].forEach(slot => {
-          const arr = from.lineup[slot] || [];
-          const li = arr.findIndex(p => (p.name||"").toLowerCase() === nm);
-          if(li >= 0){
-            const pl = arr.splice(li, 1)[0];
-            to.lineup = to.lineup || {starters:[],bench:[],ir:[]};
-            to.lineup.bench = to.lineup.bench || [];
-            to.lineup.bench.push(pl);
-          }
-        });
-      }
-    });
+  const moveOne = (from, to, nm) => {
+    let found = false;
+    let idx = (from.picks||[]).findIndex(p => (p.name||"").toLowerCase() === nm);
+    if(idx >= 0){
+      const pl = from.picks.splice(idx, 1)[0];
+      to.picks = to.picks || [];
+      to.picks.push(pl);
+      found = true;
+    }
+    if(from.lineup){
+      ["starters","bench","ir"].forEach(slot => {
+        const arr = from.lineup[slot] || [];
+        const li = arr.findIndex(p => (p.name||"").toLowerCase() === nm);
+        if(li >= 0){
+          const pl = arr.splice(li, 1)[0];
+          to.lineup = to.lineup || {starters:[],bench:[],ir:[]};
+          to.lineup.bench = to.lineup.bench || [];
+          to.lineup.bench.push(pl);
+          found = true;
+        }
+      });
+    }
+    return found;
   };
-  move(fromTeam, toTeam, youNames);
-  move(toTeam, fromTeam, themNames);
+  const movedYou = youNames.filter(nm => moveOne(fromTeam, toTeam, nm));
+  const movedThem = themNames.filter(nm => moveOne(toTeam, fromTeam, nm));
   save(st);
-  try{ 
-    if(fromPod) publish(fromPod); 
+  try{
+    if(fromPod) publish(fromPod);
     if(toPod) publish(toPod);
-    // force write picks
     if(fromPod) dataRef("drafts/"+fromPod+"/teams/"+fromTeam.id+"/picks").set(fromTeam.picks||[]);
     if(toPod) dataRef("drafts/"+toPod+"/teams/"+toTeam.id+"/picks").set(toTeam.picks||[]);
+    if(fromTeam.lineup && fromPod) dataRef("drafts/"+fromPod+"/teams/"+fromTeam.id+"/lineup").set(fromTeam.lineup);
+    if(toTeam.lineup && toPod) dataRef("drafts/"+toPod+"/teams/"+toTeam.id+"/lineup").set(toTeam.lineup);
   }catch(e){}
   trade.status = "approved";
   save(st);
   try{ dataRef("config/trades").set(st.records.trades); }catch(e){}
-  alert("Trade done. Check roster.");
+  alert("Moved: you "+movedYou.length+" · them "+movedThem.length);
   renderTrade();
-  if(location.hash.startsWith("#roster")) setTimeout(()=>renderRoster(), 200);
+  if(location.hash.startsWith("#roster")) setTimeout(()=>renderRoster(), 300);
 }
 function rejectTrade(i){
   const st = load();
