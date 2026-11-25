@@ -2378,14 +2378,16 @@ function addWaiver(id){
   const maxRoster = (Number(rs.qb)||0)+(Number(rs.rb)||0)+(Number(rs.wr)||0)+(Number(rs.te)||0)+(Number(rs.teamDef)||0)+(Number(rs.defPlayers)||0)+(Number(rs.k)||0)+(Number(rs.flex)||0)+(Number(rs.superflex)||0)+(Number(rs.bench)||0);
   const current = (targetTeam.picks||[]).length;
   if(current >= maxRoster){ alert("Roster is full ("+current+"/"+maxRoster+"). Drop a player first."); return; }
-  if(closed){
-    // Free agent pickup - add directly, no priority change
+  const onClaim = (rec.claims||[]).some(c => Number(c.id)===Number(player.id) && c.pod===pod);
+  const isGold = !closed || onClaim;
+  if(!isGold){
+    // Free agent pickup - add directly
     targetTeam.picks = targetTeam.picks || [];
     if(!targetTeam.picks.some(p => Number(p.id) === Number(player.id))){
       const maxes = {QB: (s.records||{}).maxQB||2, RB:(s.records||{}).maxRB||6, WR:(s.records||{}).maxWR||6, TE:(s.records||{}).maxTE||3};
-    const count = (targetTeam.picks||[]).filter(p=>p.pos===player.pos).length;
-    if(maxes[player.pos] && count >= maxes[player.pos]){ alert("Position limit reached for "+player.pos+"."); return; }
-    targetTeam.picks.push({id:player.id, name:player.name, pos:player.pos});
+      const count = (targetTeam.picks||[]).filter(p=>p.pos===player.pos).length;
+      if(maxes[player.pos] && count >= maxes[player.pos]){ alert("Position limit reached for "+player.pos+"."); return; }
+      targetTeam.picks.push({id:player.id, name:player.name, pos:player.pos});
     }
     targetTeam.lineup = targetTeam.lineup || {starters:[], bench:[], ir:[]};
     targetTeam.lineup.bench = targetTeam.lineup.bench || [];
@@ -2400,6 +2402,7 @@ function addWaiver(id){
     alert(player.name + " picked up by " + targetTeam.name + " (free agent).");
     return;
   }
+  // Waiver claim path
   const isFaab = (rec.waiverType || "priority") === "faab";
   let bid = 0;
   if(isFaab && !closed){
