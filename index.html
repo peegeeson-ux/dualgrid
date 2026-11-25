@@ -2788,7 +2788,9 @@ function renderTrade(prefillTo, prefillPlayer){
     const inReview = reviewHours > 0 && status === "pending" && (Date.now() - proposedAt) < reviewHours * 3600000;
     const canRespond = status === "pending" && !inReview && (isCommish || (myTeam && (t.to === myTeam.name || t.to === seat.name)));
     const canVeto = inReview && (isCommish || (myTeam && (t.from === myTeam.name || t.to === myTeam.name)));
-    return '<div class="card" style="margin:8px 0"><strong>'+ (t.from||"Team") +' → '+ (t.to||"Team") +'</strong><div class="sub">'+ (t.picks||"") +' · '+status+(inReview?" · in review":"")+'</div>'+(canRespond ? '<button class="btn btn-lime" onclick="approveTrade('+i+')">Accept</button> <button class="btn" onclick="rejectTrade('+i+')">Reject</button>' : '')+(canVeto ? '<button class="btn" onclick="vetoTrade('+i+')" style="margin-left:6px">Veto</button>' : '')+'</div>';
+    const needsVote = (mode === "vote" || mode === "vote-commish") && status === "pending" && !inReview;
+    const votes = t.votes || {yes:0, no:0};
+    return '<div class="card" style="margin:8px 0"><strong>'+ (t.from||"Team") +' → '+ (t.to||"Team") +'</strong><div class="sub">'+ (t.picks||"") +' · '+status+(inReview?" · in review":"")+(needsVote?" · votes "+votes.yes+"-"+votes.no:"")+'</div>'+(canRespond ? '<button class="btn btn-lime" onclick="approveTrade('+i+')">Accept</button> <button class="btn" onclick="rejectTrade('+i+')">Reject</button>' : '')+(needsVote && myTeam ? '<button class="btn" onclick="voteTrade('+i+',true)" style="margin-left:6px">Vote Yes</button> <button class="btn" onclick="voteTrade('+i+',false)">Vote No</button>' : '')+(canVeto ? '<button class="btn" onclick="vetoTrade('+i+')" style="margin-left:6px">Veto</button>' : '')+'</div>';
   }).join("") || "<p class=\"lede\">No pending trades.</p>";
 
   let form = "";
@@ -2894,7 +2896,20 @@ function renderTrade(prefillTo, prefillPlayer){
     renderTrade();
   };
 }
-function vetoTrade(i){
+function voteTrade(i, yes){
+  const st = load();
+  if(!st.records || !st.records.trades || !st.records.trades[i]) return;
+  const t = st.records.trades[i];
+  t.votes = t.votes || {yes:0, no:0};
+  if(yes) t.votes.yes++; else t.votes.no++;
+  // Simple majority of claimed teams
+  const total = Object.values(st.drafts||{}).reduce((n,d)=>n+(d.teams||[]).filter(tm=>tm.ownerName).length,0) || 1;
+  if(t.votes.yes > total/2) t.status = "approved";
+  if(t.votes.no > total/2) t.status = "rejected";
+  save(st);
+  try{ dataRef("config/trades").set(st.records.trades); }catch(e){}
+  renderTrade();
+}
   const st = load();
   if(!st.records || !st.records.trades || !st.records.trades[i]) return;
   st.records.trades[i].status = "vetoed";
