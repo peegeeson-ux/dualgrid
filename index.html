@@ -2734,9 +2734,13 @@ function renderTrade(prefillTo, prefillPlayer){
   const myTeam = seat.teamId != null ? (d.teams||[]).find(t => String(t.id) === String(seat.teamId)) : null;
   let myPlayers = [];
   if(myTeam){
-    myPlayers = myTeam.picks || [];
-    if(!myPlayers.length && myTeam.lineup){
-      myPlayers = [].concat(myTeam.lineup.starters||[], myTeam.lineup.bench||[]);
+    const seen = new Set();
+    const add = arr => (arr||[]).forEach(p => { if(p && p.name && !seen.has(p.name)){ seen.add(p.name); myPlayers.push(p); } });
+    add(myTeam.picks);
+    if(myTeam.lineup){
+      add(myTeam.lineup.starters);
+      add(myTeam.lineup.bench);
+      add(myTeam.lineup.ir);
     }
   }
   const otherTeams = (d.teams||[]).filter(t => !myTeam || String(t.id) !== String(myTeam.id));
@@ -2751,7 +2755,7 @@ function renderTrade(prefillTo, prefillPlayer){
   if(myTeam){
     form = '<div class="card"><h3>Propose a trade</h3>'+
       '<label>Send to</label><select id="trade-to" class="search">'+otherTeams.map(t=>'<option value="'+t.name+'"'+(prefillTo===t.name?" selected":"")+'>'+t.name+'</option>').join("")+'</select>'+
-      '<label>Your players (check the ones to send)</label><div id="trade-mine-list" style="max-height:180px;overflow:auto;margin:6px 0">'+(myPlayers.length ? myPlayers.map(p=>'<label style="display:flex;align-items:center;gap:8px;padding:6px 0"><input type="checkbox" class="trade-mine-chk" value="'+p.name+'" style="margin:0"> <span>'+p.name+' ('+(p.pos||"?")+')</span></label>').join("") : '<p>No players drafted yet</p>')+'</div>'+
+      '<label>Your players (check the ones to send) — '+myPlayers.length+' found</label><div id="trade-mine-list" style="max-height:180px;overflow:auto;margin:6px 0">'+(myPlayers.length ? myPlayers.map(p=>'<label style="display:flex;align-items:center;gap:8px;padding:6px 0"><input type="checkbox" class="trade-mine-chk" value="'+p.name+'" style="margin:0"> <span>'+p.name+' ('+(p.pos||"?")+')</span></label>').join("") : '<p>No players on this team yet. Draft some first.</p>')+'</div>'+
       '<label>What you want back</label><input id="trade-theirs" class="search" placeholder="their player or pick" value="'+(prefillPlayer||"")+'">'+
       '<button class="btn btn-lime" id="propose-trade" style="margin-top:8px">Propose trade</button></div>';
   } else {
