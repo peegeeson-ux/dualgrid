@@ -1812,14 +1812,36 @@ podsOf(s).forEach(pod=>{
   if(best&&Number(p.divRecord)) winners.push({label:"Best record · "+podName(pod), who:best.team.name+(best.team.ownerName?" · "+best.team.ownerName:""), amount:Number(p.divRecord)});
 });
 const games=(rec.board&&rec.board.games)||[];
+const weekScores = rec.weekScores || {};
+const weeklyLog = [];
+const weeklyCounts = {};
 podsOf(s).forEach(pod=>{
-  const highs={};
-  games.filter(g=>g.pod===pod).forEach(g=>{[["home",g.hs],["away",g.as]].forEach(([side,pts])=>{const team=g[side]; if(!team)return; highs[team.name]=Math.max(highs[team.name]||0,Number(pts)||0);});});
-  const top=Object.entries(highs).sort((a,b)=>b[1]-a[1])[0];
-  if(top&&Number(p.weeklyHigh)) winners.push({label:"Weekly high · "+podName(pod)+" · this week", who:top[0], amount:Number(p.weeklyHigh)});
+  const teams = ensureDraft(s,pod).teams;
+  const teamName = id => { const t = teams.find(x=>Number(x.id)===Number(id)); return t ? t.name : "Team"; };
+  // Walk every stored week and find the high scorer in this division
+  Object.keys(weekScores).sort().forEach(wk => {
+    const scores = weekScores[wk] || {};
+    let topName = null, topPts = -1;
+    teams.forEach(t => {
+      const key = pod + "-" + t.id;
+      const sc = scores[key];
+      const pts = sc && Number(sc.pf) || 0;
+      if(pts > topPts){ topPts = pts; topName = t.name; }
+    });
+    if(topName && topPts > 0){
+      weeklyLog.push({ week: wk.replace("w",""), pod: podName(pod), team: topName, pts: topPts });
+      const ck = pod + "|" + topName;
+      weeklyCounts[ck] = (weeklyCounts[ck] || 0) + 1;
+    }
+  });
 });
+const weeklyRows = weeklyLog.map(w => '<tr><td>Week '+w.week+' · '+w.pod+'</td><td>'+w.team+'</td><td class="money">$'+Number(p.weeklyHigh||0)+'</td></tr>').join("");
+const countRows = Object.entries(weeklyCounts).map(([k,n]) => {
+  const [pod, team] = k.split("|");
+  return '<tr><td>'+podName(pod)+' · '+n+' week'+(n>1?"s":"")+'</td><td>'+team+'</td><td class="money">$'+(Number(p.weeklyHigh||0)*n)+'</td></tr>';
+}).join("");
 const receipt=winners.map(w=>'<tr><td>'+w.label+'</td><td>'+w.who+'</td><td class="money">$'+w.amount+'</td></tr>').join("")||'<tr><td colspan="3">Enter the week on Standings. The names show up here.</td></tr>';
-document.getElementById("app").innerHTML=header('<a class="btn" href="#home">Circuit</a>')+'<div class="page payout"><div class="eyebrow">LEDGER · NO MONEY HELD</div><h1>Who gets paid what.</h1><p class="lede">Enter buy-ins and splits. Venmo stays between owners.</p><div class="grid-2"><div class="card"><h2>Pot</h2><label>Buy-in per owner</label><input id="buyIn" type="number" value="'+p.buyIn+'"/><p>'+seats+' seats · Gross <span class="money">$'+total.toFixed(0)+'</span></p><label><input id="useCommish" type="checkbox" '+(p.useCommish?"checked":"")+'/> Optional commissioner cut %</label><input id="commishPct" type="number" value="'+p.commishPct+'" '+(p.useCommish?"":"disabled")+'/><p>Cut <span class="money">$'+cut.toFixed(0)+'</span> · Prize pool <span class="money">$'+pool.toFixed(0)+'</span></p></div><div class="card"><h2>Splits (dollars)</h2><p>Weekly high score (x14 weeks)</p><input id="weeklyHigh" type="number" value="'+p.weeklyHigh+'"/><p>Best regular-season record per pod</p><input id="divRecord" type="number" value="'+p.divRecord+'"/><p>Champion / 2nd / 3rd</p><div class="join-row"><input id="first" type="number" value="'+p.first+'"/><input id="second" type="number" value="'+p.second+'"/><input id="third" type="number" value="'+p.third+'"/></div><button class="btn btn-lime" id="savePay" style="margin-top:12px">Save ledger</button></div></div><div class="card" style="margin-top:16px"><h2>Who won it</h2><table><tr><th>Payout</th><th>Team</th><th>Amount</th></tr>'+receipt+'</table></div><div class="card" style="margin-top:16px"><h2>Season receipt</h2><table><tr><th>Item</th><th>How many</th><th>Each</th><th>Total</th></tr><tr><td>Weekly high score</td><td>14</td><td>$'+(Number(p.weeklyHigh)||0)+'</td><td class="money">$'+((Number(p.weeklyHigh)||0)*14).toFixed(0)+'</td></tr><tr><td>Best record / pod</td><td>'+podsOf(s).length+'</td><td>$'+(Number(p.divRecord)||0)+'</td><td class="money">$'+((Number(p.divRecord)||0)*podsOf(s).length).toFixed(0)+'</td></tr><tr><td>Champion</td><td>1</td><td>$'+(Number(p.first)||0)+'</td><td class="money">$'+(Number(p.first)||0)+'</td></tr><tr><td>Second</td><td>1</td><td>$'+(Number(p.second)||0)+'</td><td class="money">$'+(Number(p.second)||0)+'</td></tr><tr><td>Third</td><td>1</td><td>$'+(Number(p.third)||0)+'</td><td class="money">$'+(Number(p.third)||0)+'</td></tr><tr><td>Commissioner cut</td><td>—</td><td>'+(p.useCommish?(p.commishPct||0)+"%":"off")+'</td><td class="money">$'+cut.toFixed(0)+'</td></tr></table><p style="margin-top:12px">Assigned <span class="money">$'+assigned.toFixed(0)+'</span> · Left in pot <span class="money">$'+leftover.toFixed(0)+'</span></p><p>Dualgrid does not collect or send money. This is the receipt.</p></div></div>';
+document.getElementById("app").innerHTML=header('<a class="btn" href="#home">Circuit</a>')+'<div class="page payout"><div class="eyebrow">LEDGER · NO MONEY HELD</div><h1>Who gets paid what.</h1><p class="lede">Enter buy-ins and splits. Venmo stays between owners.</p><div class="grid-2"><div class="card"><h2>Pot</h2><label>Buy-in per owner</label><input id="buyIn" type="number" value="'+p.buyIn+'"/><p>'+seats+' seats · Gross <span class="money">$'+total.toFixed(0)+'</span></p><label><input id="useCommish" type="checkbox" '+(p.useCommish?"checked":"")+'/> Optional commissioner cut %</label><input id="commishPct" type="number" value="'+p.commishPct+'" '+(p.useCommish?"":"disabled")+'/><p>Cut <span class="money">$'+cut.toFixed(0)+'</span> · Prize pool <span class="money">$'+pool.toFixed(0)+'</span></p></div><div class="card"><h2>Splits (dollars)</h2><p>Weekly high score (x14 weeks)</p><input id="weeklyHigh" type="number" value="'+p.weeklyHigh+'"/><p>Best regular-season record per pod</p><input id="divRecord" type="number" value="'+p.divRecord+'"/><p>Champion / 2nd / 3rd</p><div class="join-row"><input id="first" type="number" value="'+p.first+'"/><input id="second" type="number" value="'+p.second+'"/><input id="third" type="number" value="'+p.third+'"/></div><button class="btn btn-lime" id="savePay" style="margin-top:12px">Save ledger</button></div></div><div class="card" style="margin-top:16px"><h2>Who won it</h2><table><tr><th>Payout</th><th>Team</th><th>Amount</th></tr>'+receipt+'</table></div><div class="card" style="margin-top:16px"><h2>Weekly high scorers</h2><table><tr><th>Week · Division</th><th>Team</th><th>Amount</th></tr>'+(weeklyRows||'<tr><td colspan="3">No weekly scores stored yet. Close a week on the scoreboard.</td></tr>')+'</table></div><div class="card" style="margin-top:16px"><h2>Weekly high totals</h2><table><tr><th>Division · Times</th><th>Team</th><th>Total</th></tr>'+(countRows||'<tr><td colspan="3">No weekly highs yet.</td></tr>')+'</table></div><div class="card" style="margin-top:16px"><h2>Season receipt</h2><table><tr><th>Item</th><th>How many</th><th>Each</th><th>Total</th></tr><tr><td>Weekly high score</td><td>14</td><td>$'+(Number(p.weeklyHigh)||0)+'</td><td class="money">$'+((Number(p.weeklyHigh)||0)*14).toFixed(0)+'</td></tr><tr><td>Best record / pod</td><td>'+podsOf(s).length+'</td><td>$'+(Number(p.divRecord)||0)+'</td><td class="money">$'+((Number(p.divRecord)||0)*podsOf(s).length).toFixed(0)+'</td></tr><tr><td>Champion</td><td>1</td><td>$'+(Number(p.first)||0)+'</td><td class="money">$'+(Number(p.first)||0)+'</td></tr><tr><td>Second</td><td>1</td><td>$'+(Number(p.second)||0)+'</td><td class="money">$'+(Number(p.second)||0)+'</td></tr><tr><td>Third</td><td>1</td><td>$'+(Number(p.third)||0)+'</td><td class="money">$'+(Number(p.third)||0)+'</td></tr><tr><td>Commissioner cut</td><td>—</td><td>'+(p.useCommish?(p.commishPct||0)+"%":"off")+'</td><td class="money">$'+cut.toFixed(0)+'</td></tr></table><p style="margin-top:12px">Assigned <span class="money">$'+assigned.toFixed(0)+'</span> · Left in pot <span class="money">$'+leftover.toFixed(0)+'</span></p><p>Dualgrid does not collect or send money. This is the receipt.</p></div></div>';
 document.getElementById("useCommish").onchange=e=>{document.getElementById("commishPct").disabled=!e.target.checked;};
 document.getElementById("savePay").onclick=()=>{const st=load();st.payout.buyIn=Number(document.getElementById("buyIn").value)||0;st.payout.useCommish=document.getElementById("useCommish").checked;st.payout.commishPct=Number(document.getElementById("commishPct").value)||0;st.payout.weeklyHigh=Number(document.getElementById("weeklyHigh").value)||0;st.payout.divRecord=Number(document.getElementById("divRecord").value)||0;st.payout.first=Number(document.getElementById("first").value)||0;st.payout.second=Number(document.getElementById("second").value)||0;st.payout.third=Number(document.getElementById("third").value)||0;save(st);renderPayout();};
 }
@@ -2676,6 +2698,9 @@ if(added) save(s);
       const mineHere = canEditTeam(s, pod, team.id);
       const lineup = team.lineup || {starters:[], bench:[], ir:[]}; lineup.starters = lineup.starters || []; lineup.bench = lineup.bench || []; lineup.ir = lineup.ir || [];
       const override = s.owner && (localStorage.getItem("dualgrid-override-"+pod+"-"+team.id)==="1");
+      const wrapOpen = mineHere ? '' : '<details style="margin:8px 0"><summary style="cursor:pointer;font-weight:800;padding:6px 0">'+ (team.name||"Team") +' · '+(team.ownerName||"Owner")+'</summary>';
+      const wrapClose = mineHere ? '' : '</details>';
+      html += wrapOpen;
       html+='<div class="card" style="background:linear-gradient(160deg,#14233a,#0d1524);color:#fff;border-left:8px dashed #c9a227"><div class="eyebrow">SEASON TICKET · '+podName(pod).toUpperCase()+'</div><h2 style="font-size:28px;margin:6px 0">'+(team.name||"Team")+'</h2><p>'+(team.ownerName||"Owner")+(mineHere?" · you":"")+'</p><p style="font-size:20px;letter-spacing:1px">'+(row.w||0)+'-'+(row.l||0)+' · '+(row.pf||0)+' PF</p><p style="opacity:.7">Seat '+(team.id+1)+' · '+ (s.season||"2026")+' · Roster '+total+' + '+(rs.ir||1)+' IR</p>'+(s.owner?'<label style="display:flex;align-items:center;gap:8px;margin-top:10px"><input type="checkbox" data-override="'+pod+'-'+team.id+'" '+(override?"checked":"")+'> Commissioner override</label>':'')+'</div>';
       const maxK = Number((s.records||{}).maxKeepers) || 0;
       if(mineHere){
@@ -2721,7 +2746,7 @@ if(added) save(s);
       // rings case
       const rings = (s.rings && s.rings[pod+"-"+team.id]) || [];
       html+='<div class="card" style="background:#0a0a0a;border:1px solid #333"><div style="font-size:11px;letter-spacing:1px;color:#c9a227;margin-bottom:6px">RINGS CASE</div><div style="display:flex;gap:8px;flex-wrap:wrap;min-height:40px;align-items:center">'+
-        (rings.length ? rings.map(r=>'<div style="width:36px;height:36px;border-radius:50%;border:3px solid #c9a227;background:radial-gradient(circle,#1a1a1a,#000);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:800;color:#c9a227" title="'+(r.year||"")+ ' '+(r.title||"Champion")+'">'+(r.year||"★")+'</div>').join("") : '<span style="opacity:.5;font-size:12px">No rings yet</span>')+
+        (rings.length ? rings.map((r,i)=>'<div style="position:relative;width:36px;height:36px;border-radius:50%;border:3px solid #c9a227;background:radial-gradient(circle,#1a1a1a,#000);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:800;color:#c9a227" title="'+(r.year||"")+ ' '+(r.title||"Champion")+'">'+(r.year||"★")+(s.owner?'<button data-del-ring="'+pod+'-'+team.id+'-'+i+'" style="position:absolute;top:-6px;right:-6px;width:16px;height:16px;border-radius:50%;background:#c0392b;color:#fff;border:none;font-size:10px;line-height:1;cursor:pointer;padding:0">×</button>':'')+'</div>').join("") : '<span style="opacity:.5;font-size:12px">No rings yet</span>')+
         (s.owner ? ' <button class="btn" data-add-ring="'+pod+'-'+team.id+'" style="margin-left:auto;font-size:11px">Add ring</button>' : '')+
         '</div></div>';
 
@@ -2739,6 +2764,7 @@ if(added) save(s);
         const e = enrich(pl);
         const opp = playerOpp(e); return '<div class="log-item" data-player-id="'+pl.id+'"><b>'+(pl.pos||"?")+'</b><span class="name" data-player-id="'+pl.id+'">'+(e.name+injuryBadge(e.name)||"Player")+(e.team?' <span style="opacity:.7;font-size:11px">'+e.team+'</span>':'')+(opp?' <span style="opacity:.6;font-size:11px">'+opp+'</span>':'')+'</span><span style="opacity:.7">'+(e.proj||"")+'</span><span style="opacity:.7">'+(e.projWeek||"")+'</span><span style="color:#69be28;font-weight:700" class="live-pts" data-id="'+pl.id+'">—</span><span class="game-score" data-id="'+pl.id+'" style="font-size:10px;color:#aaa;margin-left:6px"></span>'+((mineHere || override)?'<button class="btn" data-move="bench" data-pod="'+pod+'" data-team="'+team.id+'" data-id="'+pl.id+'">Bench</button>':'<span></span>')+'</div>';
       }).join("")+'</div>';
+      html += wrapClose;
     });
   });
   const settings = s.owner ? '<div class="card no-print"><h3>Must-start positions</h3><p style="opacity:.8;margin-bottom:10px">Set the minimum number of each position that must be started. Owners cannot lock a lineup until these are filled.</p><div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:10px"><div><label>QB</label><input id="rs-qb" type="number" min="0" value="'+(rs.qb||1)+'"></div><div><label>RB</label><input id="rs-rb" type="number" min="0" value="'+(rs.rb||2)+'"></div><div><label>WR</label><input id="rs-wr" type="number" min="0" value="'+(rs.wr||2)+'"></div><div><label>TE</label><input id="rs-te" type="number" min="0" value="'+(rs.te||1)+'"></div><div><label>Team DEF</label><input id="rs-teamDef" type="number" min="0" value="'+(rs.teamDef||0)+'"></div><div><label>Def players</label><input id="rs-defPlayers" type="number" min="0" value="'+(rs.defPlayers||0)+'"></div><div><label>K</label><input id="rs-k" type="number" min="0" value="'+(rs.k||1)+'"></div><div><label>FLEX</label><input id="rs-flex" type="number" min="0" value="'+(rs.flex||1)+'"></div><div><label>Bench</label><input id="rs-bench" type="number" min="0" value="'+(rs.bench||6)+'"></div><div><label>IR</label><input id="rs-ir" type="number" min="0" value="'+(rs.ir||1)+'"></div></div><label style="margin-top:10px;display:block"><input type="checkbox" id="rs-matchRounds" checked> Make draft rounds equal the total roster slots (starters + bench)</label><button class="btn btn-lime" id="save-roster" style="margin-top:12px">Save must-start settings</button></div>' : '<div class="card"><p>Required starters: QB '+(rs.qb||1)+' · RB '+(rs.rb||2)+' · WR '+(rs.wr||2)+' · TE '+(rs.te||1)+' · Team DEF '+(rs.teamDef||0)+' · Def players '+(rs.defPlayers||0)+' · K '+(rs.k||1)+' · FLEX '+(rs.flex||1)+'</p></div>';
@@ -2828,6 +2854,22 @@ if(added) save(s);
       save(st);
       publishRings();
       renderRoster();
+    };
+  });
+  document.querySelectorAll("[data-del-ring]").forEach(btn=>{
+    btn.onclick=()=>{
+      if(!load().owner) return;
+      const parts = btn.dataset.delRing.split("-");
+      const idx = Number(parts.pop());
+      const key = parts.join("-");
+      if(!confirm("Remove this ring?")) return;
+      const st = load();
+      if(st.rings && st.rings[key]){
+        st.rings[key].splice(idx, 1);
+        save(st);
+        publishRings();
+        renderRoster();
+      }
     };
   });
 
