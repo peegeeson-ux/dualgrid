@@ -685,29 +685,24 @@ function updateRosterTotal(){
 function updateMatchupTotals(){
   document.querySelectorAll("details.card").forEach(card => {
     let home = 0, away = 0;
-    let homeProj = 0, awayProj = 0;
-    // Live points
+    // Sum every live-pts inside this card by side
     card.querySelectorAll(".live-pts").forEach(el => {
       const id = el.getAttribute("data-id");
       if(!id) return;
-      const v = livePts[id] != null ? Number(livePts[id]) : null;
+      const v = livePts[id] != null ? Number(livePts[id]) : Number(el.textContent);
       if(v == null || isNaN(v)) return;
+      // Find the grid row and decide side by which column the live-pts sits in
       const row = el.closest("div[style*='grid-template-columns']");
       if(!row) return;
-      const isHome = row.children[0] && row.children[0].contains(el);
+      const cols = Array.from(row.children);
+      const homeCol = cols[0];
+      const isHome = homeCol && homeCol.contains(el);
       if(isHome) home += v; else away += v;
     });
-    // Projections from .proj-sum
-    const projHome = card.querySelector('.proj-sum[data-side="home"]');
-    const projAway = card.querySelector('.proj-sum[data-side="away"]');
-    if(projHome) homeProj = Number(projHome.textContent) || 0;
-    if(projAway) awayProj = Number(projAway.textContent) || 0;
-    // Use live if available, otherwise projection (display only — do not save projections)
-    const useHome = home > 0 ? home : homeProj;
-    const useAway = away > 0 ? away : awayProj;
+    // Update every live-sum for this card (summary + expanded footer)
     card.querySelectorAll('.live-sum[data-side="home"]').forEach(el => el.textContent = home > 0 ? home.toFixed(1) : "—");
     card.querySelectorAll('.live-sum[data-side="away"]').forEach(el => el.textContent = away > 0 ? away.toFixed(1) : "—");
-    // Only store real live totals — never projections
+    // Store only real live totals
     if(home > 0 || away > 0){
       const key = card.getAttribute("data-key");
       if(key){
@@ -724,9 +719,11 @@ function updateMatchupTotals(){
           if(!s.records.weekScores["w"+week]) s.records.weekScores["w"+week] = {};
           const homeKey = card.getAttribute("data-pod") + "-" + card.getAttribute("data-home");
           const awayKey = card.getAttribute("data-pod") + "-" + card.getAttribute("data-away");
-          s.records.weekScores["w"+week][homeKey] = {pf:home, pa:away, opp:card.getAttribute("data-away")};
-          s.records.weekScores["w"+week][awayKey] = {pf:away, pa:home, opp:card.getAttribute("data-home")};
-          save(s);
+          if(homeKey && awayKey){
+            s.records.weekScores["w"+week][homeKey] = {pf:home, pa:away};
+            s.records.weekScores["w"+week][awayKey] = {pf:away, pa:home};
+            save(s);
+          }
         }catch(e){}
       }
     }
@@ -850,7 +847,6 @@ function isCurrentWeekGame(g){
   const m = id.match(/^(\d{8})/);
   if(!m) return false;
   const gameDay = m[1]; // YYYYMMDD
-  // Use the same Tuesday-2pm week boundary as currentNflWeek()
   const now = new Date();
   const et = new Date(now.toLocaleString("en-US", {timeZone:"America/New_York"}));
   const seasonStart = new Date("2026-09-10T00:00:00-04:00");
@@ -863,9 +859,10 @@ function isCurrentWeekGame(g){
   if(day > 2 && day < 5) week += 1;
   if(week < 1) week = 1;
   if(week > 18) week = 18;
-  // Week N starts the Thursday of that week
+  // Fantasy week runs Wednesday through the following Tuesday
+  // so Thanksgiving Eve and early Thursday games are included
   const weekStart = new Date(seasonStart);
-  weekStart.setDate(weekStart.getDate() + (week-1)*7);
+  weekStart.setDate(weekStart.getDate() + (week-1)*7 - 1); // start one day earlier (Wed)
   const startStr = weekStart.getFullYear() + String(weekStart.getMonth()+1).padStart(2,"0") + String(weekStart.getDate()).padStart(2,"0");
   const weekEnd = new Date(weekStart);
   weekEnd.setDate(weekEnd.getDate() + 7);
@@ -2066,14 +2063,21 @@ weekGames.forEach(g=>{
   if(!isCurrent && storedHome != null && storedHome > 0){
     homePts = storedHome; awayPts = storedAway || 0;
   }
-  // Current week: use matchup totals only (no independent calculation)
-  else if(window._matchTotals){
-    const mk = g.home.name + "|" + g.away.name;
-    const t = window._matchTotals[mk];
-    if(t){ homePts = t.home || 0; awayPts = t.away || 0; }
-    else {
-      if(window._matchTotals[g.home.name] != null) homePts = Number(window._matchTotals[g.home.name]) || 0;
-      if(window._matchTotals[g.away.name] != null) awayPts = Number(window._matchTotals[g.away.name]) || 0;
+  // Current week: prefer matchup totals, else sum livePts from the lineups
+  else {
+    if(window._matchTotals){
+      const mk = g.home.name + "|" + g.away.name;
+      const t = window._matchTotals[mk];
+      if(t){ homePts = t.home || 0; awayPts = t.away || 0; }
+      else {
+        if(window._matchTotals[g.home.name] != null) homePts = Number(window._matchTotals[g.home.name]) || 0;
+        if(window._matchTotals[g.away.name] != null) awayPts = Number(window._matchTotals[g.away.name]) || 0;
+      }
+    }
+    if(homePts === 0 && awayPts === 0){
+      const sumLive = (team) => (team.lineup && team.lineup.starters || []).reduce((s,p) => s + (livePts[p.id] != null ? Number(livePts[p.id]) : 0), 0);
+      homePts = sumLive(g.home);
+      awayPts = sumLive(g.away);
     }
   }
   games.push({key,pod:g.pod,home:g.home,away:g.away,hs:Number(homePts||saved.hs||0).toFixed(1),as:Number(awayPts||saved.as||0).toFixed(1),teams:ensureDraft(s,g.pod).teams});
@@ -2118,6 +2122,8 @@ const ss=document.getElementById("style-standard"); if(ss) ss.onclick=()=>{const
 const sr=document.getElementById("style-retro"); if(sr) sr.onclick=()=>{const st=load(); st.records.board=st.records.board||{}; st.records.board.style="retro"; save(st); publishRecords(); renderScoreboard();};
 const sb=document.getElementById("save-board"); if(sb) sb.onclick=()=>{const st=load(); st.records.board=st.records.board||{style:style}; const by={}; document.querySelectorAll("[data-game]").forEach(inp=>{by[inp.dataset.game]=by[inp.dataset.game]||{key:inp.dataset.game}; by[inp.dataset.game][inp.dataset.side]=Number(inp.value)||0;}); st.records.board.games=Object.values(by); const sched={}; document.querySelectorAll('[data-sched]').forEach(sel=>{sched[sel.dataset.sched]=sched[sel.dataset.sched]||{}; const slot=sched[sel.dataset.sched][sel.dataset.slot]=sched[sel.dataset.sched][sel.dataset.slot]||[null,null]; slot[sel.dataset.side==='home'?0:1]=Number(sel.value);}); Object.keys(sched).forEach(pod=>sched[pod]=Object.values(sched[pod])); st.records.board.schedule=sched; save(st); publishRecords(); renderScoreboard();};
 const cw=document.getElementById("close-week"); if(cw) cw.onclick=()=>{ if(!load().owner)return; if(!confirm("Close Week "+((load().records&&load().records.week)||1)+" and snapshot the current totals?"))return; cw.textContent="Closing…"; const st=load(); try{ applyWeekResults(st); }catch(e){} save(st); publishRecords(); alert("Week closed. Totals saved."); cw.textContent="Close Week "+((load().records&&load().records.week)||1); renderScoreboard(); };
+  // Load live points so the board and ticker have real numbers
+  loadBoxCache().then(()=>{ fillLiveStats(); setTimeout(fillLiveStats, 1500); }).catch(()=>{});
 }
 
 function renderBracket(){
@@ -2897,7 +2903,7 @@ games.forEach(g=>{
   const totalProj = homeProj + awayProj || 1;
   const homeOdds = Math.round(homeProj / totalProj * 100);
   const awayOdds = 100 - homeOdds;
-  list+='<details class="card" data-key="'+g.home.name+'|'+g.away.name+'" style="margin:10px 0;'+highlight+'"><summary style="font-weight:800;cursor:pointer;padding:4px 0">'+g.home.name+' <span class="proj-sum" data-side="home">'+homeProj.toFixed(1)+'</span> / <span class="live-sum" data-side="home">—</span> vs '+g.away.name+' <span class="proj-sum" data-side="away">'+awayProj.toFixed(1)+'</span> / <span class="live-sum" data-side="away">—</span>'+(isMine?' <span style="color:#69be28">· YOU</span>':'')+'</summary><div style="margin-top:8px"><div style="display:flex;justify-content:space-between;margin-bottom:8px"><strong>'+g.home.name+'</strong><span>vs</span><strong>'+g.away.name+'</strong></div>'+rows+'<div style="margin-top:8px;font-size:13px;color:#7cc8ff"><strong>'+g.home.name+'</strong> Proj <span class="proj-sum" data-side="home">'+homeProj.toFixed(1)+'</span> · Live <span class="live-sum" data-side="home">—</span><br><strong>'+g.away.name+'</strong> Proj <span class="proj-sum" data-side="away">'+awayProj.toFixed(1)+'</span> · Live <span class="live-sum" data-side="away">—</span><div class="odds-line" style="margin-top:6px;font-size:12px;opacity:.85" data-home="'+g.home.name+'" data-away="'+g.away.name+'">Odds · '+g.home.name+' '+homeOdds+'% · '+g.away.name+' '+awayOdds+'%</div></div></div></details>';
+  list+='<details class="card" data-key="'+g.home.name+'|'+g.away.name+'" data-pod="'+g.pod+'" data-home="'+g.home.id+'" data-away="'+g.away.id+'" style="margin:10px 0;'+highlight+'"><summary style="font-weight:800;cursor:pointer;padding:4px 0">'+g.home.name+' <span class="proj-sum" data-side="home">'+homeProj.toFixed(1)+'</span> / <span class="live-sum" data-side="home">—</span> vs '+g.away.name+' <span class="proj-sum" data-side="away">'+awayProj.toFixed(1)+'</span> / <span class="live-sum" data-side="away">—</span>'+(isMine?' <span style="color:#69be28">· YOU</span>':'')+'</summary><div style="margin-top:8px"><div style="display:flex;justify-content:space-between;margin-bottom:8px"><strong>'+g.home.name+'</strong><span>vs</span><strong>'+g.away.name+'</strong></div>'+rows+'<div style="margin-top:8px;font-size:13px;color:#7cc8ff"><strong>'+g.home.name+'</strong> Proj <span class="proj-sum" data-side="home">'+homeProj.toFixed(1)+'</span> · Live <span class="live-sum" data-side="home">—</span><br><strong>'+g.away.name+'</strong> Proj <span class="proj-sum" data-side="away">'+awayProj.toFixed(1)+'</span> · Live <span class="live-sum" data-side="away">—</span><div class="odds-line" style="margin-top:6px;font-size:12px;opacity:.85" data-home="'+g.home.name+'" data-away="'+g.away.name+'">Odds · '+g.home.name+' '+homeOdds+'% · '+g.away.name+' '+awayOdds+'%</div></div></div></details>';
 });
 document.getElementById("app").innerHTML=header('<a class="btn" href="#home">Home</a><a class="btn" href="#scoreboard">Scoreboard</a>')+
 '<div class="page"><div class="eyebrow">WEEK '+week+' MATCHUPS</div><h1>All games</h1><p class="lede">Your team is highlighted. Tap a game to see the lineup.</p>'+list+'</div>';
@@ -3218,6 +3224,11 @@ function loadWeekTicker(){
           if(window._matchTotals[h] != null) hPts = window._matchTotals[h];
           if(window._matchTotals[a] != null) aPts = window._matchTotals[a];
         }
+      }
+      if(hPts === 0 && aPts === 0){
+        const sumLive = (team) => (team.lineup && team.lineup.starters || []).reduce((s,p) => s + (livePts[p.id] != null ? Number(livePts[p.id]) : 0), 0);
+        hPts = sumLive(g.home);
+        aPts = sumLive(g.away);
       }
       const live = (hPts || aPts) ? " " + aPts.toFixed(1) + "-" + hPts.toFixed(1) : "";
       return a + " vs " + h + live;
