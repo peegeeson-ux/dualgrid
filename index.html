@@ -689,15 +689,15 @@ function updateMatchupTotals(){
     card.querySelectorAll(".live-pts").forEach(el => {
       const id = el.getAttribute("data-id");
       if(!id) return;
-      // Only count a real live number — never a projection shown as fallback
-      if(livePts[id] == null || livePts[id+"_wk"] != String(currentNflWeek())) return;
+      // Only count if this player has a real live number for the current week
+      const wk = String(currentNflWeek());
+      if(livePts[id] == null || String(livePts[id+"_wk"]) !== wk) return;
       const v = Number(livePts[id]);
-      if(v == null || isNaN(v)) return;
+      if(isNaN(v)) return;
       const row = el.closest("div[style*='grid-template-columns']");
       if(!row) return;
       const cols = Array.from(row.children);
-      const homeCol = cols[0];
-      const isHome = homeCol && homeCol.contains(el);
+      const isHome = cols[0] && cols[0].contains(el);
       if(isHome) home += v; else away += v;
     });
     // Update every live-sum for this card (summary + expanded footer)
@@ -1214,9 +1214,7 @@ function draftRounds(){
 const ROUNDS = 8; // fallback
 function defaultState(){return{circuit:"dual",format:"snake",actingAs:{},drafts:{},paid:false,plan:null,season:"2026",paidAt:null,owner:false,payout:{buyIn:50,commishPct:0,useCommish:false,weeklyHigh:20,divRecord:40,first:200,second:100,third:50}};}
 function load(){
-  const s = _loadRaw();
-  Object.keys(livePts).forEach(k=>delete livePts[k]);
-  return s;
+  return _loadRaw();
 }
 function _loadRaw(){try{const raw=localStorage.getItem(STORE);if(raw)return syncOwner(Object.assign(defaultState(),JSON.parse(raw)));}catch(e){}return syncOwner(defaultState());}
 function save(s){localStorage.setItem(STORE,JSON.stringify(s));}
@@ -2911,10 +2909,8 @@ document.getElementById("app").innerHTML=header('<a class="btn" href="#home">Hom
   loadBoxCache().then(()=>{ 
     setTimeout(fillLiveStats, 100); 
     setTimeout(fillLiveStats, 800); 
-    setTimeout(fillLiveStats, 2000); 
-    setTimeout(()=>{ fillLiveStats(); updateMatchupTotals(); }, 3500);
-    setTimeout(()=>{ fillLiveStats(); updateMatchupTotals(); try{ const s=load(); applyWeekResults(s); save(s); publishRecords(); }catch(e){} loadWeekTicker(); }, 3000); 
-    setTimeout(updateMatchupTotals, 500); setTimeout(updateMatchupTotals, 1500); setTimeout(updateMatchupTotals, 3000);
+    setTimeout(()=>{ fillLiveStats(); updateMatchupTotals(); loadWeekTicker(); }, 1800);
+    setTimeout(()=>{ fillLiveStats(); updateMatchupTotals(); loadWeekTicker(); }, 3500);
   }).catch(()=>setTimeout(fillLiveStats, 100));
   loadInjuries().then(()=>{ const app = document.getElementById("app"); if(app) app.querySelectorAll(".name").forEach(el=>{ const id = el.getAttribute("data-player-id"); if(!id) return; const p = PLAYERS.find(x=>String(x.id)===id); if(p){ const badge = injuryBadge(p.name); if(badge && !el.querySelector(".injury-badge")) el.insertAdjacentHTML("beforeend", badge); } }); });
 }
