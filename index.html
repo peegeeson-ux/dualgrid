@@ -689,9 +689,10 @@ function updateMatchupTotals(){
     card.querySelectorAll(".live-pts").forEach(el => {
       const id = el.getAttribute("data-id");
       if(!id) return;
-      const v = livePts[id] != null ? Number(livePts[id]) : Number(el.textContent);
+      // Only count a real live number — never a projection shown as fallback
+      if(livePts[id] == null || livePts[id+"_wk"] != String(currentNflWeek())) return;
+      const v = Number(livePts[id]);
       if(v == null || isNaN(v)) return;
-      // Find the grid row and decide side by which column the live-pts sits in
       const row = el.closest("div[style*='grid-template-columns']");
       if(!row) return;
       const cols = Array.from(row.children);
